@@ -54,7 +54,10 @@ AIMS (An Internet Media Store) exists to address the need for a modern, reliable
 
 ## Constraints
 
-- **Technical Stack:** Frontend: Angular. Backend: NestJS. Database: PostgreSQL 18.
+- **Technical Stack & Core Libraries:** 
+  - **Frontend:** Angular, RxJS (State/Async), `@angular/common/http` (API calls). Vanilla CSS/SCSS for UI.
+  - **Backend:** NestJS (Node.js), TypeORM (ORM mapping), `class-validator` & `class-transformer` (Validation).
+  - **Database:** PostgreSQL 18, `pg` (driver).
 - **Architectural Pattern (OOAD Adherence):** The source code MUST strictly follow the design. The design is complete and correctly applies Object-Oriented Analysis and Design (OOAD) steps. Implementation agents are FORBIDDEN from inventing new classes, attributes, or methods that bypass the Boundary-Control-Entity structure defined in `Context/Group20-ClassDesignSpecification.md`.
 - **Database Schema:** Tables and constraints must match `Context/DatabaseDescription.md` (e.g. JSONB for multi-valued and complex properties like authors, artists, tracks, subtitles).
 - **Taxation Policy:** A flat 10% VAT is applied to all physical media items. Shipping fees are not subject to VAT.

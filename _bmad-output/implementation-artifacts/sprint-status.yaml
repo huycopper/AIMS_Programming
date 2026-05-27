@@ -43,7 +43,7 @@ story_location: {project-root}/_bmad-output/implementation-artifacts
 
 development_status:
   epic-1: in-progress
-  1-1-browse-and-search-products: ready-for-dev
+  1-1-browse-and-search-products: in-progress
   1-2-add-and-manage-cart-items: backlog
   epic-1-retrospective: optional
   epic-2: backlog

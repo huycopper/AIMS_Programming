@@ -1,6 +1,9 @@
+---
+baseline_commit: NO_VCS
+---
 # Story 1.1: Browse and Search Products
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -16,9 +19,9 @@ so that I can find products of interest without logging in.
    **When** the homepage loads
    **Then** the system displays 20 random products (books, newspapers, CDs, DVDs) (UX-DR1)
 
-2. **Given** the customer wants to search for products
-   **When** they enter a search query or filter by category/product type
-   **Then** the system displays matching products and retrieves general and type-specific information (FR1, FR2)
+2. **Given** the customer wants to search or filter products
+   **When** they enter a search query (by product title or category) or filter by price range (e.g., under 100,000 VND, 100,000–200,000 VND, etc.)
+   **Then** the system displays all matching products on each page and retrieves general and type-specific information (FR1, FR2)
 
 ## Tasks / Subtasks
 

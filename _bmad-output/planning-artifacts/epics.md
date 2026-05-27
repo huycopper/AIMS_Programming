@@ -28,7 +28,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **FR3:** Enable customers to add products to a shopping cart with specific quantities.
 - **FR4:** Support viewing the shopping cart, updating quantities, and removing items, updating the subtotal and weight.
 - **FR5:** Enable placing orders checking stock availability, entering delivery details (name, email, phone, province, address, note).
-- **FR6:** Calculate shipping fee dynamically: Hanoi/HCM (initial 3kg = 22,000 VND), elsewhere (initial 0.5kg = 30,000 VND), additional 0.5kg = +2,500 VND. Orders > 100,000 VND get free shipping discount up to 25,000 VND.
+- **FR6:** Calculate shipping fee dynamically based on weight and location: Hanoi/HCM (first 3kg = 22,000 VND), elsewhere (first 0.5kg = 30,000 VND), and an additional fee of 2,500 VND for every subsequent 0.5kg. Orders with total items exceeding 100,000 VND qualify for free shipping up to 25,000 VND.
 - **FR7:** Display an invoice showing a detailed breakdown (subtotal, 10% VAT, shipping fee, total amount).
 - **FR8:** Allow payment via VietQR (retrieve access token, generate QR, receive callback, record transaction, update status).
 - **FR9:** Allow payment via Credit Card (PayPal Sandbox API) (display card form, process payment, record transaction, update status).
@@ -97,9 +97,9 @@ So that I can find products of interest without logging in.
 **When** the homepage loads
 **Then** the system displays 20 random products (books, newspapers, CDs, DVDs) (UX-DR1)
 
-**Given** the customer wants to search for products
-**When** they enter a search query or filter by category/product type
-**Then** the system displays matching products and retrieves general and type-specific information (FR1, FR2)
+**Given** the customer wants to search or filter products
+**When** they enter a search query (by product title or category) or filter by price range (e.g., under 100,000 VND, 100,000–200,000 VND, etc.)
+**Then** the system displays all matching products on each page and retrieves general and type-specific information (FR1, FR2)
 
 ---
 
@@ -138,7 +138,7 @@ So that I can see the final cost break-down including shipping before payment.
 
 **Given** the customer is on the delivery form
 **When** they change their province or address
-**Then** the system calculates the shipping fee dynamically: Hanoi/HCM (initial 3kg = 22,000 VND), elsewhere (initial 0.5kg = 30,000 VND, each add'l 0.5kg = +2,500 VND), and applies up to 25,000 VND discount if total is > 100,000 VND (FR6, UX-DR3)
+**Then** the system calculates the shipping fee dynamically: Hanoi/HCM (first 3kg = 22,000 VND), elsewhere (first 0.5kg = 30,000 VND), with an additional fee of 2,500 VND for every subsequent 0.5kg, and applies up to 25,000 VND discount if total is > 100,000 VND (FR6, UX-DR3)
 
 **Given** the customer submits valid delivery info
 **When** the invoice loads
