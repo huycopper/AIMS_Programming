@@ -1,0 +1,89 @@
+<aside class="search-sidebar" id="search-sidebar">
+  <!-- Search Input -->
+  <div class="filter-section">
+    <h3 class="filter-title">Search</h3>
+    <div class="search-input-group">
+      <input
+        type="text"
+        id="search-input"
+        class="search-input"
+        [(ngModel)]="searchQuery"
+        placeholder="Search by title, author, keyword…"
+        maxlength="200"
+        (keyup.enter)="onSearch()"
+      />
+      <button
+        id="search-button"
+        class="search-button"
+        (click)="onSearch()"
+        aria-label="Search products"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="m21 21-4.3-4.3"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Category Filter -->
+  <div class="filter-section">
+    <h3 class="filter-title">Categories</h3>
+    <div class="category-list">
+      @for (cat of categories; track cat.value) {
+        <label class="category-checkbox" [for]="'cat-' + cat.value">
+          <input
+            type="checkbox"
+            [id]="'cat-' + cat.value"
+            [(ngModel)]="cat.checked"
+            (change)="onCategoryToggle()"
+          />
+          <span class="checkmark"></span>
+          <span class="category-label">{{ cat.label }}</span>
+        </label>
+      }
+    </div>
+  </div>
+
+  <!-- Price Range Filter -->
+  <div class="filter-section">
+    <h3 class="filter-title">Price Range (VND)</h3>
+    <div class="price-range-group">
+      <input
+        type="number"
+        id="price-min"
+        class="price-input"
+        [(ngModel)]="minPrice"
+        placeholder="Min"
+        min="0"
+        maxlength="10"
+      />
+      <span class="price-separator">–</span>
+      <input
+        type="number"
+        id="price-max"
+        class="price-input"
+        [(ngModel)]="maxPrice"
+        placeholder="Max"
+        min="0"
+        maxlength="10"
+      />
+    </div>
+    <button
+      id="apply-price-filter"
+      class="apply-button"
+      (click)="onApplyPriceFilter()"
+    >
+      Apply
+    </button>
+  </div>
+
+  <!-- Clear Filters -->
+  <button
+    id="clear-filters"
+    class="clear-button"
+    (click)="onClearFilters()"
+  >
+    Clear All Filters
+  </button>
+</aside>

@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-26T15:03:00+07:00
-last_updated: 2026-05-26T15:03:00+07:00
+last_updated: 2026-05-29T00:43:00+07:00
 project: AIMS_Programming
 project_key: NOKEY
 tracking_system: file-system
@@ -43,8 +43,8 @@ story_location: {project-root}/_bmad-output/implementation-artifacts
 
 development_status:
   epic-1: in-progress
-  1-1-browse-and-search-products: in-progress
-  1-2-add-and-manage-cart-items: backlog
+  1-1-browse-and-search-products: done
+  1-2-add-and-manage-cart-items: done
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-place-order-calculate-shipping: backlog

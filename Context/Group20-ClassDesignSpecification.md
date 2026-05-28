@@ -305,20 +305,25 @@ Represents a media product managed in AIMS.
 
 **3.3.1 Attributes**
 - `productId` (String)
-- `productName` (String)
+- `productType` (String)
+- `title` (String)
 - `category` (String)
-- `price` (double)
+- `currentPrice` (double)
 - `originalValue` (double)
-- `quantity` (int)
-- `description` (String)
+- `stockQuantity` (int)
+- `generalDescription` (String)
 - `barcode` (String)
+- `height` (double)
+- `width` (double)
+- `length` (double)
+- `weight` (double)
 - `imgUrl` (String)
 - `status` (String)
 - `createdAt` (LocalDateTime)
 - `updatedAt` (LocalDateTime)
 
 **3.3.2 Operations**
-- `Product(productName, category, price, quantity, description)`
+- `Product(title, category, currentPrice, stockQuantity, generalDescription)`
 - `updateInfo(...)`
 - `changeStatus(status: ProductStatus)`
 - `getQuantityInStock(id: string)`
