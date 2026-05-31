@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CartService } from '../../services/cart.service';
 import { Cart } from '../../models/cart.model';
@@ -21,7 +21,7 @@ export class CartScreen implements OnInit, OnDestroy {
   insufficientStockItem: { [productId: string]: number } = {};
   private subscription: Subscription | null = null;
 
-  constructor(private cartService: CartService) {}
+  constructor(private cartService: CartService, private router: Router) { }
 
   ngOnInit(): void {
     this.subscription = this.cartService.getCartObservable().subscribe(cart => {
@@ -61,6 +61,13 @@ export class CartScreen implements OnInit, OnDestroy {
   }
 
   askToPlaceOrder(): void {
-    // To be implemented in place order story
+    this.router.navigate(['/delivery']);
+  }
+
+  formatPrice(price: number): string {
+    if (isNaN(price)) {
+      return price + '₫';
+    }
+    return price.toLocaleString('vi-VN') + '₫';
   }
 }
