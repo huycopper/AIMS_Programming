@@ -110,9 +110,9 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
     if (!this.cart) return [];
     return this.cart.items.map((item) => ({
       productId: item.product.productId,
-      quantity: item.quantity,
-      weight: item.product.weight || 0,
-      currentPrice: item.product.currentPrice || 0,
+      quantity: Number(item.quantity),
+      weight: Number(item.product.weight) || 0,
+      currentPrice: Number(item.product.currentPrice) || 0,
     }));
   }
 
@@ -223,5 +223,24 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
    */
   goBack(): void {
     this.router.navigate(['/cart']);
+  }
+
+  /**
+   * Format price to VND currency string
+   */
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
+      return price + '₫';
+    }
+    return numPrice.toLocaleString('vi-VN') + '₫';
+  }
+
+  /**
+   * Calculate total quantity of items in cart
+   */
+  getTotalQuantity(): number {
+    if (!this.cart) return 0;
+    return this.cart.items.reduce((total, item) => total + Number(item.quantity), 0);
   }
 }

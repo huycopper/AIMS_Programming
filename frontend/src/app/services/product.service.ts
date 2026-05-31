@@ -23,8 +23,12 @@ export class ProductService {
    * AC-1: Fetch 20 random ACTIVE products for the homepage.
    * Calls GET /api/products/random
    */
-  getRandomProducts(): Observable<Product[]> {
-    return this.http.get<Product[]>(`${this.apiUrl}/random`);
+  getRandomProducts(category?: string): Observable<Product[]> {
+    let httpParams = new HttpParams();
+    if (category) {
+      httpParams = httpParams.set('category', category);
+    }
+    return this.http.get<Product[]>(`${this.apiUrl}/random`, { params: httpParams });
   }
 
   /**

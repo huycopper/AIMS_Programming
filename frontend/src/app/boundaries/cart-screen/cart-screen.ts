@@ -64,10 +64,11 @@ export class CartScreen implements OnInit, OnDestroy {
     this.router.navigate(['/delivery']);
   }
 
-  formatPrice(price: number): string {
-    if (isNaN(price)) {
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
       return price + '₫';
     }
-    return price.toLocaleString('vi-VN') + '₫';
+    return numPrice.toLocaleString('vi-VN') + '₫';
   }
 }

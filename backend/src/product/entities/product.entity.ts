@@ -10,7 +10,6 @@ import { Book } from './book.entity.js';
 import { Cd } from './cd.entity.js';
 import { Dvd } from './dvd.entity.js';
 import { Newspaper } from './newspaper.entity.js';
-import { ColumnNumericTransformer } from '../../utils/column-numeric-transformer.js';
 
 /**
  * Product entity — maps exactly to the `products` table
@@ -60,25 +59,25 @@ export class Product {
   @Column({ name: 'general_description', type: 'text', nullable: true })
   generalDescription: string | null;
 
-  @Column({ name: 'height', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'height', type: 'numeric', precision: 10, scale: 2 })
   height: number;
 
-  @Column({ name: 'width', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'width', type: 'numeric', precision: 10, scale: 2 })
   width: number;
 
-  @Column({ name: 'length', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'length', type: 'numeric', precision: 10, scale: 2 })
   length: number;
 
-  @Column({ name: 'weight', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'weight', type: 'numeric', precision: 10, scale: 2 })
   weight: number;
 
   @Column({ name: 'barcode', type: 'varchar', length: 100, unique: true })
   barcode: string;
 
-  @Column({ name: 'original_value', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'original_value', type: 'numeric', precision: 14, scale: 2 })
   originalValue: number;
 
-  @Column({ name: 'current_price', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'current_price', type: 'numeric', precision: 14, scale: 2 })
   currentPrice: number;
 
   @Column({ name: 'stock_quantity', type: 'int' })

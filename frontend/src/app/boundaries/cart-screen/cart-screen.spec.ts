@@ -9,6 +9,7 @@ import { Cart } from '../../models/cart.model';
 describe('CartScreen', () => {
   let component: CartScreen;
   let mockCartService: any;
+  let mockRouter: any;
   let cartSubject: BehaviorSubject<Cart>;
 
   beforeEach(() => {
@@ -22,7 +23,11 @@ describe('CartScreen', () => {
       getCart: () => cartSubject.getValue()
     };
 
-    component = new CartScreen(mockCartService as any);
+    mockRouter = {
+      navigate: vi.fn(),
+    };
+
+    component = new CartScreen(mockCartService as any, mockRouter as any);
     component.ngOnInit();
   });
 
@@ -40,7 +45,7 @@ describe('CartScreen', () => {
       currentPrice: 90,
       stockQuantity: 10
     } as any;
-    
+
     const cart = new Cart();
     cart.addItem(mockProduct, 2);
     cartSubject.next(cart);
@@ -65,15 +70,20 @@ describe('CartScreen', () => {
       title: 'Test Book',
       stockQuantity: 3
     } as any;
-    
+
     const cart = new Cart();
     cart.addItem(mockProduct, 2);
     cartSubject.next(cart);
 
     // Try to update to a quantity greater than stock
     component.handleQuantityChange('p1', 5, 3);
-    
+
     expect(component.insufficientStockItem['p1']).toBe(3);
     expect(mockCartService.updateQuantity).toHaveBeenCalledWith('p1', 3); // Updates to max available
+  });
+
+  it('should navigate to /delivery when askToPlaceOrder is called', () => {
+    component.askToPlaceOrder();
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/delivery']);
   });
 });

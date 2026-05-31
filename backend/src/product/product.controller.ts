@@ -16,8 +16,8 @@ export class ProductController {
    * AC-1: Returns 20 random ACTIVE products.
    */
   @Get('random')
-  async getRandomProducts() {
-    return this.productService.findRandom(20);
+  async getRandomProducts(@Query('category') category?: string) {
+    return this.productService.findRandom(20, category);
   }
 
   /**

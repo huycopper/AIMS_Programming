@@ -1,0 +1,122 @@
+<div class="invoice-container container mx-auto p-4 max-w-3xl">
+  <div *ngIf="!invoiceData" class="text-center p-8">
+    <p class="text-gray-500">No invoice data available. Redirecting...</p>
+  </div>
+
+  <div *ngIf="invoiceData" class="invoice-content">
+    <h1 class="text-2xl font-bold mb-6 text-center">Order Invoice</h1>
+
+    <!-- Delivery Information Summary -->
+    <div class="delivery-summary bg-gray-50 rounded-lg p-4 mb-6">
+      <h2 class="text-lg font-semibold mb-3 text-gray-800">Delivery Information</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>
+          <span class="text-gray-500">Name:</span>
+          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.name }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500">Phone:</span>
+          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.phone }}</span>
+        </div>
+        <div *ngIf="invoiceData.deliveryInfo.email">
+          <span class="text-gray-500">Email:</span>
+          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.email }}</span>
+        </div>
+        <div>
+          <span class="text-gray-500">Province:</span>
+          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.province }}</span>
+        </div>
+        <div class="md:col-span-2">
+          <span class="text-gray-500">Address:</span>
+          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.address }}</span>
+        </div>
+        <div *ngIf="invoiceData.deliveryInfo.note" class="md:col-span-2">
+          <span class="text-gray-500">Note:</span>
+          <span class="ml-2 font-medium italic">{{ invoiceData.deliveryInfo.note }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product List Table -->
+    <div class="product-table mb-6">
+      <h2 class="text-lg font-semibold mb-3 text-gray-800">Products</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="text-left p-3 border-b font-medium text-gray-600">#</th>
+              <th class="text-left p-3 border-b font-medium text-gray-600">Product</th>
+              <th class="text-center p-3 border-b font-medium text-gray-600">Quantity</th>
+              <th class="text-right p-3 border-b font-medium text-gray-600">Unit Price</th>
+              <th class="text-right p-3 border-b font-medium text-gray-600">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of cart?.items; let i = index" class="border-b hover:bg-gray-50">
+              <td class="p-3 text-gray-500">{{ i + 1 }}</td>
+              <td class="p-3 font-medium">{{ item.product.title }}</td>
+              <td class="p-3 text-center">{{ item.quantity }}</td>
+              <td class="p-3 text-right">{{ item.product.currentPrice | number }} VND</td>
+              <td class="p-3 text-right font-medium">
+                {{ item.product.currentPrice * item.quantity | number }} VND
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Invoice Breakdown -->
+    <div class="invoice-breakdown bg-white border rounded-lg p-4">
+      <h2 class="text-lg font-semibold mb-3 text-gray-800">Payment Summary</h2>
+      <div class="space-y-2">
+        <!-- Subtotal -->
+        <div class="flex justify-between">
+          <span class="text-gray-600">Subtotal (excl. VAT):</span>
+          <span class="font-medium">{{ invoiceData.subtotal | number }} VND</span>
+        </div>
+
+        <!-- VAT -->
+        <div class="flex justify-between">
+          <span class="text-gray-600">VAT (10%):</span>
+          <span class="font-medium">{{ invoiceData.vat | number }} VND</span>
+        </div>
+
+        <!-- Shipping Breakdown -->
+        <div class="flex justify-between">
+          <span class="text-gray-600">
+            Shipping Fee
+            <span class="text-xs text-gray-400"> ({{ invoiceData.totalWeight }}kg) </span>
+          </span>
+          <span class="font-medium">{{ invoiceData.shippingFee | number }} VND</span>
+        </div>
+
+
+
+        <hr class="my-3" />
+
+        <!-- Total -->
+        <div class="flex justify-between text-xl font-bold text-blue-700">
+          <span>Total Amount:</span>
+          <span>{{ invoiceData.totalAmount | number }} VND</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-4 mt-6">
+      <button
+        (click)="goBackToDelivery()"
+        class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+      >
+        &larr; Edit Delivery Info
+      </button>
+      <button
+        (click)="confirmOrder()"
+        class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+      >
+        Confirm Order ✓
+      </button>
+    </div>
+  </div>
+</div>

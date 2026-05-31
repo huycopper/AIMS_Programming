@@ -11,7 +11,7 @@
       <div *ngFor="let item of cart.items" class="cart-item flex items-center p-4 border-b">
         <div class="item-details flex-1">
           <h3 class="font-semibold">{{ item.product.title }}</h3>
-          <p class="text-sm text-gray-500">Price: {{ item.product.currentPrice }}</p>
+          <p class="text-sm text-gray-500">Price: {{ formatPrice(item.product.currentPrice) }}</p>
           <div *ngIf="insufficientStockItem[item.product.productId]" class="error-banner text-red-500 text-sm mt-1">
             Only {{ insufficientStockItem[item.product.productId] }} items left in stock
           </div>
@@ -33,13 +33,9 @@
 
     <div class="cart-summary w-full md:w-80 bg-gray-50 p-6 rounded-lg h-fit">
       <h2 class="text-xl font-bold mb-4">Order Summary</h2>
-      <div class="summary-row flex justify-between mb-2">
+      <div class="summary-row flex justify-between mb-4">
         <span>Subtotal:</span>
-        <span class="font-semibold">{{ totalExclVAT }}</span>
-      </div>
-      <div class="summary-row flex justify-between mb-4 text-sm text-gray-600">
-        <span>Total Weight:</span>
-        <span>{{ totalWeight }} kg</span>
+        <span class="font-semibold">{{ formatPrice(totalExclVAT) }}</span>
       </div>
       <button (click)="askToPlaceOrder()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">
         Place Order

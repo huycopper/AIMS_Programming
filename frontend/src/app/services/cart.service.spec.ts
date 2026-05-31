@@ -3,6 +3,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CartService } from './cart.service';
 import { Product } from '../models/product.model';
+import { Cart } from '../models/cart.model';
 
 describe('CartService', () => {
   let service: CartService;
@@ -40,7 +41,7 @@ describe('CartService', () => {
 
   it('should add item and update behavior subject', () => {
     service.addItem(mockProduct, 2);
-    let cartState;
+    let cartState: Cart | undefined;
     service.getCartObservable().subscribe(cart => cartState = cart);
     
     expect(cartState?.items.length).toBe(1);
@@ -71,7 +72,7 @@ describe('CartService', () => {
     service.addItem(mockProduct, 2);
     service.updateQuantity('p1', 5);
     
-    let cartState;
+    let cartState: Cart | undefined;
     service.getCartObservable().subscribe(cart => cartState = cart);
     expect(cartState?.items[0].quantity).toBe(5);
   });
@@ -80,7 +81,7 @@ describe('CartService', () => {
     service.addItem(mockProduct, 2);
     service.removeItem('p1');
     
-    let cartState;
+    let cartState: Cart | undefined;
     service.getCartObservable().subscribe(cart => cartState = cart);
     expect(cartState?.items.length).toBe(0);
   });

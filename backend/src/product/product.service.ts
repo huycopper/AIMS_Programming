@@ -19,15 +19,21 @@ export class ProductService {
    * AC-1: Returns 20 random ACTIVE products (books, newspapers, CDs, DVDs).
    * Uses PostgreSQL RANDOM() for randomisation.
    */
-  async findRandom(count = 20): Promise<Product[]> {
-    return this.productRepository
+  async findRandom(count = 20, category?: string): Promise<Product[]> {
+    const qb = this.productRepository
       .createQueryBuilder('product') // Truy vấn bảng product
       .leftJoinAndSelect('product.book', 'book') // Joins book table with product table
       .leftJoinAndSelect('product.cd', 'cd') // Joins cd table with product table
       .leftJoinAndSelect('product.dvd', 'dvd') // Joins dvd table with product table
       .leftJoinAndSelect('product.newspaper', 'newspaper') // Joins newspaper table with product table
-      .where('product.status = :status', { status: ProductStatus.ACTIVE }) // Filter by status
-      .orderBy('RANDOM()') // Random order
+      .where('product.status = :status', { status: ProductStatus.ACTIVE }); // Filter by status
+
+    if (category) {
+      const categories = category.split(',');
+      qb.andWhere('product.productType IN (:...categories)', { categories });
+    }
+
+    return qb.orderBy('RANDOM()') // Random order
       .limit(count) // Limit the number of results
       .getMany(); // Get the results
   }

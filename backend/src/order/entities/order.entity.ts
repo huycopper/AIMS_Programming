@@ -8,7 +8,6 @@ import {
   OneToMany,
   JoinColumn,
 } from 'typeorm';
-import { ColumnNumericTransformer } from '../../utils/column-numeric-transformer.js';
 
 /**
  * DeliveryInfo entity — stores customer delivery information for an order.
@@ -51,19 +50,19 @@ export class Order {
   @JoinColumn({ name: 'delivery_info_id' })
   deliveryInfo: DeliveryInfo;
 
-  @Column({ name: 'subtotal', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'subtotal', type: 'numeric', precision: 14, scale: 2 })
   subtotal: number;
 
-  @Column({ name: 'vat', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'vat', type: 'numeric', precision: 14, scale: 2 })
   vat: number;
 
-  @Column({ name: 'shipping_fee', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'shipping_fee', type: 'numeric', precision: 14, scale: 2 })
   shippingFee: number;
 
-  @Column({ name: 'total_amount', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'total_amount', type: 'numeric', precision: 14, scale: 2 })
   totalAmount: number;
 
-  @Column({ name: 'total_weight', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'total_weight', type: 'numeric', precision: 10, scale: 2 })
   totalWeight: number;
 
   @Column({
@@ -110,9 +109,9 @@ export class OrderItem {
   @Column({ name: 'quantity', type: 'int' })
   quantity: number;
 
-  @Column({ name: 'unit_price', type: 'numeric', precision: 14, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'unit_price', type: 'numeric', precision: 14, scale: 2 })
   unitPrice: number;
 
-  @Column({ name: 'weight', type: 'numeric', precision: 10, scale: 2, transformer: new ColumnNumericTransformer() })
+  @Column({ name: 'weight', type: 'numeric', precision: 10, scale: 2 })
   weight: number;
 }
