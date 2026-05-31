@@ -1,0 +1,29 @@
+<div class="success-container container mx-auto p-4 max-w-md mt-10">
+  <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+    <div class="success-icon mb-6">
+      <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-100">
+        <svg class="h-16 w-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+    </div>
+    
+    <h1 class="text-3xl font-bold mb-2 text-gray-800">Payment Successful!</h1>
+    <p class="text-gray-600 mb-8">Thank you for your purchase.</p>
+
+    <div *ngIf="orderId" class="order-details text-left bg-gray-50 p-4 rounded-lg mb-8">
+      <div class="flex justify-between mb-2">
+        <span class="text-gray-500">Order ID:</span>
+        <span class="font-medium text-gray-800">#{{ orderId }}</span>
+      </div>
+      <div *ngIf="invoiceData" class="flex justify-between">
+        <span class="text-gray-500">Amount Paid:</span>
+        <span class="font-bold text-blue-700">{{ invoiceData.totalAmount | number }} VND</span>
+      </div>
+    </div>
+
+    <button (click)="goHome()" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg">
+      Back to Home
+    </button>
+  </div>
+</div>

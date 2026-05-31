@@ -1,13 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrderService } from './order.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { OrderService } from './order.service.js';
+import { Order } from './entities/order.entity.js';
 import { CartItemDto } from './dto/calculate-shipping.dto';
 
 describe('OrderService', () => {
   let service: OrderService;
 
   beforeEach(async () => {
+    const mockOrderRepository = {
+      save: jest.fn().mockImplementation((order) => Promise.resolve({ ...order, orderId: 'mock-id' })),
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [OrderService],
+      providers: [
+        OrderService,
+        { provide: getRepositoryToken(Order), useValue: mockOrderRepository },
+      ],
     }).compile();
 
     service = module.get<OrderService>(OrderService);

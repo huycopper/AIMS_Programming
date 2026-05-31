@@ -1,4 +1,4 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, ValidationPipe, Get, Param } from '@nestjs/common';
 import { OrderService } from './order.service.js';
 import {
   CalculateShippingDto,
@@ -55,5 +55,15 @@ export class PlaceOrderController {
       cartItems: dto.cartItems,
       ...invoice,
     };
+  }
+
+  /**
+   * GET /api/orders/:orderId/status
+   * Get the current status of an order (for polling).
+   */
+  @Get(':orderId/status')
+  async getOrderStatus(@Param('orderId') orderId: string) {
+    const order = await this.orderService.getOrder(orderId);
+    return { status: order.status };
   }
 }

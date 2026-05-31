@@ -103,6 +103,19 @@
       </div>
     </div>
 
+    <!-- Payment Method Selection -->
+    <div class="payment-method bg-white border rounded-lg p-4 mt-6">
+      <h2 class="text-lg font-semibold mb-3 text-gray-800">Payment Method</h2>
+      <div class="space-y-3">
+        <label class="flex items-center space-x-3 cursor-pointer">
+          <input type="radio" name="paymentMethod" value="vietqr" [(ngModel)]="paymentMethod" class="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500" [checked]="paymentMethod === 'vietqr'">
+          <span class="text-gray-700 font-medium flex items-center">
+            <span class="mr-2">🏦</span> Pay with QR Code (VietQR)
+          </span>
+        </label>
+      </div>
+    </div>
+
     <!-- Action Buttons -->
     <div class="flex gap-4 mt-6">
       <button

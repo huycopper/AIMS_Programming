@@ -1,15 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlaceOrderController } from './order.controller';
 import { OrderService } from './order.service';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Order } from './entities/order.entity';
 
 describe('PlaceOrderController', () => {
   let controller: PlaceOrderController;
   let orderService: OrderService;
 
   beforeEach(async () => {
+    const mockOrderRepository = {
+      save: jest.fn(),
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PlaceOrderController],
-      providers: [OrderService],
+      providers: [
+        OrderService,
+        { provide: getRepositoryToken(Order), useValue: mockOrderRepository },
+      ],
     }).compile();
 
     controller = module.get<PlaceOrderController>(PlaceOrderController);

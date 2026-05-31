@@ -1,0 +1,26 @@
+<div class="vietqr-container container mx-auto p-4 max-w-md mt-10">
+  <div class="bg-white rounded-lg shadow-lg p-6 text-center">
+    <h1 class="text-2xl font-bold mb-4 text-blue-700">Pay with VietQR</h1>
+    
+    <div *ngIf="paymentStatus === 'failed'" class="text-red-500 mb-4">
+      Failed to initiate payment. Please try again.
+    </div>
+
+    <div *ngIf="paymentStatus === 'waiting'" class="waiting-section">
+      <p class="text-gray-600 mb-6">Scan the QR code below using your mobile banking app to complete the payment.</p>
+      
+      <div class="qr-code-wrapper bg-gray-100 p-4 rounded-lg inline-block mb-6 relative min-h-[250px] min-w-[250px] flex items-center justify-center">
+        <img *ngIf="qrCodeUrl" [src]="qrCodeUrl" alt="VietQR Code" class="max-w-[250px] mx-auto rounded">
+        <div *ngIf="!qrCodeUrl" class="animate-pulse flex flex-col items-center">
+          <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+          <p class="text-gray-500">Generating QR Code...</p>
+        </div>
+      </div>
+
+      <div class="spinner-section flex items-center justify-center text-blue-600">
+        <div class="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+        <span class="font-medium">Waiting for payment confirmation...</span>
+      </div>
+    </div>
+  </div>
+</div>

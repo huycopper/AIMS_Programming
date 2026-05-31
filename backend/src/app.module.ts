@@ -6,6 +6,10 @@ import { AppService } from './app.service.js';
 import { ProductModule } from './product/product.module.js';
 import { OrderModule } from './order/order.module.js';
 import { join } from 'path';
+import { PayThroughVietQrService } from './controllers/pay-through-viet-qr/pay-through-viet-qr.service.js';
+import { VietQrService } from './boundaries/viet-qr/viet-qr.service.js';
+import { VietQrWebhookController } from './boundaries/viet-qr-webhook/viet-qr-webhook.controller.js';
+import { PayThroughVietQrController } from './controllers/pay-through-viet-qr/pay-through-viet-qr.controller.js';
 
 @Module({
   imports: [
@@ -29,7 +33,7 @@ import { join } from 'path';
     ProductModule,
     OrderModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, VietQrWebhookController, PayThroughVietQrController],
+  providers: [AppService, PayThroughVietQrService, VietQrService],
 })
 export class AppModule { }

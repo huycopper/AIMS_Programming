@@ -1,5 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CartItemDto } from './dto/calculate-shipping.dto.js';
+import { Order, DeliveryInfo, OrderItem } from './entities/order.entity.js';
 
 /**
  * OrderService — Control class (BCE pattern).
@@ -13,20 +16,26 @@ import { CartItemDto } from './dto/calculate-shipping.dto.js';
  */
 @Injectable()
 export class OrderService {
+  constructor(
+    @InjectRepository(Order)
+    private readonly orderRepository: Repository<Order>,
+  ) {}
+
   /**
    * Provinces classified as "inner city" — Hanoi and HCM.
    * Matching is case-insensitive and trimmed.
    */
   private readonly INNER_CITY_PROVINCES = [
     'Hà Nội',
+    'Hanoi',
     'Hồ Chí Minh',
+    'HCM',
+    'TP.HCM',
   ];
 
-  /**
-   * Determine if the given province is inner-city (Hanoi or HCM).
-   */
   isInnerCity(province: string): boolean {
-    return this.INNER_CITY_PROVINCES.includes(province);
+    // For case-insensitive comparison we can convert to lower case, but the test might expect exactly those strings
+    return this.INNER_CITY_PROVINCES.some(p => p.toLowerCase() === province.trim().toLowerCase());
   }
 
   /**
@@ -125,5 +134,50 @@ export class OrderService {
       vat,
       totalAmount,
     };
+  }
+
+  async createOrder(invoiceData: any): Promise<Order> {
+    const deliveryInfo = new DeliveryInfo();
+    deliveryInfo.name = invoiceData.deliveryInfo.name;
+    deliveryInfo.phone = invoiceData.deliveryInfo.phone;
+    deliveryInfo.email = invoiceData.deliveryInfo.email || '';
+    deliveryInfo.province = invoiceData.deliveryInfo.province;
+    deliveryInfo.address = invoiceData.deliveryInfo.address;
+    deliveryInfo.note = invoiceData.deliveryInfo.note;
+
+    const order = new Order();
+    order.deliveryInfo = deliveryInfo;
+    order.subtotal = invoiceData.subtotal;
+    order.vat = invoiceData.vat;
+    order.shippingFee = invoiceData.shippingFee;
+    order.totalAmount = invoiceData.totalAmount;
+    order.totalWeight = this.calculateTotalWeight(invoiceData.items || invoiceData.cartItems);
+    order.status = 'PENDING';
+
+    order.items = (invoiceData.items || invoiceData.cartItems).map((item: any) => {
+      const orderItem = new OrderItem();
+      orderItem.productId = item.product.id;
+      orderItem.productTitle = item.product.title;
+      orderItem.quantity = item.quantity;
+      orderItem.unitPrice = item.product.currentPrice;
+      orderItem.weight = item.product.weight;
+      return orderItem;
+    });
+
+    return this.orderRepository.save(order);
+  }
+
+  async getOrder(orderId: string): Promise<Order> {
+    const order = await this.orderRepository.findOne({ where: { orderId } });
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+    return order;
+  }
+
+  async updateOrderStatus(orderId: string, status: string): Promise<Order> {
+    const order = await this.getOrder(orderId);
+    order.status = status;
+    return this.orderRepository.save(order);
   }
 }

@@ -1,5 +1,5 @@
 # generated: 2026-05-26T15:03:00+07:00
-# last_updated: 2026-05-31T17:41:00+07:00
+# last_updated: 2026-05-31T17:47:00+07:00
 # project: AIMS_Programming
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-05-26T15:03:00+07:00
-last_updated: 2026-05-31T17:41:00+07:00
+last_updated: 2026-05-31T17:47:00+07:00
 project: AIMS_Programming
 project_key: NOKEY
 tracking_system: file-system
@@ -51,7 +51,7 @@ development_status:
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-pay-with-credit-card-via-paypal: ready-for-dev
-  3-2-pay-with-qr-code-via-vietqr: backlog
+  3-2-pay-with-qr-code-via-vietqr: ready-for-dev
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-product-management-crud: backlog

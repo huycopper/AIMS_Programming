@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { InvoiceData } from '../../models/order.model';
 import { Cart } from '../../models/cart.model';
 import { CartService } from '../../services/cart.service';
@@ -18,13 +19,14 @@ import { CartService } from '../../services/cart.service';
 @Component({
   selector: 'app-invoice-screen',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule],
   templateUrl: './invoice-screen.html',
   styleUrl: './invoice-screen.css',
 })
 export class InvoiceScreen implements OnInit {
   invoiceData: InvoiceData | null = null;
   cart: Cart | null = null;
+  paymentMethod: string = 'vietqr'; // Default payment method
 
   constructor(
     private router: Router,
@@ -50,9 +52,9 @@ export class InvoiceScreen implements OnInit {
    * Payment will be handled in Story 3.x.
    */
   confirmOrder(): void {
-    // Clear cart after showing invoice
-    this.cartService.emptyCart();
-    this.router.navigate(['/']);
+    if (this.paymentMethod === 'vietqr') {
+      this.router.navigate(['/pay-vietqr'], { state: { invoiceData: this.invoiceData, cart: this.cart } });
+    }
   }
 
   /**
