@@ -42,8 +42,16 @@ Hệ thống bán hàng trực tuyến cho các sản phẩm media (sách, báo,
 
 ### Chạy Backend (NestJS)
 
+Trước khi chạy backend, bạn cần tạo file cấu hình môi trường `.env`. Hãy sao chép từ file mẫu đã có sẵn:
+
 ```bash
 cd backend
+cp .env.example .env
+```
+
+Vui lòng mở file `.env` và chỉnh sửa các thông số cấu hình cơ sở dữ liệu (database credentials) cho phù hợp với PostgreSQL của bạn. Sau đó, chạy các lệnh sau để cài đặt và khởi động server:
+
+```bash
 npm install
 npm run start:dev
 ```
@@ -58,7 +66,9 @@ npm start
 
 ### Nạp Data mẫu (Tùy chọn)
 
-Để khởi tạo dữ liệu mẫu cho cơ sở dữ liệu (các sản phẩm demo), hãy chạy lệnh sau trong thư mục `backend`:
+> **Lưu ý quan trọng**: Trước khi có thể nạp dữ liệu, bạn **bắt buộc phải tạo một cơ sở dữ liệu trống** (database) trong PostgreSQL trước. Tên của database cần khớp với biến `DB_DATABASE` trong file `.env` của bạn (ví dụ: `aims_db`).
+
+Sau khi database đã được tạo, bạn có thể chạy lệnh sau trong thư mục `backend` để khởi tạo dữ liệu sản phẩm demo:
 
 ```bash
 npm run seed
