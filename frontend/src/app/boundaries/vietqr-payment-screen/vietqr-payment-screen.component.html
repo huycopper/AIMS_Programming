@@ -1,0 +1,23 @@
+<div class="payment-container">
+  <h2>VietQR Payment</h2>
+  
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Generating QR Code...</p>
+  </div>
+
+  <div *ngIf="!loading && !paymentSuccess" class="qr-container">
+    <p>Scan the QR code below with your banking app to pay.</p>
+    <img *ngIf="qrDataURL" [src]="qrDataURL" alt="VietQR Code" class="qr-code-img" />
+    
+    <div class="sandbox-controls">
+      <p class="sandbox-text">Sandbox mode: simulate payment callback</p>
+      <button (click)="simulateCallback()" class="btn-simulate">Simulate Success Webhook</button>
+    </div>
+  </div>
+
+  <div *ngIf="paymentSuccess" class="success-container">
+    <h3>Payment Successful!</h3>
+    <p>Your order is now processing.</p>
+  </div>
+</div>

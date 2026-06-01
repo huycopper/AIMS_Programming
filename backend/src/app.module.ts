@@ -6,6 +6,7 @@ import { AppService } from './app.service.js';
 import { ProductModule } from './product/product.module.js';
 import { OrderModule } from './order/order.module.js';
 import { join } from 'path';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { join } from 'path';
     }),
     ProductModule,
     OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
