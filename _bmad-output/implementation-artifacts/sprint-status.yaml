@@ -51,7 +51,7 @@ development_status:
   epic-2-retrospective: optional
   epic-3: in-progress
   3-1-pay-with-credit-card-via-paypal: ready-for-dev
-  3-2-pay-with-qr-code-via-vietqr: ready-for-dev
+  3-2-pay-with-qr-code-via-vietqr: review
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-product-management-crud: backlog

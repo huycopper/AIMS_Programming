@@ -77,6 +77,14 @@ export class PayThroughPaymentGatewayController {
       // Update order status
       order.status = 'PENDING_PROCESSING';
       await this.orderRepo.save(order);
+      
+      // Simulate sending email
+      this.simulateSendEmail(order, tx);
     }
+  }
+
+  private simulateSendEmail(order: Order, transaction: PaymentTransaction): void {
+    this.logger.log(`[EMAIL SIMULATION] Sending email to customer for Order ${order.orderId}`);
+    this.logger.log(`[EMAIL SIMULATION] Invoice & Transaction ${transaction.transactionRef} sent. Tracking link: http://localhost:4200/track/${order.orderId}`);
   }
 }

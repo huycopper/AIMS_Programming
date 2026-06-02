@@ -1,9 +1,12 @@
-import { Body, Controller, Post, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, ValidationPipe, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { OrderService } from './order.service.js';
 import {
   CalculateShippingDto,
   PlaceOrderDto,
 } from './dto/calculate-shipping.dto.js';
+import { Order, OrderItem, DeliveryInfo } from './entities/order.entity.js';
 
 /**
  * PlaceOrderController — Boundary class (BCE pattern) for the backend.
@@ -11,13 +14,19 @@ import {
  */
 @Controller('api/orders')
 export class PlaceOrderController {
-  constructor(private readonly orderService: OrderService) { }
+  private readonly logger = new Logger(PlaceOrderController.name);
+
+  constructor(
+    private readonly orderService: OrderService,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
+    @InjectRepository(DeliveryInfo)
+    private readonly deliveryInfoRepo: Repository<DeliveryInfo>,
+  ) { }
 
   /**
    * POST /api/orders/calculate-shipping
    * AC-2: Calculates shipping fee dynamically based on province and cart items.
-   * Returns a full breakdown: baseFee, additionalFee, discount, shippingFee,
-   * subtotal, VAT, and totalAmount.
    */
   @Post('calculate-shipping')
   calculateShipping(
@@ -30,10 +39,11 @@ export class PlaceOrderController {
   /**
    * POST /api/orders/place
    * AC-1 & AC-3: Place an order with delivery info and cart items.
-   * Returns the full invoice data for display.
+   * Saves Order, DeliveryInfo, and OrderItems to DB.
+   * Returns the full invoice data including orderId for payment flow.
    */
   @Post('place')
-  placeOrder(
+  async placeOrder(
     @Body(new ValidationPipe({ transform: true, whitelist: true }))
     dto: PlaceOrderDto,
   ) {
@@ -43,7 +53,43 @@ export class PlaceOrderController {
       dto.cartItems,
     );
 
+    // 1. Create and save DeliveryInfo
+    const deliveryInfo = this.deliveryInfoRepo.create({
+      name: dto.name,
+      phone: dto.phone,
+      email: dto.email || '',
+      province: dto.province,
+      address: dto.address,
+      note: dto.note || null,
+    });
+
+    // 2. Build OrderItems from cart
+    const orderItems: Partial<OrderItem>[] = dto.cartItems.map(item => ({
+      productId: item.productId,
+      productTitle: item.productId, // Sử dụng productId làm title tạm thời
+      quantity: item.quantity,
+      unitPrice: item.currentPrice,
+      weight: item.weight,
+    }));
+
+    // 3. Create Order with relations
+    const order = this.orderRepo.create({
+      deliveryInfo: deliveryInfo,
+      subtotal: invoice.subtotal,
+      vat: invoice.vat,
+      shippingFee: invoice.shippingFee,
+      totalAmount: invoice.totalAmount,
+      totalWeight: invoice.totalWeight,
+      status: 'PENDING', // Trạng thái ban đầu khi đặt hàng
+      items: orderItems as OrderItem[],
+    });
+
+    // 4. Save (cascade saves DeliveryInfo + OrderItems)
+    const savedOrder = await this.orderRepo.save(order);
+    this.logger.log(`Order created with ID: ${savedOrder.orderId}`);
+
     return {
+      orderId: savedOrder.orderId,
       deliveryInfo: {
         name: dto.name,
         phone: dto.phone,

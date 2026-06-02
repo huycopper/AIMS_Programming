@@ -139,6 +139,10 @@ As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` i
 - [x] Task 4: Testing and Validation
   - [x] Unit test `PayThroughPaymentGatewayController` logic (mocking `VietQRBoundary`).
   - [x] Test webhook payload validation (`verifyCallbackData`) with Sandbox API logic.
+- [x] Task 5: Implement New Business Rules
+  - [x] Implement Cart emptying on Frontend upon successful webhook callback.
+  - [x] Implement Email simulation in Backend `PayThroughPaymentGatewayController`.
+  - [x] Verified `PENDING_PROCESSING` logic and recorded Manual Refund constraints.
 
 ## Dev Agent Record
 
@@ -152,6 +156,7 @@ As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` i
 - ✅ Task 2: Implemented `PayThroughPaymentGatewayController` business logic and `PayOrderController` to orchestrate endpoints. Added all controllers to a new `PaymentModule`.
 - ✅ Task 3: Built `VietQRPaymentScreen` in Angular with dummy sandbox webhook payload firing for QA testing.
 - ✅ Task 4: Created unit tests for business logic testing `PayThroughPaymentGatewayController` with mock TypeORM repository methods.
+- ✅ Task 5: Cập nhật code để thoả mãn các Business Rule mới (VietQR docs): gọi `cartService.emptyCart()` trên Frontend khi thanh toán thành công, và gọi hàm `simulateSendEmail` trong Backend `PayThroughPaymentGatewayController`. Các yêu cầu về Manual Refund (hoàn tiền thủ công) đã được ghi nhận trong documentation/code comments.
 
 ## File List
 - `backend/src/payment/entities/payment-transaction.entity.ts`
@@ -172,6 +177,6 @@ As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` i
 - Mocked webhook endpoint using `VietQRWebhookBoundary`.
 - Mapped front-end component `/vietqr-payment` to test end-to-end integration.
 
-review -> ready-for-dev (Updating with new business rules)
+review -> ready-for-dev (Updating with new business rules) -> review
 ## Status
-ready-for-dev
+review

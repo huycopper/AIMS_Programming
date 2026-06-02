@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { CartService } from '../../services/cart.service';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
@@ -12,40 +14,59 @@ import { Router } from '@angular/router';
 })
 export class VietQRPaymentScreen implements OnInit {
   qrDataURL: string | null = null;
+  safeQrUrl: SafeResourceUrl | null = null;
   loading: boolean = true;
   paymentSuccess: boolean = false;
-
-  // In a real flow, the orderId would come from state/routing after placing the order
-  orderId: string = 'test-order-123';  // test mock data
+  errorMessage: string | null = null;
+  orderId: string = '';
 
   constructor(
     private http: HttpClient,
-    private router: Router
+    private router: Router,
+    private cartService: CartService,
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
+    const state = history.state;
+    if (state && state['orderId']) {
+      this.orderId = state['orderId'];
+    }
+
+    if (!this.orderId) {
+      this.loading = false;
+      this.errorMessage = 'Không tìm thấy mã đơn hàng. Vui lòng đặt hàng từ giỏ hàng.';
+      return;
+    }
+
     this.requestPayment();
   }
 
   requestPayment() {
     this.loading = true;
-    // Call our backend API to generate the QR
-    this.http.post<any>(`http://localhost:3000/api/payment/pay-order/${this.orderId}`, {})
+    this.errorMessage = null;
+    this.http.post<any>(`http://localhost:8080/api/payment/pay-order/${this.orderId}`, {})
       .subscribe({
         next: (res) => {
           this.qrDataURL = res.qrDataURL;
+          if (this.qrDataURL) {
+            this.safeQrUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.qrDataURL);
+          }
           this.loading = false;
+          this.cdr.detectChanges(); // reload lại giao diện
         },
         error: (err) => {
           console.error('Failed to get QR code', err);
           this.loading = false;
+          this.errorMessage = 'Không thể tạo mã QR. Vui lòng thử lại sau.';
+          this.cdr.detectChanges();
         }
       });
   }
 
   simulateCallback() {
-    // Sandbox simulation: manually trigger the webhook the banking system would send
-    this.http.post('http://localhost:3000/api/vietqr/webhook', {
+    this.http.post('http://localhost:8080/api/vietqr/webhook', {
       orderId: this.orderId,
       amount: 100000,
       status: 'success',
@@ -53,8 +74,8 @@ export class VietQRPaymentScreen implements OnInit {
     }).subscribe({
       next: () => {
         this.paymentSuccess = true;
+        this.cartService.emptyCart();
         setTimeout(() => {
-          // Navigate to a success screen or home
           alert('Payment Successful!');
           this.router.navigate(['/']);
         }, 1500);
@@ -63,5 +84,9 @@ export class VietQRPaymentScreen implements OnInit {
         console.error('Callback simulation failed', err);
       }
     });
+  }
+
+  goHome() {
+    this.router.navigate(['/']);
   }
 }

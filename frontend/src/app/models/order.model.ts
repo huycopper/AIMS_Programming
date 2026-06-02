@@ -33,6 +33,7 @@ export interface ShippingFeeResult {
 }
 
 export interface InvoiceData extends ShippingFeeResult {
+  orderId?: string;
   deliveryInfo: DeliveryInfo;
   cartItems: CartItemPayload[];
 }

@@ -29,7 +29,7 @@ export class InvoiceScreen implements OnInit {
   constructor(
     private router: Router,
     private cartService: CartService,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Retrieve invoice data from router state (passed by DeliveryInfoScreen)
@@ -46,13 +46,16 @@ export class InvoiceScreen implements OnInit {
   }
 
   /**
-   * Confirm order — in this story we just show the invoice.
-   * Payment will be handled in Story 3.x.
+   * Confirm order and proceed to payment
    */
   confirmOrder(): void {
-    // Clear cart after showing invoice
-    this.cartService.emptyCart();
-    this.router.navigate(['/']);
+    // VietQR is the default payment method.
+    // Emptying the cart will be done when payment is successful
+    this.router.navigate(['/vietqr-payment'], {
+      state: {
+        orderId: this.invoiceData?.orderId
+      }
+    });
   }
 
   /**
