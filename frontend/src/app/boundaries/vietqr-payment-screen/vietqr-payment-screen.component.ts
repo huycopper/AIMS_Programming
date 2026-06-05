@@ -18,6 +18,7 @@ export class VietQRPaymentScreen implements OnInit {
   amount: number | null = null;
   loading: boolean = true;
   paymentSuccess: boolean = false;
+  confirmingPayment: boolean = false; // Trạng thái đang xác nhận thanh toán
   errorMessage: string | null = null;
   orderId: string = '';
 
@@ -37,7 +38,7 @@ export class VietQRPaymentScreen implements OnInit {
 
     if (!this.orderId) {
       this.loading = false;
-      this.errorMessage = 'Không tìm thấy mã đơn hàng. Vui lòng đặt hàng từ giỏ hàng.';
+      this.errorMessage = 'Cannot find order id. Please try again.';
       return;
     }
 
@@ -61,31 +62,54 @@ export class VietQRPaymentScreen implements OnInit {
         error: (err) => {
           console.error('Failed to get QR code', err);
           this.loading = false;
-          this.errorMessage = 'Không thể tạo mã QR. Vui lòng thử lại sau.';
+          this.errorMessage = 'Cannot generate QR code. Please try again.';
           this.cdr.detectChanges();
         }
       });
   }
 
-  simulateCallback() {
-    this.http.post('http://localhost:8080/api/vietqr/webhook', {
-      orderId: this.orderId,
-      amount: 100000,
-      status: 'success',
-      transactionRef: 'sandbox_txn_' + Date.now()
-    }).subscribe({
-      next: () => {
-        this.paymentSuccess = true;
-        this.cartService.emptyCart();
-        setTimeout(() => {
-          alert('Payment Successful!');
-          this.router.navigate(['/']);
-        }, 1500);
-      },
-      error: (err) => {
-        console.error('Callback simulation failed', err);
-      }
-    });
+  /**
+   * Bước 2 trong Sequence Diagram v2: confirmPayment()
+   * 
+   * Thay vì simulateCallback cũ gọi trực tiếp webhook,
+   * giờ gọi Backend endpoint confirmPayment để trigger luồng:
+   * 
+   * Frontend (confirmPayment) 
+   *   → Backend POST /api/payment/pay-order/:orderId/confirm
+   *   → PayOrderController.confirmPayment(order)
+   *   → PayThroughPaymentGatewayController.confirmPayment(order)
+   *   → PayThroughPaymentGatewayController.handleAPICallback(order)
+   *   → VietQRBoundary.postAPICallback(order, accessToken) (gọi API Test Callback)
+   *   → VietQR Sandbox nhận request → tự gọi Transaction Sync về AIMS
+   *   → TransactionSyncController nhận callback → lưu PaymentTransaction + update order status
+   *   → Kết quả trả về Frontend → hiển thị SuccessfulPaidScreen
+   */
+  confirmPayment() {
+    this.confirmingPayment = true;
+    this.errorMessage = null;
+
+    this.http.post<any>(`http://localhost:8080/api/payment/pay-order/${this.orderId}/confirm`, {})
+      .subscribe({
+        next: (res) => {
+          console.log('Payment confirmation result:', res);
+          this.confirmingPayment = false;
+
+          if (res.status === 'SUCCESS') {
+            this.paymentSuccess = true;
+            this.cartService.emptyCart();
+            this.cdr.detectChanges();
+          } else {
+            this.errorMessage = `Payment confirmation failed: ${res.message || 'Unknown error'}`;
+            this.cdr.detectChanges();
+          }
+        },
+        error: (err) => {
+          console.error('Payment confirmation failed', err);
+          this.confirmingPayment = false;
+          this.errorMessage = 'Payment confirmation failed. Please try again.';
+          this.cdr.detectChanges();
+        }
+      });
   }
 
   goHome() {

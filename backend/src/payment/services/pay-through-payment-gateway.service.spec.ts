@@ -4,7 +4,6 @@ import { VietQRBoundary } from '../../boundaries/viet-qr/viet-qr.service.js';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PaymentTransaction } from '../entities/payment-transaction.entity.js';
 import { Order } from '../../order/entities/order.entity.js';
-import { BadRequestException } from '@nestjs/common';
 
 describe('PayThroughPaymentGatewayController', () => {
   let service: PayThroughPaymentGatewayController;
@@ -16,6 +15,7 @@ describe('PayThroughPaymentGatewayController', () => {
     const vietQRMock = {
       getAccessToken: jest.fn(),
       generateQRCode: jest.fn(),
+      postAPICallback: jest.fn(),
     };
 
     const orderRepoMock = {
@@ -47,41 +47,67 @@ describe('PayThroughPaymentGatewayController', () => {
     expect(service).toBeDefined();
   });
 
-  describe('verifyCallbackData', () => {
-    it('should return false if orderId is missing', () => {
-      const payload = { amount: 100000 };
-      expect(service.verifyCallbackData(payload)).toBe(false);
-    });
+  describe('generateQRCode', () => {
+    it('should get access token and generate QR code', async () => {
+      const mockOrder = { orderId: 'ord-123', totalAmount: 100000 } as Order;
+      const mockToken = 'test-access-token';
+      const mockQrResult = { qrDataURL: 'data:image/png;base64,...', amount: 100000, content: 'AIMS ord123' };
 
-    it('should return false if amount is missing', () => {
-      const payload = { orderId: 'ord-123' };
-      expect(service.verifyCallbackData(payload)).toBe(false);
-    });
+      vietQRBoundary.getAccessToken.mockResolvedValue(mockToken);
+      vietQRBoundary.generateQRCode.mockResolvedValue(mockQrResult);
 
-    it('should return true if both orderId and amount are present', () => {
-      const payload = { orderId: 'ord-123', amount: 100000 };
-      expect(service.verifyCallbackData(payload)).toBe(true);
+      const result = await service.generateQRCode(mockOrder);
+
+      expect(vietQRBoundary.getAccessToken).toHaveBeenCalled();
+      expect(vietQRBoundary.generateQRCode).toHaveBeenCalledWith(mockOrder, mockToken);
+      expect(result).toEqual(mockQrResult);
     });
   });
 
-  describe('handlePaymentCallback', () => {
-    it('should throw BadRequestException if data is invalid', async () => {
-      await expect(service.handlePaymentCallback({})).rejects.toThrow(BadRequestException);
+  describe('confirmPayment', () => {
+    it('should call handleAPICallback and return payment result', async () => {
+      const mockOrder = { orderId: 'ord-123', totalAmount: 100000 } as Order;
+      const mockToken = 'test-access-token';
+      const mockCallbackResult = { status: 'SUCCESS', message: '' };
+
+      vietQRBoundary.getAccessToken.mockResolvedValue(mockToken);
+      vietQRBoundary.postAPICallback.mockResolvedValue(mockCallbackResult);
+
+      const result = await service.confirmPayment(mockOrder);
+
+      expect(vietQRBoundary.getAccessToken).toHaveBeenCalled();
+      expect(vietQRBoundary.postAPICallback).toHaveBeenCalledWith(mockOrder, mockToken);
+      expect(result).toEqual({
+        status: 'SUCCESS',
+        message: '',
+        orderId: 'ord-123',
+      });
     });
 
-    it('should save transaction and update order if valid', async () => {
-      const payload = { orderId: 'ord-123', amount: 100000, status: 'success' };
-      const mockOrder = { orderId: 'ord-123', status: 'PENDING' };
-      
-      orderRepo.findOne.mockResolvedValue(mockOrder);
-      paymentTxRepo.create.mockReturnValue({ status: 'SUCCESS' });
+    it('should propagate error if postAPICallback fails', async () => {
+      const mockOrder = { orderId: 'ord-123', totalAmount: 100000 } as Order;
 
-      await service.handlePaymentCallback(payload);
+      vietQRBoundary.getAccessToken.mockResolvedValue('test-token');
+      vietQRBoundary.postAPICallback.mockRejectedValue(new Error('VietQR API error'));
 
-      expect(paymentTxRepo.create).toHaveBeenCalled();
-      expect(paymentTxRepo.save).toHaveBeenCalled();
-      expect(mockOrder.status).toBe('PENDING_PROCESSING');
-      expect(orderRepo.save).toHaveBeenCalledWith(mockOrder);
+      await expect(service.confirmPayment(mockOrder)).rejects.toThrow('VietQR API error');
+    });
+  });
+
+  describe('handleAPICallback', () => {
+    it('should get access token and call postAPICallback', async () => {
+      const mockOrder = { orderId: 'ord-123', totalAmount: 100000 } as Order;
+      const mockToken = 'test-access-token';
+      const mockResult = { status: 'SUCCESS', message: '' };
+
+      vietQRBoundary.getAccessToken.mockResolvedValue(mockToken);
+      vietQRBoundary.postAPICallback.mockResolvedValue(mockResult);
+
+      const result = await service.handleAPICallback(mockOrder);
+
+      expect(vietQRBoundary.getAccessToken).toHaveBeenCalled();
+      expect(vietQRBoundary.postAPICallback).toHaveBeenCalledWith(mockOrder, mockToken);
+      expect(result).toEqual(mockResult);
     });
   });
 });

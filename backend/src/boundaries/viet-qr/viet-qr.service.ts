@@ -12,6 +12,17 @@ export class VietQRBoundary {
   private readonly VIETQR_USERNAME = 'customer-aims888-user26593';
   private readonly VIETQR_PASSWORD = 'Y3VzdG9tZXItYWltczg4OC11c2VyMjY1OTM=';
 
+  // VietQR Generate QR Code API configuration
+  // Theo tài liệu: POST https://dev.vietqr.org/vqr/api/qr/generate-customer
+  private readonly VIETQR_GENERATE_URL = 'https://dev.vietqr.org/vqr/api/qr/generate-customer';
+  private readonly BANK_CODE = 'MB';
+  private readonly BANK_ACCOUNT = '999990977777';
+  private readonly USER_BANK_NAME = 'DONG DAI HUY';
+
+  // VietQR Test Callback API (Sandbox only)
+  // Theo tài liệu 5-CallAPITestCallback.md: POST https://dev.vietqr.org/vqr/bank/api/test/transaction-callback
+  private readonly VIETQR_TEST_CALLBACK_URL = 'https://dev.vietqr.org/vqr/bank/api/test/transaction-callback';
+
   // Gọi API VietQR để lấy access token
   async getAccessToken(): Promise<string> {
     this.logger.log('Calling VietQR API to get access token...');
@@ -48,15 +59,8 @@ export class VietQRBoundary {
     return data.access_token;
   }
 
-  // VietQR Generate QR Code API configuration
-  // Theo tài liệu: POST https://dev.vietqr.org/vqr/api/qr/generate-customer
-  private readonly VIETQR_GENERATE_URL = 'https://dev.vietqr.org/vqr/api/qr/generate-customer';
-  private readonly BANK_CODE = 'MB';
-  private readonly BANK_ACCOUNT = '999990977777';
-  private readonly USER_BANK_NAME = 'DONG DAI HUY';
-
   // Gọi API VietQR để sinh mã QR thanh toán
-  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string, amount: number }> {
+  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string, amount: number, content: string }> {
     this.logger.log(`Calling VietQR API to generate QR for order ${order.orderId}`);
 
     // orderId tối đa 13 ký tự (yêu cầu của VietQR), cắt bớt UUID, xóa kí tự '-'
@@ -88,6 +92,8 @@ export class VietQRBoundary {
       body: JSON.stringify(body), // HTTP Request chỉ biết truyền tải text hoặc byte nên phải stringify body trước khi gửi
     });
 
+    console.log("Access token in generateQRCode: ", accessToken);
+
     if (!response.ok) {
       const errorBody = await response.text();
       this.logger.error(`VietQR GenerateQR failed: ${response.status} - ${errorBody}`);
@@ -98,11 +104,72 @@ export class VietQRBoundary {
     this.logger.log(`VietQR QR code generated successfully. qrLink: ${data.qrLink}`);
 
     console.log("\n\nResponse from VietQR generateQRCode: ", data);
-    
+
     // Tạo mã QR dạng Data URL (base64 image) từ chuỗi qrCode thô do VietQR trả về
     const qrDataURL = await QRCode.toDataURL(data.qrCode);
 
-    // Trả về qrDataURL (URL ảnh mã QR) để Frontend hiển thị trong thẻ <img>
-    return { qrDataURL, amount: Math.round(order.totalAmount) };
+    // Trả về qrDataURL (URL ảnh mã QR), amount, content để Frontend hiển thị và dùng cho confirmPayment
+    return { qrDataURL, amount: Math.round(order.totalAmount), content };
+  }
+
+  /**
+   * Bước 2.1.1.1.1 trong Sequence Diagram v2: postAPICallback(order, accessToken)
+   * 
+   * Gọi API Test Callback của VietQR Sandbox để giả lập giao dịch thanh toán thành công.
+   * Theo tài liệu 5-CallAPITestCallback.md:
+   *   - URL: POST https://dev.vietqr.org/vqr/bank/api/test/transaction-callback
+   *   - Headers: Authorization: Bearer <token từ VietQR>
+   *   - Body: { bankAccount, content, amount, transType, bankCode }
+   * 
+   * Sau khi VietQR nhận request này, VietQR sẽ tự động gọi API Transaction Sync
+   * (postAPIToAIMS) tới endpoint /bank/api/transaction-sync trên hệ thống AIMS
+   * để thông báo giao dịch đã hoàn thành.
+   * 
+   * @param order - Đơn hàng cần xác nhận thanh toán
+   * @param accessToken - Token VietQR đã lấy được từ getAccessToken()
+   * @returns Kết quả từ VietQR Test Callback API { status, message }
+   */
+  async postAPICallback(order: Order, accessToken: string): Promise<{ status: string; message: string }> {
+    this.logger.log(`Calling VietQR Test Callback API for order ${order.orderId}`);
+
+    // orderId tối đa 13 ký tự, tương tự generateQRCode
+    const shortOrderId = order.orderId.replace(/-/g, '').substring(0, 13);
+    const content = `AIMS ${shortOrderId}`;
+
+    // Body theo tài liệu 5-CallAPITestCallback.md
+    const body = {
+      bankAccount: this.BANK_ACCOUNT,
+      content: content,
+      amount: Math.round(order.totalAmount),
+      transType: 'C', // C = giao dịch đến (Credit), mặc định theo tài liệu
+      bankCode: this.BANK_CODE,
+    };
+
+    this.logger.log(`VietQR Test Callback request body: ${JSON.stringify(body)}`);
+
+    const response = await fetch(this.VIETQR_TEST_CALLBACK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      this.logger.error(`VietQR Test Callback failed: ${response.status} - ${errorBody}`);
+      throw new Error(`Failed to call VietQR Test Callback: ${response.status}`);
+    }
+
+    const data: any = await response.json();
+    this.logger.log(`VietQR Test Callback response: ${JSON.stringify(data)}`);
+
+    console.log("\n\nResponse from VietQR Test Callback: ", data);
+
+    // Response: { status: "SUCCESS", message: "" } hoặc { status: "FAILED", message: "mã_lỗi" }
+    return { status: data.status, message: data.message || '' };
   }
 }

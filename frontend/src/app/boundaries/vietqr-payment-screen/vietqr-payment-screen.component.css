@@ -110,13 +110,43 @@
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  min-width: 180px;
 }
 
-.btn-simulate:hover {
+.btn-simulate:hover:not(:disabled) {
   background-color: #d35400;
+}
+
+.btn-simulate:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.confirming-text {
+  font-size: 0.9em;
+  color: #666;
+  margin-top: 10px;
+  font-style: italic;
 }
 
 .success-container {
   color: #27ae60;
   margin-top: 30px;
+}
+
+.success-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #27ae60;
+  color: white;
+  font-size: 2rem;
+  line-height: 60px;
+  margin: 0 auto 15px;
+}
+
+.success-detail {
+  color: #666;
+  font-size: 0.9em;
+  margin: 5px 0;
 }

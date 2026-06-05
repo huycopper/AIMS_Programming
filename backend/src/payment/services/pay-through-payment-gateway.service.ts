@@ -8,7 +8,7 @@ import { Order } from '../../order/entities/order.entity.js';
 // file này thực thi duy nhất class PayThroughPaymentGatewayController
 // class này là cầu nối giữa controller và boundary để xử lý nghiệp vụ thanh toán
 // cụ thể: class này sẽ gọi hàm getAccessToken và generateQRCode của VietQRBoundary
-// class này cũng xử lý nghiệp vụ: lưu transaction vào db, update order status
+// class này cũng xử lý nghiệp vụ: gọi API callback, lưu transaction vào db, update order status
 
 @Injectable()
 export class PayThroughPaymentGatewayController {
@@ -51,7 +51,7 @@ export class PayThroughPaymentGatewayController {
   
   qrResult cũng biến thành promise do hàm được khai báo là async.
   */
-  async generateQRCode(invoice: Order): Promise<{ qrDataURL: string, amount: number }> {
+  async generateQRCode(invoice: Order): Promise<{ qrDataURL: string, amount: number, content: string }> {
     this.logger.log(`Generating QR Code for invoice ${invoice.orderId}`);
 
     // Call getAccessToken on VietQRBoundary
@@ -63,57 +63,112 @@ export class PayThroughPaymentGatewayController {
     return qrResult;
   }
 
-  async handlePaymentCallback(transactionResult: any): Promise<void> {
-    this.logger.log('Handling payment callback', transactionResult);
+  /**
+   * Bước 2.1.1 trong Sequence Diagram v2: confirmPayment(order)
+   * 
+   * Luồng xử lý theo SD v2:
+   * 1. PayOrderController gọi confirmPayment(order) → PayThroughPaymentGatewayController
+   * 2. PayThroughPaymentGatewayController gọi handleAPICallback(order) → VietQRBoundary
+   * 3. VietQRBoundary gọi postAPICallback(order, accessToken) → VietQR Sandbox
+   * 4. VietQR Sandbox nhận request → tự gọi Transaction Sync (postAPIToAIMS()) về AIMS Backend
+   * 5. AIMS Backend nhận Transaction Sync → trả referenceTransactionId → paymentStatus trả về
+   * 
+   * Lưu ý: Việc lưu PaymentTransaction và update order status đã được xử lý
+   * trong TransactionSyncController (postAPIToAIMS) khi VietQR callback về.
+   * Hàm này chỉ cần gọi API Test Callback để trigger luồng.
+   * 
+   * @param order - Đơn hàng cần xác nhận thanh toán
+   * @returns paymentStatus - Kết quả thanh toán { status, message, orderId }
+   */
+  async confirmPayment(order: Order): Promise<{ status: string; message: string; orderId: string }> {
+    this.logger.log(`Confirming payment for order ${order.orderId}`);
 
-    const isValid = this.verifyCallbackData(transactionResult);
-    if (!isValid) {
-      throw new BadRequestException('Invalid callback data');
-    }
+    // Gọi handleAPICallback() theo SD v2 (bước 2.1.1.1)
+    const callbackResult = await this.handleAPICallback(order);
 
-    await this.saveTransaction(transactionResult);
+    return {
+      status: callbackResult.status,
+      message: callbackResult.message,
+      orderId: order.orderId,
+    };
   }
 
-  verifyCallbackData(transactionResult: any): boolean {
-    // In sandbox, we just check if it has an orderId and amount
-    if (!transactionResult || !transactionResult.orderId || !transactionResult.amount) {
-      return false;
-    }
-    return true;
+  /**
+   * Bước 2.1.1.1 trong Sequence Diagram v2: handleAPICallback(order)
+   * 
+   * Lấy access token từ VietQR và gọi postAPICallback() trên VietQRBoundary
+   * để trigger VietQR gửi Transaction Sync callback về AIMS.
+   * 
+   * @param order - Đơn hàng cần xác nhận
+   * @returns Kết quả từ VietQR Test Callback { status, message }
+   */
+  async handleAPICallback(order: Order): Promise<{ status: string; message: string }> {
+    this.logger.log(`Handling API Callback for order ${order.orderId}`);
+
+    // Lấy access token từ VietQR (cần token để gọi Test Callback API)
+    const accessToken = await this.vietQRBoundary.getAccessToken(); // accessToken đã được gọi 1 lần ở hàm generateQRCode rồi, liệu có cần gọi lần nữa? 
+
+    // Gọi postAPICallback() trên VietQRBoundary (bước 2.1.1.1.1 trong SD v2)
+    const result = await this.vietQRBoundary.postAPICallback(order, accessToken);
+
+    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(result)}`);
+
+    return result;
   }
 
-  private async saveTransaction(transactionResult: any): Promise<void> {
-    this.logger.log('Saving transaction', transactionResult);
+  // ==================== Legacy methods (kept for backward compatibility) ====================
 
-    const order = await this.orderRepo.findOne({ where: { orderId: transactionResult.orderId } });
-    if (!order) {
-      this.logger.error(`Order not found for ID ${transactionResult.orderId}`);
-      throw new BadRequestException('Order not found');
-    }
+  //   async handlePaymentCallback(transactionResult: any): Promise<void> {
+  //     this.logger.log('Handling payment callback (legacy)', transactionResult);
 
-    const tx = this.paymentTransactionRepo.create({
-      order: order,
-      transactionRef: transactionResult.transactionRef || 'txn_' + Date.now(),
-      amount: transactionResult.amount,
-      paymentMethod: 'VIETQR',
-      status: transactionResult.status === 'success' ? 'SUCCESS' : 'FAILED',
-      paymentDetails: transactionResult,
-    });
+  //     const isValid = this.verifyCallbackData(transactionResult);
+  //     if (!isValid) {
+  //       throw new BadRequestException('Invalid callback data');
+  //     }
 
-    await this.paymentTransactionRepo.save(tx);
+  //     await this.saveTransaction(transactionResult);
+  //   }
 
-    if (tx.status === 'SUCCESS') {
-      // Update order status
-      order.status = 'PENDING_PROCESSING';
-      await this.orderRepo.save(order);
+  //   verifyCallbackData(transactionResult: any): boolean {
+  //     // In sandbox, we just check if it has an orderId and amount
+  //     if (!transactionResult || !transactionResult.orderId || !transactionResult.amount) {
+  //       return false;
+  //     }
+  //     return true;
+  //   }
 
-      // Simulate sending email
-      this.simulateSendEmail(order, tx);
-    }
-  }
+  //   private async saveTransaction(transactionResult: any): Promise<void> {
+  //     this.logger.log('Saving transaction', transactionResult);
 
-  private simulateSendEmail(order: Order, transaction: PaymentTransaction): void {
-    this.logger.log(`[EMAIL SIMULATION] Sending email to customer for Order ${order.orderId}`);
-    this.logger.log(`[EMAIL SIMULATION] Invoice & Transaction ${transaction.transactionRef} sent. Tracking link: http://localhost:4200/track/${order.orderId}`);
-  }
+  //     const order = await this.orderRepo.findOne({ where: { orderId: transactionResult.orderId } });
+  //     if (!order) {
+  //       this.logger.error(`Order not found for ID ${transactionResult.orderId}`);
+  //       throw new BadRequestException('Order not found');
+  //     }
+
+  //     const tx = this.paymentTransactionRepo.create({
+  //       order: order,
+  //       transactionRef: transactionResult.transactionRef || 'txn_' + Date.now(),
+  //       amount: transactionResult.amount,
+  //       paymentMethod: 'VIETQR',
+  //       status: transactionResult.status === 'success' ? 'SUCCESS' : 'FAILED',
+  //       paymentDetails: transactionResult,
+  //     });
+
+  //     await this.paymentTransactionRepo.save(tx);
+
+  //     if (tx.status === 'SUCCESS') {
+  //       // Update order status
+  //       order.status = 'PENDING_PROCESSING';
+  //       await this.orderRepo.save(order);
+
+  //       // Simulate sending email
+  //       this.simulateSendEmail(order, tx);
+  //     }
+  //   }
+
+  //   private simulateSendEmail(order: Order, transaction: PaymentTransaction): void {
+  //     this.logger.log(`[EMAIL SIMULATION] Sending email to customer for Order ${order.orderId}`);
+  //     this.logger.log(`[EMAIL SIMULATION] Invoice & Transaction ${transaction.transactionRef} sent. Tracking link: http://localhost:4200/track/${order.orderId}`);
+  //   }
 }

@@ -28,13 +28,27 @@
     <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
 
     <div class="sandbox-controls">
-      <button (click)="simulateCallback()" class="btn-simulate">I have paid</button>
+      <!-- Nút xác nhận thanh toán (confirmPayment theo SD v2) -->
+      <button 
+        (click)="confirmPayment()" 
+        class="btn-simulate"
+        [disabled]="confirmingPayment">
+        <span *ngIf="!confirmingPayment">I have paid</span>
+        <span *ngIf="confirmingPayment">Confirming payment...</span>
+      </button>
+      <p *ngIf="confirmingPayment" class="confirming-text">
+        Please wait while we verify your payment with VietQR...
+      </p>
     </div>
   </div>
 
-  <!-- Trạng thái: Thanh toán thành công -->
+  <!-- Trạng thái: Thanh toán thành công (SuccessfulPaidScreen theo SD v2) -->
   <div *ngIf="paymentSuccess" class="success-container">
+    <div class="success-icon">✓</div>
     <h3>Payment Successful!</h3>
     <p>Your order is now processing.</p>
+    <p class="success-detail">Order ID: {{ orderId }}</p>
+    <p class="success-detail">An email with your invoice and tracking link has been sent.</p>
+    <button (click)="goHome()" class="btn-home" style="margin-top: 20px;">Return to Home Page</button>
   </div>
 </div>

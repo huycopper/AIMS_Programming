@@ -19,9 +19,9 @@ So that I can pay easily from my mobile banking app.
 - **When** they request payment
 - **Then** the system fetches a VietQR access token and generates a QR code image to display with a waiting spinner (FR8, UX-DR5)
 
-- **Given** the QR code is displayed
-- **When** the banking system sends a payment callback to AIMS
-- **Then** the system validates the callback, records the transaction, updates the order status to `PENDING_PROCESSING`, empties the cart, and displays the success screen (FR8, UX-DR6)
+- **Given** the QR code is displayed and customer has scanned and paid
+- **When** the customer clicks "I have paid" (confirmPayment)
+- **Then** the system calls VietQR Test Callback API, VietQR sends Transaction Sync callback to AIMS, the system validates the callback, records the transaction, updates the order status to `PENDING_PROCESSING`, empties the cart, and displays the success screen (FR8, UX-DR6)
 
 ### Business Rules (Strictly Enforced)
 1. **Quy tắc về Khởi tạo & Hiển thị (Initialization & UI)**
@@ -44,104 +44,124 @@ So that I can pay easily from my mobile banking app.
 
 ## Developer Context
 
-This story implements the VietQR payment integration for generating QR codes and handling asynchronous webhook callbacks for payment confirmation. **CRITICAL: Within the scope of this project, this integration is for demonstration purposes only (Sandbox).** No real business account or actual money transfers are required. The implementation must strictly follow the architectural sequence diagram defined in `PayOrder(CustomerVietQR).png` while utilizing the VietQR Sandbox environment.
+This story implements the VietQR payment integration for generating QR codes and handling payment confirmation via VietQR Test Callback API and Transaction Sync. **CRITICAL: Within the scope of this project, this integration is for demonstration purposes only (Sandbox).** No real business account or actual money transfers are required. The implementation must strictly follow the architectural sequence diagram defined in `Pay order by VietQR SD v2.png`.
 
-**Sequence of Operations (Strict Implementation based on Sequence Diagram):**
-1. System/Caller invokes `PayOrderController` via `PayOrder(invoice)`.
-2. `PayOrderController` calls `generateQRCode(invoice)` on `PayThroughPaymentGatewayController`.
-3. `PayThroughPaymentGatewayController` requests an access token by calling `getAccessToken()` on `VietQRBoundary`.
-4. `VietQRBoundary` makes the external request `getAccessToken()` to `VietQR` and returns the `accessToken` to the controller.
-5. `PayThroughPaymentGatewayController` calls `generateQRCode(invoice, accessToken)` on `VietQRBoundary`.
-6. `VietQRBoundary` calls `generateQRCode(invoice, accessToken)` to `VietQR` and returns the `qrCode` image/data to the controller, which passes it back to `PayOrderController`.
-7. `PayOrderController` triggers UI creation `displayQRCode(invoice, qrCode)` on `PaymentScreen`. (First phase ends).
-8. Asynchronously, `VietQR` sends a webhook `paymentCallback(transactionResult)` to `VietQRBoundary`.
-9. `VietQRBoundary` forwards this by calling `handlePaymentCallback(transactionResult)` on `PayThroughPaymentGatewayController`.
-10. `PayThroughPaymentGatewayController` executes an internal method `verifyCallbackData(transactionResult)`.
-11. Once verified, `PayThroughPaymentGatewayController` calls `saveTransaction()` on the `PaymentTransaction` entity.
-12. It then returns `returnPaymentResult(paymentResult)` to `PayOrderController`.
-13. Finally, `PayOrderController` executes `returnPaymentResult()` within the `Place Order` context, completing the flow.
+**Sequence of Operations (Strict Implementation based on Sequence Diagram v2):**
+
+### Phase 1 - Bước 1: payOrder(order) - Tạo và hiển thị mã QR
+1. Customer → PayOrderController: `payOrder(order)`
+2. PayOrderController → PayThroughPaymentGatewayController: `generateQRCode(order)`
+3. PayThroughPaymentGatewayController → VietQRBoundary: `getAccessToken()`
+4. VietQRBoundary → VietQR: `getAccessToken()` → trả về `accessToken`
+5. PayThroughPaymentGatewayController → VietQRBoundary: `generateQRCode(order, accessToken)`
+6. VietQRBoundary → VietQR: `generateQRCode(invoice, accessToken)` → trả về `qrCode`
+7. PayOrderController → PaymentScreen: `displayQRCode(order, qrCode)`
+
+### Phase 2 - Bước 2: confirmPayment() - Xác nhận và xử lý thanh toán
+8. Customer bấm "I have paid" → PayOrderController: `confirmPayment()`
+9. PayOrderController → PayThroughPaymentGatewayController: `confirmPayment(order)`
+10. PayThroughPaymentGatewayController → PayThroughPaymentGatewayController: `handleAPICallback(order)`
+11. PayThroughPaymentGatewayController → VietQRBoundary: `postAPICallback(order, accessToken)`
+12. VietQRBoundary → VietQR (Sandbox): `POST /vqr/bank/api/test/transaction-callback`
+13. VietQR (Sandbox) → TransactionSyncController (AIMS): `postAPIToAIMS()` via `POST /bank/api/transaction-sync`
+14. TransactionSyncController: Validate callback → Tìm order → Lưu PaymentTransaction → Update order status → trả về `referenceTransactionId`
+15. PayThroughPaymentGatewayController → PayOrderController: trả `paymentStatus`
+16. PayOrderController → PaymentScreen: `displayOrderInfo(order, paymentTransaction)` → SuccessfulPaidScreen
+
+### VietQR API Documentation References
+- **API Get Token**: Lấy access token để truy cập API VietQR (tài liệu: `1-APIGetToken.md`, `3-CallAPIGetToken.md`)
+- **API Generate QR Code**: Sinh mã thanh toán QR (tài liệu: `4-CallAPIGenerateQRCode.md`)
+- **API Transaction Sync**: Endpoint nhận callback từ VietQR khi giao dịch hoàn thành (tài liệu: `2-APITransactionSync.md`)
+- **API Test Callback**: Giả lập thanh toán trong môi trường Sandbox (tài liệu: `5-CallAPITestCallback.md`)
+- **Luồng nghiệp vụ**: Xem `mô tả luồng nghiệp vụ API.md`
 
 ## Technical Requirements & Architecture Compliance
 
 **BCE Class Mapping:**
-- **Boundary:** `PaymentScreen` (UI), `VietQRBoundary` (External API wrapper and Webhook receiver)
+- **Boundary:** `PaymentScreen` (UI), `VietQRBoundary` (External API wrapper), `TransactionSyncController` (Webhook receiver - postAPIToAIMS)
 - **Control:** `PayOrderController`, `PayThroughPaymentGatewayController`
 - **Entity:** `PaymentTransaction`
 
 **Key Operations to Implement:**
-- `VietQRBoundary.getAccessToken()`, `generateQRCode()`, `paymentCallback()`
-- `PayThroughPaymentGatewayController.generateQRCode()`, `handlePaymentCallback()`, `verifyCallbackData()`
-- `PayOrderController.PayOrder()`, `returnPaymentResult()`
+- `VietQRBoundary.getAccessToken()`, `generateQRCode()`, `postAPICallback()`
+- `TransactionSyncController.transactionSync()` (POST /bank/api/transaction-sync - nhận callback từ VietQR)
+- `PayThroughPaymentGatewayController.generateQRCode()`, `confirmPayment()`, `handleAPICallback()`
+- `PayOrderController.payOrder()`, `confirmPayment()` (returnPaymentResult)
 
 ## File Structure Requirements
 
 - **Frontend (Angular):**
   - Implement `PaymentScreen` component to display the QR code and a loading spinner.
-  - Listen for real-time updates (e.g., via polling or WebSocket) or navigate based on the callback success.
+  - Implement `confirmPayment()` button that calls Backend to trigger VietQR Test Callback flow.
+  - Display `SuccessfulPaidScreen` with order info after payment confirmed.
 - **Backend (NestJS):**
-  - Create the `VietQRBoundary` service for outgoing API requests and incoming webhooks.
-  - Create/Update `PayThroughPaymentGatewayController` and `PayOrderController` exactly as specified in the sequence diagram.
+  - `VietQRBoundary` service for outgoing API requests (getAccessToken, generateQRCode, postAPICallback).
+  - `TransactionSyncController` - endpoint `/bank/api/transaction-sync` receiving VietQR callbacks (postAPIToAIMS).
+  - `PayThroughPaymentGatewayController` - orchestrates confirmPayment → handleAPICallback flow.
+  - `PayOrderController` - REST endpoints for payOrder and confirmPayment.
 - **Database:** Ensure `PaymentTransaction` is saved with VietQR-specific fields (transaction ref, amount, status).
 
 ## Library & Framework Requirements
 
-- Use Node's built-in `fetch` or `@nestjs/axios` for VietQR API calls.
-- Define strict DTOs for the webhook payload (`transactionResult`).
+- Use Node's built-in `fetch` for VietQR API calls.
+- Define strict DTOs for the Transaction Sync payload.
+- No additional npm packages required (uses built-in crypto for UUID generation).
 
 ## Testing Requirements
 
 - Unit test `PayThroughPaymentGatewayController` logic (mocking `VietQRBoundary`).
-- Ensure webhook payload validation (`verifyCallbackData`) handles missing/invalid fields and edge cases gracefully.
-- **Sandbox Testing:** Developers must test the webhook flow by sending simulated requests using the VietQR test callback API instead of making real transactions.
+- Ensure Transaction Sync payload validation handles missing/invalid fields gracefully.
+- **Sandbox Testing:** Test the full flow: confirmPayment → Test Callback API → Transaction Sync → success.
 
-## Latest Technical Information (Webhook & Local Development Strategy)
+## Latest Technical Information (API Callback & Local Development Strategy)
 
-Để hệ thống Backend (NestJS) nhận được tín hiệu thanh toán thành công (Callback/Webhook) từ VietQR Sandbox khi đang code trên localhost, Developer PHẢI tuân thủ 4 bước thiết lập sau:
+Để hệ thống Backend (NestJS) nhận được tín hiệu thanh toán thành công (Transaction Sync) từ VietQR Sandbox khi đang code trên localhost, Developer PHẢI tuân thủ các bước thiết lập sau:
 
-### Bước 1: Tạo API Endpoint (Webhook) trên Backend NestJS
-- Tạo một API method `POST` (VD: `POST /api/vietqr/callback`).
-- **BẮT BUỘC:** Phải trả về HTTP Status `200 OK` (VD: `@HttpCode(200)`) ngay khi nhận được request để VietQR biết hệ thống đã nhận thành công.
-- Trong hàm xử lý callback:
-  1. Log dữ liệu VietQR gửi về.
-  2. Gọi hàm `verifyCallbackData()` để kiểm tra tính hợp lệ.
-  3. Cập nhật Order status thành `PENDING_PROCESSING` (theo đúng Business Rule).
-  4. Lưu thông tin giao dịch vào bảng `PaymentTransaction`.
+### Bước 1: Tạo API Endpoint Transaction Sync trên Backend NestJS
+- Tạo một API method `POST` tại `POST /bank/api/transaction-sync`.
+- **BẮT BUỘC:** Phải trả về HTTP Status `200 OK` (dùng `@HttpCode(200)`) ngay khi nhận được request để VietQR biết hệ thống đã nhận thành công.
+- Validate Bearer token trong header Authorization.
+- Nhận body với các field: bankaccount, amount, transType, content, transactionid, transactiontime, referencenumber, orderId.
+- Trả về response đúng format: `{ error: false, object: { reftransactionid: "..." } }`.
 
 ### Bước 2: "Đục lỗ" Localhost ra Internet bằng Ngrok
-- VietQR không thể gửi webhook tới `localhost`. Developer bắt buộc phải dùng **Ngrok** (hoặc tool tương tự) để public port đang chạy NestJS (VD: `ngrok http 3000`).
-- Đường link nhận Webhook thực tế sẽ có dạng: `https://<ngrok-id>.ngrok-free.app/api/vietqr/callback`.
+- VietQR không thể gửi Transaction Sync tới `localhost`. Developer bắt buộc phải dùng **Ngrok** (hoặc tool tương tự) để public port đang chạy NestJS (VD: `ngrok http 8080`).
+- Đường link nhận Transaction Sync thực tế sẽ có dạng: `https://<ngrok-id>.ngrok-free.app/bank/api/transaction-sync`.
 
-### Bước 3: Cấu hình/Thông báo Webhook URL cho VietQR
-- Tùy theo cấu hình của VietQR, public URL từ Ngrok ở Bước 2 phải được cấu hình trên hệ thống quản trị Sandbox của VietQR, hoặc truyền động qua field `urlLink`/`callback_url` khi gọi API Generate QR.
+### Bước 3: Cấu hình Webhook URL cho VietQR
+- Public URL từ Ngrok ở Bước 2 phải được cấu hình trên hệ thống quản trị Sandbox của VietQR.
 
-### Bước 4: Giả lập thanh toán và Test luồng Callback (E2E)
-- Khách hàng (Angular) tạo đơn hàng -> Hiển thị mã QR và chờ.
-- Sử dụng **Test Callback API**: `https://api.vietqr.vn/vi/api-vietqr-callback/goi-api-test-callback` (thông qua Postman/Swagger) để giả lập việc quét mã thành công.
-- VietQR Sandbox sẽ tự động POST dữ liệu về URL Ngrok -> NestJS xử lý dữ liệu -> Cập nhật trạng thái DB.
-- Angular Frontend (đang dùng polling hoặc websocket) nhận thấy trạng thái đơn hàng thay đổi -> Tự động chuyển sang màn hình Success.
+### Bước 4: Test luồng confirmPayment (E2E)
+- Khách hàng (Angular) tạo đơn hàng → Hiển thị mã QR và chờ.
+- Khách bấm "I have paid" → Frontend gọi `POST /api/payment/pay-order/:orderId/confirm`.
+- Backend gọi **API Test Callback**: `POST https://dev.vietqr.org/vqr/bank/api/test/transaction-callback`.
+- VietQR Sandbox tự động POST dữ liệu về URL Ngrok → NestJS `TransactionSyncController` xử lý dữ liệu → Lưu PaymentTransaction → Cập nhật trạng thái DB.
+- Kết quả trả về Frontend → Tự động chuyển sang màn hình Success.
 
 ## Project Context Reference
 
-As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` is the ultimate source of truth. The application architecture must map strictly to the BCE classes defined in `Group20-ClassDesignSpecification.md` and the DB schema in `DatabaseDescription.md`. The sequence flow must explicitly match the provided `PayOrder(CustomerVietQR).png`.
+As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` is the ultimate source of truth. The application architecture must map strictly to the BCE classes defined in `Group20-ClassDesignSpecification.md` and the DB schema in `DatabaseDescription.md`. The sequence flow must explicitly match the provided `Pay order by VietQR SD v2.png`.
 
 ## Tasks/Subtasks
 
 - [x] Task 1: Setup Backend Payment Models and Boundaries
   - [x] Create `PaymentTransaction` entity with VietQR fields (transaction ref, amount, status)
-  - [x] Create `VietQRBoundary` service for `getAccessToken()`, `generateQRCode()`, and webhook receiving.
+  - [x] Create `VietQRBoundary` service for `getAccessToken()`, `generateQRCode()`, and `postAPICallback()`.
 - [x] Task 2: Implement Backend Controllers
-  - [x] Update/Create `PayThroughPaymentGatewayController` with `generateQRCode()`, `handlePaymentCallback()`, and `verifyCallbackData()`.
-  - [x] Update/Create `PayOrderController` to orchestrate payment flow (`PayOrder()`, `returnPaymentResult()`).
+  - [x] Update/Create `PayThroughPaymentGatewayController` with `generateQRCode()`, `confirmPayment()`, and `handleAPICallback()`.
+  - [x] Update/Create `PayOrderController` to orchestrate payment flow (`payOrder()`, `confirmPayment()`).
+  - [x] Create `TransactionSyncController` with `transactionSync()` endpoint (`POST /bank/api/transaction-sync`).
 - [x] Task 3: Implement Frontend Payment Screen
   - [x] Create `PaymentScreen` component in Angular.
   - [x] Fetch and display QR code with loading spinner.
-  - [x] Implement mechanism to navigate based on callback success.
+  - [x] Implement `confirmPayment()` button to trigger Backend API Test Callback flow.
+  - [x] Display `SuccessfulPaidScreen` with order details after payment confirmed.
 - [x] Task 4: Testing and Validation
   - [x] Unit test `PayThroughPaymentGatewayController` logic (mocking `VietQRBoundary`).
-  - [x] Test webhook payload validation (`verifyCallbackData`) with Sandbox API logic.
+  - [x] Test Transaction Sync payload validation with Sandbox API logic.
 - [x] Task 5: Implement New Business Rules
-  - [x] Implement Cart emptying on Frontend upon successful webhook callback.
-  - [x] Implement Email simulation in Backend `PayThroughPaymentGatewayController`.
+  - [x] Implement Cart emptying on Frontend upon successful payment confirmation.
+  - [x] Implement Email simulation in Backend `TransactionSyncController`.
   - [x] Verified `PENDING_PROCESSING` logic and recorded Manual Refund constraints.
 
 ## Dev Agent Record
@@ -152,16 +172,17 @@ As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` i
 - Added Angular standalone component and routing properly configured.
 
 ### Completion Notes
-- ✅ Task 1: Created `PaymentTransaction` entity and `VietQRBoundary` service for mocking external requests and webhook processing.
-- ✅ Task 2: Implemented `PayThroughPaymentGatewayController` business logic and `PayOrderController` to orchestrate endpoints. Added all controllers to a new `PaymentModule`.
-- ✅ Task 3: Built `VietQRPaymentScreen` in Angular with dummy sandbox webhook payload firing for QA testing.
+- ✅ Task 1: Created `PaymentTransaction` entity and `VietQRBoundary` service with `postAPICallback()` for calling VietQR Test Callback API.
+- ✅ Task 2: Implemented `PayThroughPaymentGatewayController` with `confirmPayment()` and `handleAPICallback()`. Created `TransactionSyncController` at `/bank/api/transaction-sync` to receive VietQR callbacks (postAPIToAIMS). Updated `PayOrderController` with `confirmPayment` endpoint.
+- ✅ Task 3: Built `VietQRPaymentScreen` in Angular with `confirmPayment()` button that calls Backend, and `SuccessfulPaidScreen` display.
 - ✅ Task 4: Created unit tests for business logic testing `PayThroughPaymentGatewayController` with mock TypeORM repository methods.
-- ✅ Task 5: Cập nhật code để thoả mãn các Business Rule mới (VietQR docs): gọi `cartService.emptyCart()` trên Frontend khi thanh toán thành công, và gọi hàm `simulateSendEmail` trong Backend `PayThroughPaymentGatewayController`. Các yêu cầu về Manual Refund (hoàn tiền thủ công) đã được ghi nhận trong documentation/code comments.
+- ✅ Task 5: Cập nhật code để thoả mãn các Business Rule mới (VietQR docs): gọi `cartService.emptyCart()` trên Frontend khi thanh toán thành công, và gọi hàm `simulateSendEmail` trong Backend `TransactionSyncController`. Các yêu cầu về Manual Refund (hoàn tiền thủ công) đã được ghi nhận trong documentation/code comments.
 
 ## File List
 - `backend/src/payment/entities/payment-transaction.entity.ts`
 - `backend/src/boundaries/viet-qr/viet-qr.service.ts`
-- `backend/src/boundaries/viet-qr/viet-qr-webhook.boundary.ts`
+- `backend/src/boundaries/viet-qr/viet-qr-webhook.boundary.ts` (DEPRECATED)
+- `backend/src/boundaries/viet-qr/transaction-sync.controller.ts` (NEW - postAPIToAIMS)
 - `backend/src/payment/services/pay-through-payment-gateway.service.ts`
 - `backend/src/payment/controllers/pay-order.controller.ts`
 - `backend/src/payment/payment.module.ts`
@@ -176,7 +197,16 @@ As stated in `project-context.md`, `Context/AIMS-ProblemStatement-ver3.1.1.md` i
 - Established BCE structure mapping for `VietQR` sandbox mode.
 - Mocked webhook endpoint using `VietQRWebhookBoundary`.
 - Mapped front-end component `/vietqr-payment` to test end-to-end integration.
+- **[UPDATE v2] Thay đổi luồng callback theo Sequence Diagram v2:**
+  - Thay thế cơ chế webhook cũ (VietQR tự gọi POST /api/vietqr/webhook) bằng luồng mới:
+    - Customer bấm confirmPayment → Backend gọi API Test Callback → VietQR → Transaction Sync callback về AIMS
+  - Thêm `VietQRBoundary.postAPICallback()` - gọi API Test Callback của VietQR Sandbox
+  - Tạo `TransactionSyncController` (POST /bank/api/transaction-sync) - endpoint nhận callback từ VietQR (postAPIToAIMS)
+  - Thêm `PayThroughPaymentGatewayController.confirmPayment()` và `handleAPICallback()`
+  - Thêm `PayOrderController.confirmPayment()` endpoint (POST :orderId/confirm)
+  - Cập nhật Frontend `confirmPayment()` gọi Backend thay vì trực tiếp webhook
+  - Deprecated `VietQRWebhookBoundary` (viet-qr-webhook.boundary.ts)
 
-review -> ready-for-dev (Updating with new business rules) -> review
+review -> ready-for-dev (Updating with new business rules) -> review -> ready-for-dev (Updating callback flow per SD v2)
 ## Status
-review
+ready-for-dev
