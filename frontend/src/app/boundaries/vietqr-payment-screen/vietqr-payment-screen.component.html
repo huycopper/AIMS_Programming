@@ -1,6 +1,6 @@
 <div class="payment-container">
   <h2>VietQR Payment</h2>
-  
+
   <!-- Trạng thái: Đang tạo mã QR -->
   <div *ngIf="loading" class="spinner-container">
     <div class="spinner"></div>
@@ -10,22 +10,25 @@
   <!-- Trạng thái: Lỗi (không có orderId hoặc API thất bại) -->
   <div *ngIf="errorMessage" class="error-container">
     <p class="error-text">{{ errorMessage }}</p>
-    <button (click)="goHome()" class="btn-home">Quay về trang chủ</button>
+    <button (click)="goHome()" class="btn-home">Return to Home Page</button>
   </div>
 
   <!-- Trạng thái: Hiển thị mã QR -->
   <div *ngIf="!loading && !paymentSuccess && !errorMessage" class="qr-container">
     <p>Scan the QR code below with your banking app to pay.</p>
-    
-    <!-- Hiển thị QR dưới dạng link (qrLink từ VietQR) -->
-    <iframe *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-iframe" title="VietQR Code"></iframe>
-    
-    <!-- Fallback: hiển thị link nếu iframe không hoạt động -->
-    <a *ngIf="qrDataURL" [href]="qrDataURL" target="_blank" class="qr-link">Mở link QR trong tab mới</a>
+
+    <div *ngIf="amount" class="amount-display">
+      <h3>
+        Total Amount:
+        <span class="highlight-amount">{{ amount | currency: 'VND' : 'symbol' : '1.0-0' }}</span>
+      </h3>
+    </div>
+
+    <!-- Hiển thị ảnh QR -->
+    <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
 
     <div class="sandbox-controls">
-      <p class="sandbox-text">Sandbox mode: simulate payment callback</p>
-      <button (click)="simulateCallback()" class="btn-simulate">Simulate Success Webhook</button>
+      <button (click)="simulateCallback()" class="btn-simulate">I have paid</button>
     </div>
   </div>
 

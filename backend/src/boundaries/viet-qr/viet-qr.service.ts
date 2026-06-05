@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Order } from '../../order/entities/order.entity.js';
+import * as QRCode from 'qrcode';
 
 @Injectable()
 export class VietQRBoundary {
@@ -15,12 +16,8 @@ export class VietQRBoundary {
   async getAccessToken(): Promise<string> {
     this.logger.log('Calling VietQR API to get access token...');
 
-    // Build Basic Auth header: Base64(username:password)
-    // Tài liệu VietQR yêu cầu gửi request kèm mật khẩu dưới dạng Basic Base64[username:password]. 
-    // Đoạn code này nối Username và Password bằng dấu hai chấm :
-    // Sau đó, dùng Buffer.from(...).toString('base64') (một hàm có sẵn của Node.js) để biến chuỗi chữ thường đó thành một chuỗi mã hóa khó đọc (Base64).
-    const credentials = `${this.VIETQR_USERNAME}:${this.VIETQR_PASSWORD}`;
-    const base64Credentials = Buffer.from(credentials).toString('base64');
+    const credentials = `${this.VIETQR_USERNAME}:${this.VIETQR_PASSWORD}`; // chứa username và password của VietQR cấp
+    const base64Credentials = Buffer.from(credentials).toString('base64');  // biến chuỗi chữ thường đó thành một chuỗi mã hóa khó đọc (Base64) để POST tới VietQR
 
     // Gửi request qua mạng
     const response = await fetch(this.VIETQR_TOKEN_URL, { // Sử dụng hàm fetch để gọi một HTTP Request tới máy chủ VietQR.
@@ -45,8 +42,9 @@ export class VietQRBoundary {
     // Trích xuất token VietQR trả về
     const data: any = await response.json();
     this.logger.log(`VietQR access token obtained successfully (expires in ${data.expires_in}s)`);
-    // console.log("\n\nResponse from VietQR: ", response);
+
     // console.log("\n\nResponse from VietQR json: ", data);
+
     return data.access_token;
   }
 
@@ -58,10 +56,10 @@ export class VietQRBoundary {
   private readonly USER_BANK_NAME = 'DONG DAI HUY';
 
   // Gọi API VietQR để sinh mã QR thanh toán
-  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string }> {
+  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string, amount: number }> {
     this.logger.log(`Calling VietQR API to generate QR for order ${order.orderId}`);
 
-    // orderId tối đa 13 ký tự (yêu cầu của VietQR), cắt bớt UUID
+    // orderId tối đa 13 ký tự (yêu cầu của VietQR), cắt bớt UUID, xóa kí tự '-'
     const shortOrderId = order.orderId.replace(/-/g, '').substring(0, 13);
 
     // content tối đa 23 ký tự, không dấu, không ký tự đặc biệt
@@ -87,7 +85,7 @@ export class VietQRBoundary {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(body), // HTTP Request chỉ biết truyền tải text hoặc byte nên phải stringify body trước khi gửi
     });
 
     if (!response.ok) {
@@ -99,7 +97,12 @@ export class VietQRBoundary {
     const data: any = await response.json();
     this.logger.log(`VietQR QR code generated successfully. qrLink: ${data.qrLink}`);
 
-    // Trả về qrLink (URL ảnh mã QR) để Frontend hiển thị trong thẻ <img>
-    return { qrDataURL: data.qrLink };
+    console.log("\n\nResponse from VietQR generateQRCode: ", data);
+    
+    // Tạo mã QR dạng Data URL (base64 image) từ chuỗi qrCode thô do VietQR trả về
+    const qrDataURL = await QRCode.toDataURL(data.qrCode);
+
+    // Trả về qrDataURL (URL ảnh mã QR) để Frontend hiển thị trong thẻ <img>
+    return { qrDataURL, amount: Math.round(order.totalAmount) };
   }
 }

@@ -10,13 +10,12 @@ export class PayOrderController {
   private readonly logger = new Logger(PayOrderController.name);
 
   constructor(
-    private readonly paymentGatewayController: PayThroughPaymentGatewayController,
+    private readonly payThroughPaymentGatewayController: PayThroughPaymentGatewayController,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
   ) { }
 
-  //hàm này dùng để trả về QR code cho frontend
-  @Post(':orderId')
+  @Post(':orderId') // endpoint để hứng request từ frontend
   async payOrder(@Param('orderId') orderId: string) {
     this.logger.log(`Received PayOrder request for invoice: ${orderId}`);
 
@@ -27,7 +26,7 @@ export class PayOrderController {
     }
 
     // Call generateQRCode on PayThroughPaymentGatewayController
-    const qrResult = await this.paymentGatewayController.generateQRCode(invoice);
+    const qrResult = await this.payThroughPaymentGatewayController.generateQRCode(invoice);
 
     // Return QR code to frontend for display
     return qrResult;

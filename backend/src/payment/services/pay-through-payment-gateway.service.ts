@@ -22,7 +22,36 @@ export class PayThroughPaymentGatewayController {
     private readonly orderRepo: Repository<Order>,
   ) { }
 
-  async generateQRCode(invoice: Order): Promise<{ qrDataURL: string }> {
+  /*
+  Dưới đây là cách Promise hoạt động cụ thể trong hàm generateQRCode của bạn:
+
+  1. Hàm trả về một Promise (Promise<{ qrDataURL: string }>)
+  
+    async generateQRCode(invoice: Order): Promise<{ qrDataURL: string }> {
+    
+  Việc tạo QR code đòi hỏi phải gọi API qua mạng tới hệ thống VietQR. Việc này tốn thời gian (có thể mất vài trăm mili-giây đến vài giây).
+  Thay vì bắt toàn bộ hệ thống phải "đóng băng" đứng chờ VietQR trả lời, hàm này lập tức trả về một Promise.
+  Dấu <{ qrDataURL: string }> mang ý nghĩa: "Tôi hứa rằng khi nào gọi API xong, tôi sẽ trả lại cho bạn một object có chứa chuỗi qrDataURL".
+  Từ khóa async ở đầu hàm khai báo rằng đây là một hàm bất đồng bộ. Bất cứ hàm nào có chữ async đều sẽ tự động trả về một Promise.
+ 
+  2. Tạm dừng để chờ Promise hoàn thành với từ khóa await
+ 
+    const accessToken = await this.vietQRBoundary.getAccessToken();
+
+  Hàm getAccessToken() bản thân nó cũng phải gọi mạng và trả về một Promise.
+  Từ khóa await ở đây giống như việc bạn nói: "Hãy tạm dừng chạy các dòng code tiếp theo trong hàm này, đứng chờ cho đến khi cái Promise của getAccessToken hoàn thành và lấy được chuỗi token thật, rồi mới gán vào biến accessToken".
+ 
+    const qrResult = await this.vietQRBoundary.generateQRCode(invoice, accessToken);
+  
+  Tương tự, ta lại có một await khác. Code sẽ tiếp tục chờ generateQRCode của VietQR gọi xong API và trả về kết quả thật, rồi mới gán vào qrResult.
+  
+  3. Trả về kết quả thực tế
+  
+    return qrResult;
+  
+  qrResult cũng biến thành promise do hàm được khai báo là async.
+  */
+  async generateQRCode(invoice: Order): Promise<{ qrDataURL: string, amount: number }> {
     this.logger.log(`Generating QR Code for invoice ${invoice.orderId}`);
 
     // Call getAccessToken on VietQRBoundary
@@ -77,7 +106,7 @@ export class PayThroughPaymentGatewayController {
       // Update order status
       order.status = 'PENDING_PROCESSING';
       await this.orderRepo.save(order);
-      
+
       // Simulate sending email
       this.simulateSendEmail(order, tx);
     }

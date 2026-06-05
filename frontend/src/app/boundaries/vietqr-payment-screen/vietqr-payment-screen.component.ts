@@ -15,6 +15,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 export class VietQRPaymentScreen implements OnInit {
   qrDataURL: string | null = null;
   safeQrUrl: SafeResourceUrl | null = null;
+  amount: number | null = null;
   loading: boolean = true;
   paymentSuccess: boolean = false;
   errorMessage: string | null = null;
@@ -50,6 +51,7 @@ export class VietQRPaymentScreen implements OnInit {
       .subscribe({
         next: (res) => {
           this.qrDataURL = res.qrDataURL;
+          this.amount = res.amount;
           if (this.qrDataURL) {
             this.safeQrUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.qrDataURL);
           }
