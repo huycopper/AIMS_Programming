@@ -51,14 +51,16 @@ export class PayThroughPaymentGatewayController {
   
   qrResult cũng biến thành promise do hàm được khai báo là async.
   */
+  private accessToken: string;
+
   async generateQRCode(invoice: Order): Promise<{ qrDataURL: string, amount: number, content: string }> {
     this.logger.log(`Generating QR Code for invoice ${invoice.orderId}`);
 
     // Call getAccessToken on VietQRBoundary
-    const accessToken = await this.vietQRBoundary.getAccessToken();
+    this.accessToken = await this.vietQRBoundary.getAccessToken();
 
     // Call generateQRCode on VietQRBoundary
-    const qrResult = await this.vietQRBoundary.generateQRCode(invoice, accessToken);
+    const qrResult = await this.vietQRBoundary.generateQRCode(invoice, this.accessToken);
 
     return qrResult;
   }
@@ -106,10 +108,10 @@ export class PayThroughPaymentGatewayController {
     this.logger.log(`Handling API Callback for order ${order.orderId}`);
 
     // Lấy access token từ VietQR (cần token để gọi Test Callback API)
-    const accessToken = await this.vietQRBoundary.getAccessToken(); // accessToken đã được gọi 1 lần ở hàm generateQRCode rồi, liệu có cần gọi lần nữa? 
+    // const accessToken = await this.vietQRBoundary.getAccessToken(); // accessToken đã được gọi 1 lần ở hàm generateQRCode rồi, liệu có cần gọi lần nữa? 
 
     // Gọi postAPICallback() trên VietQRBoundary (bước 2.1.1.1.1 trong SD v2)
-    const result = await this.vietQRBoundary.postAPICallback(order, accessToken);
+    const result = await this.vietQRBoundary.postAPICallback(order, this.accessToken);
 
     this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(result)}`);
 

@@ -9,8 +9,8 @@ export class VietQRBoundary {
   // VietQR Sandbox API configuration
   // Theo tài liệu: POST https://dev.vietqr.org/vqr/api/token_generate
   private readonly VIETQR_TOKEN_URL = 'https://dev.vietqr.org/vqr/api/token_generate';
-  private readonly VIETQR_USERNAME = 'customer-aims888-user26593';
-  private readonly VIETQR_PASSWORD = 'Y3VzdG9tZXItYWltczg4OC11c2VyMjY1OTM=';
+  private readonly VIETQR_USERNAME = 'customer-aims1234-user26601';
+  private readonly VIETQR_PASSWORD = 'Y3VzdG9tZXItYWltczEyMzQtdXNlcjI2NjAx';
 
   // VietQR Generate QR Code API configuration
   // Theo tài liệu: POST https://dev.vietqr.org/vqr/api/qr/generate-customer
