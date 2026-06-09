@@ -1,14 +1,8 @@
-/**
- * Transaction Sync Controller (VietQR Callback Receiver)
- *
- * Bước 2.1.1.1.1.1 trong Sequence Diagram v2: postAPIToAIMS()
- *
+/*
  * Đây là endpoint mà VietQR sẽ gọi TỰ ĐỘNG vào hệ thống AIMS sau khi
  * nhận được lệnh Test Callback (postAPICallback). VietQR sẽ POST dữ liệu
  * giao dịch tới endpoint này kèm Bearer token.
- *
  */
-
 import { Controller, Post, Body, Headers, Logger, Res } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,14 +12,9 @@ import { Order } from '../../order/entities/order.entity.js';
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
 
-// ===== Các hằng số (tương ứng code mẫu NodeJS) =====
-// const SECRET_KEY = 'your-256-bit-secret'; // Secret key để kiểm tra JWT (giống code mẫu)
-const BEARER_PREFIX = 'Bearer '; // Prefix của Authorization header
-
-// ===== Model cho request body (tương ứng class TransactionCallback trong code mẫu) =====
+// ===== Model cho request body =====
 /**
  * DTO cho request body từ VietQR Transaction Sync
- * Chuyển đổi từ class TransactionCallback trong code mẫu NodeJS
  * Theo tài liệu 2-APITransactionSync.md
  */
 export class TransactionCallbackDto {
@@ -45,7 +34,7 @@ export class TransactionCallbackDto {
   transType?: string; // Phân loại giao dịch: D (ghi nợ) / C (ghi có)
 }
 
-// ===== Lớp model cho success response (tương ứng class SuccessResponse trong code mẫu) =====
+// ===== Lớp model cho success response =====
 class SuccessResponse {
   error: boolean;
   errorReason: string | null;
@@ -65,7 +54,7 @@ class SuccessResponse {
   }
 }
 
-// ===== Lớp model cho lỗi response (tương ứng class ErrorResponse trong code mẫu) =====
+// ===== Lớp model cho error response =====
 class ErrorResponse {
   error: boolean;
   errorReason: string;
@@ -85,7 +74,7 @@ class ErrorResponse {
   }
 }
 
-// ===== Lớp model cho object trả về trong success response (tương ứng class TransactionResponseObject) =====
+// ===== Lớp model cho object trả về trong success response =====
 class TransactionResponseObject {
   reftransactionid: string;
 
@@ -106,156 +95,89 @@ export class TransactionSyncController {
     private readonly jwtService: JwtService,
   ) { }
 
-  @Post('transaction-sync')
+  @Post('transaction-sync') // Hứng request từ VietQR
   async transactionSync(
-    @Body() transactionCallback: TransactionCallbackDto,
+    @Body() transactionSyncBody: TransactionCallbackDto,
     @Headers('authorization') authHeader: string,
     @Res() res: Response,
   ) {
     this.logger.log('=== VietQR Transaction Sync Received ===');
-    this.logger.log(`Callback data: ${JSON.stringify(transactionCallback)}`);
+    this.logger.log(`Callback data: ${JSON.stringify(transactionSyncBody)}`);
 
-    if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
+    // 1. Valid header
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       this.logger.error('Invalid or missing Authorization header');
-      return res
-        .status(401)
-        .json(
-          new ErrorResponse(
-            true,
-            'INVALID_AUTH_HEADER',
-            'Authorization header is missing or invalid',
-            null,
-          ),
-        );
+      return res.status(401).json(new ErrorResponse(
+        true,
+        'INVALID_AUTH_HEADER',
+        'Authorization header is missing or invalid',
+        null,
+      ));
     }
 
-    const token = authHeader.substring(BEARER_PREFIX.length).trim();
+    // 2. Valid token
+    const token = authHeader.substring('Bearer '.length).trim();
     if (!this.validateCallbackToken(token)) {
       this.logger.error('Invalid or expired Bearer token');
-      return res
-        .status(401)
-        .json(
-          new ErrorResponse(
-            true,
-            'INVALID_TOKEN',
-            'Invalid or expired token',
-            null,
-          ),
-        );
+      return res.status(401).json(new ErrorResponse(
+        true,
+        'INVALID_TOKEN',
+        'Invalid or expired token',
+        null,
+      ));
     }
 
     try {
-      const missingFields = this.getMissingRequiredFields(transactionCallback);
-      if (missingFields.length > 0) {
-        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
-      }
-
+      // Bước 1: Tải toàn bộ danh sách đơn hàng và tìm đơn hàng khớp với callback
       const allOrders = await this.orderRepo.find();
-      const order = this.findMatchingOrder(transactionCallback, allOrders);
+
+      // Tìm order tương ứng với callback
+      const order = this.findMatchingOrder(transactionSyncBody, allOrders);
       if (!order) {
-        this.logger.warn(
-          `Order not found for orderId: ${transactionCallback.orderId}`,
-        );
-        throw new Error(
-          `Order not found for orderId: ${transactionCallback.orderId}`,
-        );
+        this.logger.warn(`Order not found for orderId: ${transactionSyncBody.orderId}`);
+        throw new Error(`Order not found for orderId: ${transactionSyncBody.orderId}`);
       }
+      this.logger.log(`Found matching order: ${order.orderId} (status: ${order.status})`);
 
-      this.logger.log(
-        `Found matching order: ${order.orderId} (status: ${order.status})`,
-      );
+      // Bước 2: Kiểm tra tính hợp lệ của giao dịch so với đơn hàng (số tiền, nội dung)
+      // Validate transaction against order
+      this.validateTransactionAgainstOrder(transactionSyncBody, order);
 
-      this.validateTransactionAgainstOrder(transactionCallback, order);
+      // Bước 3: Sinh mã tham chiếu
+      // refTransactionId: do AIMS tạo, trả về cho VietQR làm biên nhận
+      // transactionRef:   do VietQR tạo, lưu lại để đối soát với ngân hàng
+      const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`; // Mã do AIMS tạo
+      const transactionRef = transactionSyncBody.referencenumber || transactionSyncBody.transactionid; // Mã do VietQR tạo
 
-      const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`;
-      const transactionRef =
-        transactionCallback.referencenumber ||
-        transactionCallback.transactionid;
-
-      const existingTransaction = await this.paymentTransactionRepo.findOne({
-        where: { transactionRef },
-      });
-
-      if (existingTransaction) {
-        order.status = 'PENDING_PROCESSING';
-        await this.orderRepo.save(order);
-
-        const existingRefTransactionId =
-          existingTransaction.paymentDetails?.reftransactionid ??
-          existingTransaction.paymentTransactionId;
-
-        this.logger.log(
-          `Duplicate Transaction Sync ignored: ${transactionRef}`,
-        );
-        return res
-          .status(200)
-          .json(
-            new SuccessResponse(
-              false,
-              null,
-              'Transaction already processed',
-              new TransactionResponseObject(existingRefTransactionId),
-            ),
-          );
-      }
-
-      const paymentTransaction = this.paymentTransactionRepo.create({
-        order,
-        transactionRef,
-        amount: Number(transactionCallback.amount),
-        paymentMethod: 'VIETQR',
-        status: 'SUCCESS',
-        paymentDetails: {
-          transactionid: transactionCallback.transactionid,
-          transactiontime: transactionCallback.transactiontime,
-          referencenumber: transactionCallback.referencenumber,
-          bankaccount: this.getCallbackBankAccount(transactionCallback),
-          content: transactionCallback.content,
-          transType: transactionCallback.transType,
-          orderId: transactionCallback.orderId,
-          terminalCode: transactionCallback.terminalCode,
-          subTerminalCode: transactionCallback.subTerminalCode,
-          serviceCode: transactionCallback.serviceCode,
-          urlLink: transactionCallback.urlLink,
-          sign: transactionCallback.sign,
-          reftransactionid: refTransactionId,
-        },
-      });
-
+      // Bước 4: Tạo bản ghi PaymentTransaction và lưu vào database
+      const paymentTransaction = this.buildPaymentTransaction(order, transactionSyncBody, transactionRef, refTransactionId);
       await this.paymentTransactionRepo.save(paymentTransaction);
-      this.logger.log(
-        `PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`,
-      );
+      this.logger.log(`PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`);
 
+      // Bước 5: Cập nhật trạng thái đơn hàng → PENDING_PROCESSING (chờ xử lý tiếp theo)
       order.status = 'PENDING_PROCESSING';
       await this.orderRepo.save(order);
-      this.logger.log(
-        `Order ${order.orderId} status updated to PENDING_PROCESSING`,
-      );
+      this.logger.log(`Order ${order.orderId} status updated to PENDING_PROCESSING`);
 
+      // Bước 6: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
       this.simulateSendEmail(order, paymentTransaction);
 
+      // Bước 7: Trả về phản hồi thành công cho VietQR kèm mã biên nhận của AIMS
       this.logger.log('=== Transaction Sync processed successfully ===');
-      return res
-        .status(200)
-        .json(
-          new SuccessResponse(
-            false,
-            null,
-            'Transaction processed successfully',
-            new TransactionResponseObject(refTransactionId),
-          ),
-        );
+      return res.status(200).json(
+        new SuccessResponse(
+          false,
+          null,
+          'Transaction processed successfully',
+          new TransactionResponseObject(refTransactionId),
+        ),
+      );
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Unknown transaction sync error';
+      // Bắt mọi lỗi phát sinh trong quá trình xử lý và trả về phản hồi lỗi cho VietQR
+      const message = error instanceof Error ? error.message : 'Unknown transaction sync error';
       const stack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Transaction Sync processing error: ${message}`, stack);
-      return res
-        .status(400)
-        .json(new ErrorResponse(true, 'TRANSACTION_FAILED', message, null));
+      return res.status(400).json(new ErrorResponse(true, 'TRANSACTION_FAILED', message, null));
     }
   }
 
@@ -275,84 +197,47 @@ export class TransactionSyncController {
     }
   }
 
-  private getMissingRequiredFields(
-    transactionCallback: TransactionCallbackDto,
-  ): string[] {
-    const requiredFields = {
-      bankaccount: this.getCallbackBankAccount(transactionCallback),
-      amount: transactionCallback.amount,
-      transType: transactionCallback.transType,
-      content: transactionCallback.content,
-      transactionid: transactionCallback.transactionid,
-      transactiontime: transactionCallback.transactiontime,
-      referencenumber: transactionCallback.referencenumber,
-    };
-
-    return Object.entries(requiredFields)
-      .filter(
-        ([, value]) => value === undefined || value === null || value === '',
-      )
-      .map(([field]) => field);
-  }
-
-  private findMatchingOrder(
-    transactionCallback: TransactionCallbackDto,
-    orders: Order[],
-  ): Order | null {
-    const callbackOrderId = transactionCallback.orderId?.trim();
-    const callbackContent = transactionCallback.content ?? '';
+  private findMatchingOrder(transactionSyncBody: TransactionCallbackDto, orders: Order[]): Order | null {
+    const callbackOrderId = transactionSyncBody.orderId?.trim();
+    const callbackContent = transactionSyncBody.content ?? '';
 
     return (
       orders.find((order) => {
         const shortOrderId = this.getShortOrderId(order);
         const expectedContent = this.getPaymentContent(shortOrderId);
-
         return (
           order.orderId === callbackOrderId ||
           shortOrderId === callbackOrderId ||
           callbackContent.includes(expectedContent)
         );
-      }) ?? null
+      })
+      ?? null
     );
   }
 
-  private validateTransactionAgainstOrder(
-    transactionCallback: TransactionCallbackDto,
-    order: Order,
-  ): void {
-    const callbackAmount = Math.round(Number(transactionCallback.amount));
+  private validateTransactionAgainstOrder(transactionSyncBody: TransactionCallbackDto, order: Order): void {
+    const callbackAmount = Math.round(Number(transactionSyncBody.amount));
     const orderAmount = Math.round(Number(order.totalAmount));
 
+    // check if transaction amount is a valid number (not NaN, not Infinity, ...)
     if (!Number.isFinite(callbackAmount)) {
       throw new Error('Invalid transaction amount');
     }
 
+    // check if transaction amount match with order amount
     if (callbackAmount !== orderAmount) {
-      throw new Error(
-        `Amount mismatch: expected ${orderAmount}, received ${callbackAmount}`,
-      );
+      throw new Error(`Amount mismatch: expected ${orderAmount}, received ${callbackAmount}`);
     }
 
-    if (transactionCallback.transType !== 'C') {
-      throw new Error(
-        `Invalid transType: expected C, received ${transactionCallback.transType}`,
-      );
-    }
-
+    // check if transaction content match with order content
     const expectedContent = this.getPaymentContent(this.getShortOrderId(order));
-    if (!transactionCallback.content?.includes(expectedContent)) {
-      throw new Error(
-        `Content mismatch: expected content to include ${expectedContent}`,
-      );
+    if (!transactionSyncBody.content?.includes(expectedContent)) {
+      throw new Error(`Content mismatch: expected content to include ${expectedContent}`);
     }
   }
 
-  private getCallbackBankAccount(
-    transactionCallback: TransactionCallbackDto,
-  ): string {
-    return (
-      transactionCallback.bankaccount ?? transactionCallback.bankAccount ?? ''
-    );
+  private getCallbackBankAccount(transactionSyncBody: TransactionCallbackDto): string {
+    return transactionSyncBody.bankaccount ?? transactionSyncBody.bankAccount ?? '';
   }
 
   private getShortOrderId(order: Order): string {
@@ -361,6 +246,36 @@ export class TransactionSyncController {
 
   private getPaymentContent(shortOrderId: string): string {
     return `AIMS ${shortOrderId}`;
+  }
+
+  private buildPaymentTransaction(
+    order: Order,
+    body: TransactionCallbackDto,
+    transactionRef: string,
+    refTransactionId: string,
+  ): PaymentTransaction {
+    return this.paymentTransactionRepo.create({
+      order,
+      transactionRef,
+      amount: Number(body.amount),
+      paymentMethod: 'VIETQR',
+      status: 'SUCCESS',
+      paymentDetails: {
+        transactionid: body.transactionid,
+        transactiontime: body.transactiontime,
+        referencenumber: body.referencenumber,
+        bankaccount: this.getCallbackBankAccount(body),
+        content: body.content,
+        transType: body.transType,
+        orderId: body.orderId,
+        terminalCode: body.terminalCode,
+        subTerminalCode: body.subTerminalCode,
+        serviceCode: body.serviceCode,
+        urlLink: body.urlLink,
+        sign: body.sign,
+        reftransactionid: refTransactionId,
+      },
+    });
   }
 
   /**

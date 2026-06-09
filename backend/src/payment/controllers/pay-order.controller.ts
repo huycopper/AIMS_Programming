@@ -1,14 +1,4 @@
-// File này nhận request từ Frontend và endpoint token callback mà VietQR gọi vào AIMS.
-import {
-  BadRequestException,
-  Controller,
-  Headers,
-  HttpException,
-  HttpStatus,
-  Logger,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { BadRequestException, Controller, Headers, HttpException, HttpStatus, Logger, Param, Post } from '@nestjs/common';
 import { PayThroughPaymentGatewayController } from '../services/pay-through-payment-gateway.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../order/entities/order.entity.js';
@@ -24,7 +14,7 @@ export class PayOrderController {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly vietqrService: VietQRBoundary,
-  ) {}
+  ) { }
 
   /*
   Endpoint để VietQR lấy Bearer token của AIMS trước khi gọi Transaction Sync.
@@ -33,18 +23,12 @@ export class PayOrderController {
   */
   @Post('vqr/api/token_generate')
   token_generate(@Headers('authorization') authHeader: string) {
+    this.logger.log(`Received token_generate request from VietQR`);
     const { username, password } = this.parseBasicCredentials(authHeader);
     return this.vietqrService.generateJWTToken(username, password);
   }
 
-  /**
-   * Bước 1 trong Sequence Diagram v2: payOrder(order)
-   *
-   * Customer → PayOrderController: payOrder(order)
-   * PayOrderController → PayThroughPaymentGatewayController: generateQRCode(order)
-   * → VietQRBoundary: getAccessToken() + generateQRCode(invoice, accessToken)
-   * → PaymentScreen: displayQRCode(order, qrCode)
-   */
+  // Endpoint để hứng request từ Frontend để generate QR Code
   @Post('api/payment/pay-order/:orderId')
   async payOrder(@Param('orderId') orderId: string) {
     this.logger.log(`Received payOrder request for order: ${orderId}`);
@@ -57,22 +41,7 @@ export class PayOrderController {
     return this.payThroughPaymentGatewayController.generateQRCode(order);
   }
 
-  /**
-   * Bước 2 trong Sequence Diagram v2: confirmPayment()
-   *
-   * Luồng hoạt động:
-   * 1. Customer bấm "I have paid" (confirmPayment) trên PaymentScreen
-   * 2. Frontend gọi POST /api/payment/pay-order/:orderId/confirm
-   * 3. PayOrderController gọi confirmPayment(order) trên PayThroughPaymentGatewayController
-   * 4. PayThroughPaymentGatewayController gọi handleAPICallback(order) → VietQRBoundary
-   * 5. VietQRBoundary gọi API Test Callback (postAPICallback) → VietQR Sandbox
-   * 6. VietQR Sandbox tự động gọi Transaction Sync (postAPIToAIMS) → AIMS Backend
-   * 7. TransactionSyncController nhận callback → lưu PaymentTransaction + update order status
-   * 8. Kết quả trả về cho Frontend → hiển thị SuccessfulPaidScreen
-   *
-   * @param orderId - ID đơn hàng cần xác nhận thanh toán
-   * @returns paymentResult - { status, message, orderId }
-   */
+  // Endpoint để hứng request từ Frontend để xác nhận đã thanh toán
   @Post('api/payment/pay-order/:orderId/confirm')
   async confirmPayment(@Param('orderId') orderId: string) {
     this.logger.log(`Received confirmPayment request for order: ${orderId}`);
@@ -82,12 +51,9 @@ export class PayOrderController {
       throw new BadRequestException('Order not found');
     }
 
-    const paymentResult =
-      await this.payThroughPaymentGatewayController.confirmPayment(order);
-    this.logger.log(
-      `Payment result for order ${orderId}: ${JSON.stringify(paymentResult)}`,
-    );
+    const paymentResult = await this.payThroughPaymentGatewayController.confirmPayment(order);
 
+    this.logger.log(`Payment result for order ${orderId}: ${JSON.stringify(paymentResult)}`);
     return paymentResult;
   }
 
