@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PaymentTransaction } from './entities/payment-transaction.entity.js';
 import { Order } from '../order/entities/order.entity.js';
-import { PayOrderController } from './controllers/pay-order.controller.js';
+import { PayOrderBoundary } from './controllers/pay-order.controller.js';
 import { PayThroughPaymentGatewayController } from './services/pay-through-payment-gateway.service.js';
 import { VietQRBoundary } from '../boundaries/viet-qr/viet-qr.service.js';
 import { TransactionSyncController } from '../boundaries/viet-qr/transaction-sync.controller.js';
@@ -23,7 +23,7 @@ import { TransactionSyncController } from '../boundaries/viet-qr/transaction-syn
       }),
     }),
   ],
-  controllers: [PayOrderController, TransactionSyncController],
+  controllers: [PayOrderBoundary, TransactionSyncController],
   providers: [PayThroughPaymentGatewayController, VietQRBoundary],
 })
 export class PaymentModule { }
