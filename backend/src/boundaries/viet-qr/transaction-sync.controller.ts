@@ -3,7 +3,7 @@
  * nhận được lệnh Test Callback (postAPICallback). VietQR sẽ POST dữ liệu
  * giao dịch tới endpoint này kèm Bearer token.
  */
-import { Controller, Post, Body, Headers, Logger, Res } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Logger, Res, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { PaymentTransaction } from '../../payment/entities/payment-transaction.e
 import { Order } from '../../order/entities/order.entity.js';
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
+import { PayThroughPaymentGatewayController } from '../../payment/services/pay-through-payment-gateway.service.js';
 
 // ===== Model cho request body =====
 /**
@@ -83,7 +84,7 @@ class TransactionResponseObject {
   }
 }
 
-@Controller('vqr/bank/api')
+@Controller()
 export class TransactionSyncController {
   private readonly logger = new Logger(TransactionSyncController.name);
 
@@ -93,9 +94,33 @@ export class TransactionSyncController {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly jwtService: JwtService,
+    private readonly payThroughPaymentGatewayController: PayThroughPaymentGatewayController,
   ) { }
 
-  @Post('transaction-sync') // Hứng request từ VietQR
+  /*
+  Endpoint de VietQR lay Bearer token cua AIMS truoc khi goi Transaction Sync.
+  Docs: POST https://<your-host>/<your-basepath>/vqr/api/token_generate
+  Header: Authorization: Basic Base64[username:password]
+  */
+  @Post('vqr/api/token_generate')
+  token_generate(@Headers('authorization') authHeader: string) {
+    this.logger.log('Received token_generate request from VietQR');
+
+    if (!authHeader || !authHeader.startsWith('Basic ')) {
+      throw new HttpException(
+        { error: 'Authorization header is missing or invalid' },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const base64Credentials = authHeader.split(' ')[1];
+    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+    const [username, password] = credentials.split(':');
+
+    return this.payThroughPaymentGatewayController.generateJWTToken(username, password);
+  }
+
+  @Post('vqr/bank/api/transaction-sync') // Hứng request từ VietQR
   async transactionSync(
     @Body() transactionSyncBody: TransactionCallbackDto,
     @Headers('authorization') authHeader: string,
