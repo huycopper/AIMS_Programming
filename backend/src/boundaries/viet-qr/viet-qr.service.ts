@@ -118,7 +118,7 @@ export class VietQRBoundary {
    * @param accessToken - Token VietQR đã lấy được từ getAccessToken()
    * @returns Kết quả từ VietQR Test Callback API { status, message }
    */
-  async postAPICallback(order: Order, accessToken: string): Promise<{ status: string; message: string }> {
+  async handleAPICallback(order: Order, accessToken: string): Promise<{ status: string; message: string }> {
     this.logger.log(`Calling VietQR Test Callback API for order ${order.orderId}`);
 
     const shortOrderId = this.getShortOrderId(order);

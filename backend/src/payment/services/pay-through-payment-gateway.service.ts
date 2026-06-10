@@ -56,26 +56,15 @@ export class PayThroughPaymentGatewayController {
   async confirmPayment(order: Order): Promise<{ status: string; message: string; orderId: string }> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
-    // Gọi handleAPICallback() theo SD v2 (bước 2.1.1.1)
-    const callbackResult = await this.handleAPICallback(order);
+    const callbackResult = await this.vietQRBoundary.handleAPICallback(order, this.accessToken);
+
+    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`);
 
     return {
       status: callbackResult.status,
       message: callbackResult.message,
       orderId: order.orderId,
     };
-  }
-
-  //Hàm này đáng ra phải ở Class VietQR Boundary
-  async handleAPICallback(order: Order): Promise<{ status: string; message: string }> {
-    this.logger.log(`Handling API Callback for order ${order.orderId}`);
-
-    // Dùng lại this.accessToken đã được lấy từ generateQRCode, không gọi getAccessToken() thêm lần nữa
-    const result = await this.vietQRBoundary.postAPICallback(order, this.accessToken);
-
-    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(result)}`);
-
-    return result;
   }
 
   /**
