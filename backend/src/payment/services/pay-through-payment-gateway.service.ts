@@ -7,6 +7,8 @@ import { JwtService } from '@nestjs/jwt';
 export class PayThroughPaymentGatewayController {
   private readonly logger = new Logger(PayThroughPaymentGatewayController.name); // Logger là class dùng để ghi log
 
+  private accessToken: string;
+
   constructor(
     private readonly vietQRBoundary: VietQRBoundary,
     private readonly jwtService: JwtService,
@@ -45,8 +47,8 @@ export class PayThroughPaymentGatewayController {
   async generateQRCode(order: Order): Promise<{ qrDataURL: string; amount: number; content: string }> {
     this.logger.log(`Generating QR Code for invoice ${order.orderId}`);
 
-    const accessToken = await this.vietQRBoundary.getAccessToken();
-    const qrResult = await this.vietQRBoundary.generateQRCode(order, accessToken);
+    this.accessToken = await this.vietQRBoundary.getAccessToken();
+    const qrResult = await this.vietQRBoundary.generateQRCode(order, this.accessToken);
 
     return qrResult;
   }
@@ -68,9 +70,8 @@ export class PayThroughPaymentGatewayController {
   async handleAPICallback(order: Order): Promise<{ status: string; message: string }> {
     this.logger.log(`Handling API Callback for order ${order.orderId}`);
 
-    // Token VietQR hết hạn nhanh, nên confirmPayment luôn lấy token mới trước khi gọi Test Callback.
-    const accessToken = await this.vietQRBoundary.getAccessToken(); //
-    const result = await this.vietQRBoundary.postAPICallback(order, accessToken);
+    // Dùng lại this.accessToken đã được lấy từ generateQRCode, không gọi getAccessToken() thêm lần nữa
+    const result = await this.vietQRBoundary.postAPICallback(order, this.accessToken);
 
     this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(result)}`);
 
