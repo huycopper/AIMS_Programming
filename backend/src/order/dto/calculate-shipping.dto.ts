@@ -19,6 +19,10 @@ export class CartItemDto {
   @IsString()
   productId: string;
 
+  @IsOptional()
+  @IsString()
+  productTitle?: string;
+
   @IsNumber()
   @Min(1)
   quantity: number;

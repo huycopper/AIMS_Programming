@@ -10,6 +10,7 @@ export const routes: Routes = [
   { path: 'cart', component: CartScreen },
   { path: 'delivery', component: DeliveryInfoScreen },
   { path: 'invoice', component: InvoiceScreen },
+  { path: 'vietqr-payment/:orderId', component: VietQRPaymentScreen },
   { path: 'vietqr-payment', component: VietQRPaymentScreen },
   { path: '**', redirectTo: '' },
 ];

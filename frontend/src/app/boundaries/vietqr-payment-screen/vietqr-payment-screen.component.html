@@ -22,6 +22,7 @@
         Total Amount:
         <span class="highlight-amount">{{ amount | currency: 'VND' : 'symbol' : '1.0-0' }}</span>
       </h3>
+      <p *ngIf="paymentContent" class="payment-content">Content: {{ paymentContent }}</p>
     </div>
 
     <!-- Hiển thị ảnh QR -->
@@ -47,8 +48,41 @@
     <div class="success-icon">✓</div>
     <h3>Payment Successful!</h3>
     <p>Your order is now processing.</p>
-    <p class="success-detail">Order ID: {{ orderId }}</p>
-    <p class="success-detail">An email with your invoice and tracking link has been sent.</p>
+
+    <div class="success-section" *ngIf="confirmation?.order as order">
+      <h4>Order Information</h4>
+      <div class="detail-grid">
+        <span>Customer Name</span>
+        <strong>{{ order.customerName }}</strong>
+        <span>Phone Number</span>
+        <strong>{{ order.phoneNumber }}</strong>
+        <span>Shipping Address</span>
+        <strong>{{ order.shippingAddress }}</strong>
+        <span>Province</span>
+        <strong>{{ order.province }}</strong>
+        <span>Total Amount</span>
+        <strong>{{ order.totalAmount | number }} VND</strong>
+        <span>Order Status</span>
+        <strong>{{ order.status }}</strong>
+      </div>
+    </div>
+
+    <div class="success-section" *ngIf="confirmation?.transaction as transaction">
+      <h4>Transaction Information</h4>
+      <div class="detail-grid">
+        <span>Transaction ID</span>
+        <strong>{{ transaction.transactionId }}</strong>
+        <span>Transaction Content</span>
+        <strong>{{ transaction.transactionContent }}</strong>
+        <span>Transaction Datetime</span>
+        <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>
+        <span>Gateway Reference</span>
+        <strong>{{ transaction.transactionReference }}</strong>
+        <span>Payment Method</span>
+        <strong>{{ transaction.paymentMethod }}</strong>
+      </div>
+    </div>
+
     <button (click)="goHome()" class="btn-home" style="margin-top: 20px;">Return to Home Page</button>
   </div>
 </div>

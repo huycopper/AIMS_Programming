@@ -1,4 +1,4 @@
-import { Body, Controller, Post, ValidationPipe, Logger } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post, ValidationPipe, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OrderService } from './order.service.js';
@@ -66,7 +66,7 @@ export class PlaceOrderController {
     // 2. Build OrderItems from cart
     const orderItems: Partial<OrderItem>[] = dto.cartItems.map(item => ({
       productId: item.productId,
-      productTitle: item.productId, // Sử dụng productId làm title tạm thời
+      productTitle: item.productTitle || item.productId,
       quantity: item.quantity,
       unitPrice: item.currentPrice,
       weight: item.weight,
@@ -100,6 +100,46 @@ export class PlaceOrderController {
       },
       cartItems: dto.cartItems,
       ...invoice,
+    };
+  }
+
+  @Get(':orderId')
+  async getOrder(@Param('orderId') orderId: string) {
+    const order = await this.orderRepo.findOne({ where: { orderId } });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return this.buildInvoiceResponse(order);
+  }
+
+  private buildInvoiceResponse(order: Order) {
+    const cartItems = (order.items || []).map((item) => ({
+      productId: item.productId,
+      productTitle: item.productTitle,
+      quantity: Number(item.quantity),
+      weight: Number(item.weight),
+      currentPrice: Number(item.unitPrice),
+    }));
+    const invoice = this.orderService.calculateShippingFee(order.deliveryInfo.province, cartItems);
+
+    return {
+      orderId: order.orderId,
+      deliveryInfo: {
+        name: order.deliveryInfo.name,
+        phone: order.deliveryInfo.phone,
+        email: order.deliveryInfo.email || '',
+        province: order.deliveryInfo.province,
+        address: order.deliveryInfo.address,
+        note: order.deliveryInfo.note || undefined,
+      },
+      cartItems,
+      ...invoice,
+      totalWeight: Number(order.totalWeight),
+      subtotal: Number(order.subtotal),
+      vat: Number(order.vat),
+      shippingFee: Number(order.shippingFee),
+      totalAmount: Number(order.totalAmount),
     };
   }
 }

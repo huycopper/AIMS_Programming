@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Logger, Param, Post } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Logger, Param, Post } from '@nestjs/common';
 import { PayThroughPaymentGatewayController } from '../services/pay-through-payment-gateway.service.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Order } from '../../order/entities/order.entity.js';
@@ -41,6 +41,12 @@ export class PayOrderBoundary {
 
     this.logger.log(`Payment result for order ${orderId}: ${JSON.stringify(paymentResult)}`);
     return paymentResult;
+  }
+
+  @Get('api/payment/pay-order/:orderId/confirmation')
+  async getPaymentConfirmation(@Param('orderId') orderId: string) {
+    this.logger.log(`Received payment confirmation status request for order: ${orderId}`);
+    return this.payThroughPaymentGatewayController.getPaymentConfirmation(orderId);
   }
 
 }

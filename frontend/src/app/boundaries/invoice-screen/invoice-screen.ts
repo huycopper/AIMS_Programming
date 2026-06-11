@@ -25,6 +25,9 @@ import { CartService } from '../../services/cart.service';
 export class InvoiceScreen implements OnInit {
   invoiceData: InvoiceData | null = null;
   cart: Cart | null = null;
+  displayItems: Array<{ title: string; quantity: number; unitPrice: number }> = [];
+  private readonly currentInvoiceKey = 'aims_current_invoice';
+  private readonly currentOrderIdKey = 'aims_current_order_id';
 
   constructor(
     private router: Router,
@@ -33,12 +36,13 @@ export class InvoiceScreen implements OnInit {
 
   ngOnInit(): void {
     // Retrieve invoice data from router state (passed by DeliveryInfoScreen)
-    const navigation = this.router.getCurrentNavigation();
     const state = history.state;
 
     if (state && state['invoiceData']) {
-      this.invoiceData = state['invoiceData'];
-      this.cart = state['cart'] || null;
+      this.setInvoiceData(state['invoiceData'], state['cart'] || null);
+      this.saveCurrentInvoice(state['invoiceData']);
+    } else if (this.loadStoredInvoice()) {
+      return;
     } else {
       // If no invoice data, redirect back to cart
       this.router.navigate(['/cart']);
@@ -51,9 +55,16 @@ export class InvoiceScreen implements OnInit {
   confirmOrder(): void {
     // VietQR is the default payment method.
     // Emptying the cart will be done when payment is successful
-    this.router.navigate(['/vietqr-payment'], {
+    const orderId = this.invoiceData?.orderId;
+    if (!orderId) {
+      this.router.navigate(['/cart']);
+      return;
+    }
+
+    this.saveCurrentInvoice(this.invoiceData);
+    this.router.navigate(['/vietqr-payment', orderId], {
       state: {
-        orderId: this.invoiceData?.orderId
+        orderId,
       }
     });
   }
@@ -63,5 +74,52 @@ export class InvoiceScreen implements OnInit {
    */
   goBackToDelivery(): void {
     this.router.navigate(['/delivery']);
+  }
+
+  private setInvoiceData(invoiceData: InvoiceData, cart: Cart | null): void {
+    this.invoiceData = invoiceData;
+    this.cart = cart;
+    this.displayItems = this.buildDisplayItems(invoiceData, cart);
+  }
+
+  private buildDisplayItems(invoiceData: InvoiceData, cart: Cart | null): Array<{ title: string; quantity: number; unitPrice: number }> {
+    if (cart?.items?.length) {
+      return cart.items.map((item) => ({
+        title: item.product.title,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.product.currentPrice),
+      }));
+    }
+
+    return (invoiceData.cartItems || []).map((item) => ({
+      title: item.productTitle || item.productId,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.currentPrice),
+    }));
+  }
+
+  private saveCurrentInvoice(invoiceData: InvoiceData | null): void {
+    if (typeof localStorage === 'undefined' || !invoiceData) return;
+
+    localStorage.setItem(this.currentInvoiceKey, JSON.stringify(invoiceData));
+    if (invoiceData.orderId) {
+      localStorage.setItem(this.currentOrderIdKey, invoiceData.orderId);
+    }
+  }
+
+  private loadStoredInvoice(): boolean {
+    if (typeof localStorage === 'undefined') return false;
+
+    const savedInvoice = localStorage.getItem(this.currentInvoiceKey);
+    if (!savedInvoice) return false;
+
+    try {
+      const invoiceData = JSON.parse(savedInvoice) as InvoiceData;
+      this.setInvoiceData(invoiceData, null);
+      return true;
+    } catch {
+      localStorage.removeItem(this.currentInvoiceKey);
+      return false;
+    }
   }
 }
