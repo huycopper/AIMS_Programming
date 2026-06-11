@@ -3,7 +3,7 @@
  * nhận được lệnh Test Callback (postAPICallback). VietQR sẽ POST dữ liệu
  * giao dịch tới endpoint này kèm Bearer token.
  */
-import { Controller, Post, Body, Headers, Logger, Res, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Headers, Logger, Res, HttpException, HttpStatus, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -117,7 +117,53 @@ export class TransactionSyncController {
     const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
     const [username, password] = credentials.split(':');
 
-    return this.payThroughPaymentGatewayController.generateJWTToken(username, password);
+    return this.generateJWTToken(username, password);
+  }
+
+  /**
+   * Hàm này để hứng request từ VietQR khi VietQR POST API generate_token để lấy token của client
+   * @param username - Username của client
+   * @param password - Password của client
+   * @returns JWT token của client
+   */
+  generateJWTToken(username: string, password: string) {
+    this.logger.log(`Generating JWT token for client username: ${username}`);
+
+    if (
+      username === process.env.CLIENT_USERNAME &&
+      password === process.env.CLIENT_PASSWORD
+    ) {
+      if (!process.env.JWT_SECRET) {
+        this.logger.error('JWT_SECRET is not configured');
+        throw new InternalServerErrorException({
+          status: 'FAILED',
+          message: 'JWT_SECRET is not configured',
+        });
+      }
+
+      const JWT_token = this.jwtService.sign(
+        { username },
+        {
+          secret: process.env.JWT_SECRET,
+          algorithm: 'HS512',
+          expiresIn: '5m', // Token hết hạn sau 5 phút
+        },
+      );
+
+      this.logger.log('JWT token generated successfully');
+
+      return {
+        access_token: JWT_token,
+        token_type: 'Bearer',
+        expires_in: 300,
+      };
+    } else {
+      this.logger.warn(`Invalid credentials provided for username: ${username}`);
+      throw new UnauthorizedException({
+        status: 'FAILED',
+        message: 'INVALID_CREDENTIALS',
+      });
+    }
   }
 
   @Post('vqr/bank/api/transaction-sync') // Hứng request từ VietQR
