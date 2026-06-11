@@ -108,8 +108,35 @@
   color: #666;
 }
 
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.btn-go-back {
+  background-color: #e8ebf0;
+  color: #1a3b5c;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  min-width: 180px;
+  transition: background-color 0.2s;
+}
+
+.btn-go-back:hover:not(:disabled) {
+  background-color: #d1d5db;
+}
+
+.btn-go-back:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .btn-simulate {
-  background-color: #e67e22;
+  background-color: #00b050;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -120,7 +147,7 @@
 }
 
 .btn-simulate:hover:not(:disabled) {
-  background-color: #d35400;
+  background-color: #009040;
 }
 
 .btn-simulate:disabled {

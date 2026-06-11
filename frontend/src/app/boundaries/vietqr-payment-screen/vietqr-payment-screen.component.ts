@@ -1,5 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -36,6 +36,7 @@ export class VietQRPaymentScreen implements OnInit {
     private cartService: CartService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
+    private location: Location
   ) { }
 
   ngOnInit() {
@@ -103,6 +104,10 @@ export class VietQRPaymentScreen implements OnInit {
 
   goHome() {
     this.router.navigate(['/']);
+  }
+
+  goBack() {
+    this.location.back();
   }
 
   formatTransactionDate(value?: string): string {

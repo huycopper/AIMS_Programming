@@ -29,14 +29,19 @@
     <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
 
     <div class="sandbox-controls">
-      <!-- Nút xác nhận thanh toán (confirmPayment theo SD v2) -->
-      <button 
-        (click)="confirmPayment()" 
-        class="btn-simulate"
-        [disabled]="confirmingPayment">
-        <span *ngIf="!confirmingPayment">I have paid</span>
-        <span *ngIf="confirmingPayment">Confirming payment...</span>
-      </button>
+      <div class="button-group">
+        <button (click)="goBack()" class="btn-go-back" [disabled]="confirmingPayment">
+          &larr; Go Back
+        </button>
+        <!-- Nút xác nhận thanh toán (confirmPayment theo SD v2) -->
+        <button 
+          (click)="confirmPayment()" 
+          class="btn-simulate"
+          [disabled]="confirmingPayment">
+          <span *ngIf="!confirmingPayment">I have paid</span>
+          <span *ngIf="confirmingPayment">Confirming payment...</span>
+        </button>
+      </div>
       <p *ngIf="confirmingPayment" class="confirming-text">
         Please wait while we verify your payment with VietQR...
       </p>
