@@ -1,54 +1,66 @@
-<div class="container mt-5">
-  <div class="card shadow-sm max-w-md mx-auto" style="max-width: 600px;">
-    <div class="card-header bg-danger text-white">
-      <h4 class="mb-0">Cancel Order</h4>
+<div class="cancel-order-container">
+  
+  <!-- Loading State -->
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Processing cancellation...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error" class="error-container">
+    <div class="error-icon">!</div>
+    <p class="error-text">{{ error }}</p>
+    <button class="btn-secondary" (click)="error = null">Try Again</button>
+  </div>
+
+  <!-- Success State -->
+  <div *ngIf="successData && !loading" class="success-state">
+    <div class="success-icon-wrapper">
+      <svg class="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
     </div>
+    <h3 class="success-title">Order Cancelled Successfully</h3>
+    <p class="success-desc">Your order <strong>#{{ successData.orderId }}</strong> has been cancelled.</p>
     
-    <div class="card-body">
-      <div *ngIf="error" class="alert alert-danger">
-        {{ error }}
-      </div>
-
-      <div *ngIf="successData" class="text-center py-4">
-        <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-        <h4 class="mt-3 text-success">Order Cancelled Successfully</h4>
-        <p class="text-muted mb-4">Your order #{{ successData.orderId }} has been cancelled.</p>
-        
-        <div *ngIf="successData.refund" class="alert alert-info text-start">
-          <h5 class="alert-heading">Refund Information</h5>
-          <p class="mb-0"><strong>Status:</strong> {{ successData.refund.refundStatus }}</p>
-          <p class="mb-0"><strong>Amount:</strong> {{ successData.refund.refundAmount | number:'1.0-0' }} VND</p>
-          <p class="mt-2 mb-0" *ngIf="successData.refund.refundStatus === 'MANUAL_REQUIRED'">
-            <small>Since you paid via VietQR, our team will process a manual bank transfer to refund you. Please expect an email from us shortly.</small>
-          </p>
+    <div *ngIf="successData.refund" class="refund-card">
+      <h4>Refund Information</h4>
+      <div class="refund-details">
+        <div class="detail-row">
+          <span>Status</span>
+          <span class="status-badge" [ngClass]="{'status-pending': successData.refund.refundStatus !== 'COMPLETED', 'status-success': successData.refund.refundStatus === 'COMPLETED'}">
+            {{ successData.refund.refundStatus.replace('_', ' ') }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span>Amount</span>
+          <strong class="amount">{{ successData.refund.refundAmount | number:'1.0-0' }} VND</strong>
         </div>
       </div>
-
-      <div *ngIf="!successData && cancelToken">
-        <p>You are about to cancel your order. If you have already paid, a refund will be issued.</p>
-        
-        <div class="mb-3">
-          <label for="reason" class="form-label">Reason for cancellation (optional)</label>
-          <textarea 
-            id="reason" 
-            class="form-control" 
-            rows="3" 
-            [(ngModel)]="reason" 
-            placeholder="I changed my mind..."
-            [disabled]="loading">
-          </textarea>
-        </div>
-
-        <div class="d-grid gap-2">
-          <button 
-            class="btn btn-danger" 
-            (click)="cancelOrder()" 
-            [disabled]="loading">
-            <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            Confirm Cancellation
-          </button>
-        </div>
-      </div>
+      <p class="refund-note" *ngIf="successData.refund.refundStatus === 'MANUAL_REQUIRED'">
+        <svg class="info-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span>Since you paid via VietQR, our team will process a manual bank transfer to refund you. Please expect an email from us shortly.</span>
+      </p>
     </div>
   </div>
+
+  <!-- Cancel Confirmation Form -->
+  <div *ngIf="!successData && cancelToken && !loading && !error" class="cancel-form">
+    <div class="warning-header">
+      <div class="warning-icon-wrapper">
+        <svg class="warning-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+      <h2>Cancel Order</h2>
+    </div>
+    
+    <p class="cancel-prompt">You are about to cancel your order. If you have already paid, a refund will be issued according to our policy.</p>
+    
+    <div class="action-buttons">
+      <button 
+        class="btn-danger" 
+        (click)="cancelOrder()" 
+        [disabled]="loading">
+        Confirm Cancellation
+      </button>
+    </div>
+  </div>
+
 </div>

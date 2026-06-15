@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,6 +22,7 @@ export class CancelOrderScreen implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly orderService: OrderService,
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -45,11 +46,13 @@ export class CancelOrderScreen implements OnInit {
       next: (data) => {
         this.successData = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = err.error?.message || 'Failed to cancel the order. It may have already been processed or the link is invalid.';
         this.loading = false;
         console.error(err);
+        this.cdr.detectChanges();
       },
     });
   }
