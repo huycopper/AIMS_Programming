@@ -24,6 +24,10 @@ export class CustomerOrderService {
   async getOrderByViewToken(viewToken: string) {
     const order = await this.orderRepo.findOne({
       where: { orderViewToken: viewToken },
+      relations: {
+        items: true,
+        deliveryInfo: true,
+      },
     });
 
     if (!order) {
@@ -81,6 +85,10 @@ export class CustomerOrderService {
   async cancelOrderByToken(cancelToken: string, reason?: string) {
     const order = await this.orderRepo.findOne({
       where: { cancelToken },
+      relations: {
+        items: true,
+        deliveryInfo: true,
+      },
     });
 
     if (!order) {

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { OrderService } from '../../services/order.service';
@@ -15,13 +15,14 @@ export class CustomerOrderDetailsScreen implements OnInit {
   orderData: any = null;
   loading = true;
   error: string | null = null;
-  cancelToken: string | null = null; // Might not have it from view API, but can link to cancel if available or show button
+  cancelToken: string | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly orderService: OrderService,
-  ) {}
+    private readonly cdr: ChangeDetectorRef,
+  ) { }
 
   ngOnInit(): void {
     const viewToken = this.route.snapshot.paramMap.get('viewToken');
@@ -35,11 +36,12 @@ export class CustomerOrderDetailsScreen implements OnInit {
       next: (data) => {
         this.orderData = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.error = 'Failed to load order details. The link may be expired or invalid.';
         this.loading = false;
-        console.error(err);
+        this.cdr.detectChanges();
       },
     });
   }

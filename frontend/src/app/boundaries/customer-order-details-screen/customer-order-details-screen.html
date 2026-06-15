@@ -1,74 +1,91 @@
-<div class="container mt-5">
-  <div *ngIf="loading" class="text-center">
-    <div class="spinner-border text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
+<div class="order-summary-container">
+  <!-- Trạng thái Loading -->
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Loading order details...</p>
   </div>
 
-  <div *ngIf="error" class="alert alert-danger">
-    {{ error }}
+  <!-- Trạng thái Lỗi -->
+  <div *ngIf="error" class="error-container">
+    <p class="error-text">{{ error }}</p>
+    <a href="/" class="btn-home">Return to Home Page</a>
   </div>
 
-  <div *ngIf="orderData && !loading" class="card shadow-sm">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-      <h4 class="mb-0">Order #{{ orderData.orderId }}</h4>
-      <span class="badge bg-light text-dark fs-6">{{ orderData.status }}</span>
-    </div>
+  <!-- Trạng thái Thành công (Hiển thị chi tiết) -->
+  <div *ngIf="orderData && !loading">
     
-    <div class="card-body">
-      <!-- Shipping Info -->
-      <h5 class="card-title">Delivery Information</h5>
-      <p class="mb-1"><strong>Name:</strong> {{ orderData.deliveryInfo.name }}</p>
-      <p class="mb-1"><strong>Phone:</strong> {{ orderData.deliveryInfo.phone }}</p>
-      <p class="mb-1"><strong>Email:</strong> {{ orderData.deliveryInfo.email || 'N/A' }}</p>
-      <p class="mb-1"><strong>Address:</strong> {{ orderData.deliveryInfo.address }}, {{ orderData.deliveryInfo.province }}</p>
-      <p class="mb-4"><strong>Note:</strong> {{ orderData.deliveryInfo.note || 'None' }}</p>
+    <div class="order-header">
+      <h2>Order Summary</h2>
+      <p class="order-id">#{{ orderData.orderId }}</p>
+      
+      <div class="status-badge" [ngClass]="{
+        'status-pending': orderData.status === 'PENDING',
+        'status-processing': orderData.status === 'PENDING_PROCESSING',
+        'status-cancelled': orderData.status === 'CANCELLED',
+        'status-success': orderData.status === 'SUCCESS'
+      }">
+        {{ orderData.status.replace('_', ' ') }}
+      </div>
+    </div>
 
-      <!-- Ordered Items -->
-      <h5 class="card-title">Items</h5>
-      <ul class="list-group mb-4">
-        <li class="list-group-item d-flex justify-content-between align-items-center" *ngFor="let item of orderData.items">
-          <div>
-            {{ item.productTitle }}
-            <br>
-            <small class="text-muted">{{ item.quantity }} x {{ item.currentPrice | number:'1.0-0' }} VND ({{ item.weight }} kg)</small>
+    <div class="success-section">
+      <h4>Delivery Information</h4>
+      <div class="detail-grid">
+        <span>Customer Name</span>
+        <strong>{{ orderData.deliveryInfo.name }}</strong>
+        <span>Phone Number</span>
+        <strong>{{ orderData.deliveryInfo.phone }}</strong>
+        <span>Email</span>
+        <strong>{{ orderData.deliveryInfo.email || 'N/A' }}</strong>
+        <span>Shipping Address</span>
+        <strong>{{ orderData.deliveryInfo.address }}</strong>
+        <span>Province</span>
+        <strong>{{ orderData.deliveryInfo.province }}</strong>
+        <span>Note</span>
+        <strong>{{ orderData.deliveryInfo.note || 'None' }}</strong>
+      </div>
+    </div>
+
+    <div class="success-section">
+      <h4>Ordered Items</h4>
+      <ul class="items-list">
+        <li *ngFor="let item of orderData.items">
+          <div class="item-info">
+            <span class="item-title">{{ item.productTitle }}</span>
+            <span class="item-desc">{{ item.quantity }} x {{ item.currentPrice | number:'1.0-0' }} VND ({{ item.weight }} kg)</span>
           </div>
-          <span>{{ (item.quantity * item.currentPrice) | number:'1.0-0' }} VND</span>
+          <span class="item-price">{{ (item.quantity * item.currentPrice) | number:'1.0-0' }} VND</span>
         </li>
       </ul>
+    </div>
 
-      <!-- Invoice Summary -->
-      <h5 class="card-title">Invoice Summary</h5>
-      <div class="d-flex justify-content-between mb-1">
-        <span>Subtotal:</span>
-        <span>{{ orderData.invoice.subtotal | number:'1.0-0' }} VND</span>
-      </div>
-      <div class="d-flex justify-content-between mb-1">
-        <span>VAT (10%):</span>
-        <span>{{ orderData.invoice.vat | number:'1.0-0' }} VND</span>
-      </div>
-      <div class="d-flex justify-content-between mb-1">
-        <span>Shipping Fee:</span>
-        <span>{{ orderData.invoice.shippingFee | number:'1.0-0' }} VND</span>
-      </div>
-      <hr>
-      <div class="d-flex justify-content-between mb-4">
-        <strong>Total Amount:</strong>
-        <strong class="text-primary fs-5">{{ orderData.invoice.totalAmount | number:'1.0-0' }} VND</strong>
-      </div>
-
-      <!-- Payment Info -->
-      <div *ngIf="orderData.paymentTransaction" class="alert alert-success">
-        <h5 class="alert-heading">Payment Successful</h5>
-        <p class="mb-0"><strong>Method:</strong> {{ orderData.paymentTransaction.paymentMethod }}</p>
-        <p class="mb-0"><strong>Ref:</strong> {{ orderData.paymentTransaction.transactionReference }}</p>
-        <p class="mb-0"><strong>Date:</strong> {{ orderData.paymentTransaction.transactionDatetime | date:'medium' }}</p>
-      </div>
-
-      <!-- Actions -->
-      <div class="mt-4" *ngIf="orderData.canCancel">
-        <p class="text-muted"><small>Need to change something? Check your email for the cancellation link.</small></p>
+    <div class="success-section invoice-section">
+      <h4>Invoice Summary</h4>
+      <div class="detail-grid">
+        <span>Subtotal</span>
+        <strong>{{ orderData.invoice.subtotal | number:'1.0-0' }} VND</strong>
+        <span>VAT (10%)</span>
+        <strong>{{ orderData.invoice.vat | number:'1.0-0' }} VND</strong>
+        <span>Shipping Fee</span>
+        <strong>{{ orderData.invoice.shippingFee | number:'1.0-0' }} VND</strong>
+        <span class="total-label">Total Amount</span>
+        <strong class="total-amount">{{ orderData.invoice.totalAmount | number:'1.0-0' }} VND</strong>
       </div>
     </div>
+
+    <div class="success-section" *ngIf="orderData.paymentTransaction">
+      <h4>Payment Information</h4>
+      <div class="detail-grid">
+        <span>Transaction ID</span>
+        <strong>{{ orderData.paymentTransaction.paymentTransactionId }}</strong>
+        <span>Datetime</span>
+        <strong>{{ orderData.paymentTransaction.transactionDatetime | date:'medium' }}</strong>
+        <span>Method</span>
+        <strong>{{ orderData.paymentTransaction.paymentMethod }}</strong>
+        <span>Status</span>
+        <strong>{{ orderData.paymentTransaction.status }}</strong>
+      </div>
+    </div>
+
   </div>
 </div>
