@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Param, Body, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Param } from '@nestjs/common';
 import { CustomerOrderService } from './customer-order.service.js';
-import { CancelOrderDto } from './dto/cancel-order.dto.js';
 
 @Controller('api/customer/orders')
 export class CustomerOrderController {
@@ -14,10 +13,8 @@ export class CustomerOrderController {
   @Post('cancel/:cancelToken')
   async cancelOrderByToken(
     @Param('cancelToken') cancelToken: string,
-    @Body(new ValidationPipe({ transform: true, whitelist: true }))
-    dto: CancelOrderDto,
   ) {
-    return this.customerOrderService.cancelOrderByToken(cancelToken, dto.reason);
+    return this.customerOrderService.cancelOrderByToken(cancelToken);
   }
 
   @Get('cancel/:cancelToken')

@@ -82,7 +82,7 @@ export class CustomerOrderService {
     };
   }
 
-  async cancelOrderByToken(cancelToken: string, reason?: string) {
+  async cancelOrderByToken(cancelToken: string) {
     const order = await this.orderRepo.findOne({
       where: { cancelToken },
       relations: {
@@ -102,10 +102,9 @@ export class CustomerOrderService {
     // Process cancellation
     order.status = 'CANCELLED';
     order.cancelledAt = new Date();
-    order.cancelReason = reason || 'Customer requested cancellation';
     
     await this.orderRepo.save(order);
-    this.logger.log(`Order ${order.orderId} cancelled by customer. Reason: ${order.cancelReason}`);
+    this.logger.log(`Order ${order.orderId} cancelled by customer.`);
 
     let refundSummary: any = null;
 
@@ -117,7 +116,7 @@ export class CustomerOrderService {
 
     if (transaction) {
       if (transaction.paymentMethod === 'VIETQR') {
-        const refund = await this.refundService.createManualRefundForVietQR(transaction, order.cancelReason);
+        const refund = await this.refundService.createManualRefundForVietQR(transaction, 'Customer requested cancellation');
         refundSummary = {
           refundStatus: refund.refundStatus,
           refundMethod: refund.refundMethod,

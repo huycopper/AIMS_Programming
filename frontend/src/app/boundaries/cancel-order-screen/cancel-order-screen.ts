@@ -13,7 +13,6 @@ import { OrderService } from '../../services/order.service';
 })
 export class CancelOrderScreen implements OnInit {
   cancelToken: string | null = null;
-  reason: string = '';
   loading = false;
   error: string | null = null;
   successData: any = null;
@@ -59,7 +58,7 @@ export class CancelOrderScreen implements OnInit {
     this.loading = true;
     this.error = null;
 
-    this.orderService.cancelCustomerOrder(this.cancelToken, this.reason).subscribe({
+    this.orderService.cancelCustomerOrder(this.cancelToken).subscribe({
       next: (data) => {
         this.successData = data;
         this.loading = false;

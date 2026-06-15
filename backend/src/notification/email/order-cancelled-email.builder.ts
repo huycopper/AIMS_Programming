@@ -30,8 +30,6 @@ Dear ${order.deliveryInfo?.name || 'Customer'},
 
 Your order #${order.orderId} has been successfully cancelled.
 
-Cancellation Reason: ${order.cancelReason || 'Customer requested cancellation'}
-
 ${refundTextInfo}
 
 To view your order details, visit:
@@ -45,8 +43,6 @@ AIMS Store Team
     <h2>Order Cancelled</h2>
     <p>Dear ${order.deliveryInfo?.name || 'Customer'},</p>
     <p>Your order <strong>#${order.orderId}</strong> has been successfully cancelled.</p>
-    
-    <p><strong>Cancellation Reason:</strong> ${order.cancelReason || 'Customer requested cancellation'}</p>
 
     ${refundHtmlInfo}
 

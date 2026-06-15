@@ -72,8 +72,8 @@ export class OrderService {
     return this.http.get<any>(`http://localhost:8080/api/customer/orders/view/${viewToken}`);
   }
 
-  cancelCustomerOrder(cancelToken: string, reason?: string): Observable<any> {
-    return this.http.post<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`, { reason });
+  cancelCustomerOrder(cancelToken: string): Observable<any> {
+    return this.http.post<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`, {});
   }
 
   getCustomerOrderByCancelToken(cancelToken: string): Observable<any> {
