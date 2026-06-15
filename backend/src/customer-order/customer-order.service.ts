@@ -140,4 +140,42 @@ export class CustomerOrderService {
       refund: refundSummary,
     };
   }
+
+  async getOrderByCancelToken(cancelToken: string) {
+    const order = await this.orderRepo.findOne({
+      where: { cancelToken },
+      relations: {
+        items: true,
+        deliveryInfo: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found or invalid token');
+    }
+
+    let refundSummary: any = null;
+    
+    const transaction = await this.paymentTransactionRepo.findOne({
+      where: { order: { orderId: order.orderId }, status: 'SUCCESS' },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (transaction) {
+      const refund = await this.refundService.getRefundByPaymentTransaction(transaction.paymentTransactionId);
+      if (refund) {
+        refundSummary = {
+          refundStatus: refund.refundStatus,
+          refundMethod: refund.refundMethod,
+          refundAmount: Number(refund.refundAmount),
+        };
+      }
+    }
+
+    return {
+      orderId: order.orderId,
+      status: order.status,
+      refund: refundSummary,
+    };
+  }
 }

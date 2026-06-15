@@ -29,7 +29,24 @@ export class CancelOrderScreen implements OnInit {
     this.cancelToken = this.route.snapshot.paramMap.get('cancelToken');
     if (!this.cancelToken) {
       this.error = 'Invalid cancel token';
+      return;
     }
+
+    this.loading = true;
+    this.orderService.getCustomerOrderByCancelToken(this.cancelToken).subscribe({
+      next: (data) => {
+        if (data.status === 'CANCELLED') {
+          this.successData = data;
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to retrieve order details.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   cancelOrder() {

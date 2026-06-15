@@ -19,4 +19,9 @@ export class CustomerOrderController {
   ) {
     return this.customerOrderService.cancelOrderByToken(cancelToken, dto.reason);
   }
+
+  @Get('cancel/:cancelToken')
+  async getOrderByCancelToken(@Param('cancelToken') cancelToken: string) {
+    return this.customerOrderService.getOrderByCancelToken(cancelToken);
+  }
 }

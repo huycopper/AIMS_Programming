@@ -31,4 +31,10 @@ export class RefundService {
 
     return this.refundTransactionRepo.save(refund);
   }
+
+  async getRefundByPaymentTransaction(paymentTransactionId: string): Promise<RefundTransaction | null> {
+    return this.refundTransactionRepo.findOne({
+      where: { paymentTransaction: { paymentTransactionId } },
+    });
+  }
 }
