@@ -20,7 +20,8 @@ export class EmailService {
   }
 
   async sendEmail(to: string, subject: string, html: string, text: string): Promise<void> {
-    const isEnabled = this.configService.get<boolean>('EMAIL_ENABLED', true);
+    const isEnabledStr = this.configService.get<string>('EMAIL_ENABLED');
+    const isEnabled = isEnabledStr === 'true'; // Default to false if not explicitly true
     
     if (!isEnabled) {
       this.logger.log(`[EMAIL_ENABLED=false] Simulated email to ${to}: ${subject}`);
