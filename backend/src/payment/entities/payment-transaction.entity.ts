@@ -38,6 +38,12 @@ export class PaymentTransaction {
   @Column({ name: 'payment_details', type: 'json', nullable: true })
   paymentDetails: any;
 
+  @Column({ name: 'receipt_email_sent_at', type: 'timestamp', nullable: true })
+  receiptEmailSentAt: Date | null;
+
+  @Column({ name: 'receipt_email_error', type: 'text', nullable: true })
+  receiptEmailError: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 

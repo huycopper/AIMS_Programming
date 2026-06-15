@@ -67,4 +67,12 @@ export class OrderService {
   getPaymentConfirmation(orderId: string): Observable<PaymentConfirmationResponse> {
     return this.http.get<PaymentConfirmationResponse>(`${this.paymentApiUrl}/${orderId}/confirmation`);
   }
+
+  getCustomerOrderByToken(viewToken: string): Observable<any> {
+    return this.http.get<any>(`http://localhost:8080/api/customer/orders/view/${viewToken}`);
+  }
+
+  cancelCustomerOrder(cancelToken: string, reason?: string): Observable<any> {
+    return this.http.post<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`, { reason });
+  }
 }

@@ -8,6 +8,7 @@ import { PayOrderBoundary } from './controllers/pay-order.controller.js';
 import { PayThroughPaymentGatewayController } from './services/pay-through-payment-gateway.service.js';
 import { VietQRBoundary } from '../boundaries/viet-qr/viet-qr.service.js';
 import { TransactionSyncController } from '../boundaries/viet-qr/transaction-sync.controller.js';
+import { NotificationModule } from '../notification/notification.module.js';
 // import { VietQRController } from '../boundaries/viet-qr/viet-qr.controller.js';
 
 @Module({
@@ -22,6 +23,7 @@ import { TransactionSyncController } from '../boundaries/viet-qr/transaction-syn
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    NotificationModule,
   ],
   controllers: [PayOrderBoundary, TransactionSyncController],
   providers: [PayThroughPaymentGatewayController, VietQRBoundary],

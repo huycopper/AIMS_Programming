@@ -1,4 +1,5 @@
 import { Body, Controller, Get, NotFoundException, Param, Post, ValidationPipe, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { OrderService } from './order.service.js';
@@ -81,6 +82,8 @@ export class PlaceOrderController {
       totalAmount: invoice.totalAmount,
       totalWeight: invoice.totalWeight,
       status: 'PENDING', // Trạng thái ban đầu khi đặt hàng
+      orderViewToken: randomUUID(),
+      cancelToken: randomUUID(),
       items: orderItems as OrderItem[],
     });
 

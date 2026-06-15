@@ -12,6 +12,7 @@ import { Order } from '../../order/entities/order.entity.js';
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
 import { PayThroughPaymentGatewayController } from '../../payment/services/pay-through-payment-gateway.service.js';
+import { NotificationService } from '../../notification/notification.service.js';
 
 // ===== Model cho request body =====
 /**
@@ -95,6 +96,7 @@ export class TransactionSyncController {
     private readonly orderRepo: Repository<Order>,
     private readonly jwtService: JwtService,
     private readonly payThroughPaymentGatewayController: PayThroughPaymentGatewayController,
+    private readonly notificationService: NotificationService,
   ) { }
 
   /*
@@ -231,7 +233,18 @@ export class TransactionSyncController {
       this.logger.log(`Order ${order.orderId} status updated to PENDING_PROCESSING`);
 
       // Bước 6: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
-      this.simulateSendEmail(order, paymentTransaction);
+      if (!paymentTransaction.receiptEmailSentAt) {
+        try {
+          await this.notificationService.sendPaymentSuccessNotification(order, paymentTransaction);
+          paymentTransaction.receiptEmailSentAt = new Date();
+          paymentTransaction.receiptEmailError = null;
+          await this.paymentTransactionRepo.save(paymentTransaction);
+        } catch (emailError) {
+          this.logger.error(`Failed to send receipt email for order ${order.orderId}`, emailError.stack);
+          paymentTransaction.receiptEmailError = emailError.message;
+          await this.paymentTransactionRepo.save(paymentTransaction);
+        }
+      }
 
       // Bước 7: Trả về phản hồi thành công cho VietQR kèm mã biên nhận của AIMS
       this.logger.log('=== Transaction Sync processed successfully ===');
@@ -347,28 +360,5 @@ export class TransactionSyncController {
         reftransactionid: refTransactionId,
       },
     });
-  }
-
-  /**
-   * Simulate sending email to customer
-   * Theo Business Rule: Hiển thị màn hình thành công và gửi email tự động
-   * chứa hóa đơn (invoice), thông tin giao dịch kèm đường link
-   */
-  private simulateSendEmail(
-    order: Order,
-    transaction: PaymentTransaction,
-  ): void {
-    this.logger.log(
-      `[EMAIL SIMULATION] Sending email to customer for Order ${order.orderId}`,
-    );
-    this.logger.log(
-      `[EMAIL SIMULATION] Invoice & Transaction ${transaction.transactionRef} sent.`,
-    );
-    this.logger.log(
-      `[EMAIL SIMULATION] Tracking link: http://localhost:4200/track/${order.orderId}`,
-    );
-    this.logger.log(
-      `[EMAIL SIMULATION] Cancel link: http://localhost:4200/cancel/${order.orderId}`,
-    );
   }
 }

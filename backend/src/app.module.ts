@@ -6,7 +6,10 @@ import { AppService } from './app.service.js';
 import { ProductModule } from './product/product.module.js';
 import { OrderModule } from './order/order.module.js';
 import { join } from 'path';
-import { PaymentModule } from './payment/payment.module';
+import { PaymentModule } from './payment/payment.module.js';
+import { NotificationModule } from './notification/notification.module.js';
+import { CustomerOrderModule } from './customer-order/customer-order.module.js';
+import { RefundModule } from './refund/refund.module.js';
 
 @Module({
   imports: [
@@ -30,6 +33,9 @@ import { PaymentModule } from './payment/payment.module';
     ProductModule,
     OrderModule,
     PaymentModule,
+    NotificationModule,
+    CustomerOrderModule,
+    RefundModule,
   ],
   controllers: [AppController],
   providers: [AppService],

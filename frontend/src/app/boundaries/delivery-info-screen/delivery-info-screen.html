@@ -171,9 +171,9 @@
         <div class="bg-white border border-gray-300 mb-8 min-h-[200px]">
           <div *ngIf="cart && cart.items.length > 0">
             <div *ngFor="let item of cart.items" class="p-4 border-b border-gray-300 last:border-b-0">
-              <div class="flex justify-between items-start mb-1">
-                <h4 class="font-bold text-gray-800 text-[15px] pr-2">{{ item.product.title }}</h4>
-                <div class="font-bold text-[#3b82f6] text-[15px] whitespace-nowrap">{{ formatPrice(item.product.currentPrice * item.quantity) }}</div>
+              <div class="flex justify-between items-start gap-2 mb-1">
+                <h4 class="font-bold text-gray-800 text-[15px] flex-1 min-w-0 break-words">{{ item.product.title }}</h4>
+                <div class="font-bold text-[#3b82f6] text-[15px] whitespace-nowrap flex-shrink-0">{{ formatPrice(item.product.currentPrice * item.quantity) }}</div>
               </div>
               <div class="text-gray-500 text-[13px] space-y-0.5">
                 <p>Price: {{ formatPrice(item.product.currentPrice) }}</p>

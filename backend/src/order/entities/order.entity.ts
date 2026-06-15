@@ -79,6 +79,18 @@ export class Order {
   })
   items: OrderItem[];
 
+  @Column({ name: 'order_view_token', type: 'varchar', length: 255, unique: true, nullable: true })
+  orderViewToken: string;
+
+  @Column({ name: 'cancel_token', type: 'varchar', length: 255, unique: true, nullable: true })
+  cancelToken: string;
+
+  @Column({ name: 'cancelled_at', type: 'timestamp', nullable: true })
+  cancelledAt: Date | null;
+
+  @Column({ name: 'cancel_reason', type: 'text', nullable: true })
+  cancelReason: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
