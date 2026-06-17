@@ -72,8 +72,8 @@ export class CustomerOrderService {
       paymentTransaction: transaction
         ? {
             paymentTransactionId: transaction.paymentTransactionId,
-            transactionReference: transaction.transactionRef,
-            transactionDatetime: transaction.createdAt.toISOString(),
+            transactionReference: transaction.gatewayTransactionRef,
+            transactionDatetime: (transaction.transactionDatetime ?? transaction.createdAt).toISOString(),
             amount: Number(transaction.amount),
             paymentMethod: transaction.paymentMethod,
             status: transaction.status,
@@ -115,7 +115,7 @@ export class CustomerOrderService {
     });
 
     if (transaction) {
-      if (transaction.paymentMethod === 'VIETQR') {
+      if (transaction.paymentMethod === 'QR_CODE' || transaction.paymentMethod === 'VIETQR') {
         const refund = await this.refundService.createManualRefundForVietQR(transaction, 'Customer requested cancellation');
         refundSummary = {
           refundStatus: refund.refundStatus,

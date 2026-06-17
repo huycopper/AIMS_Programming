@@ -5,8 +5,8 @@ import { Order } from '../../order/entities/order.entity.js';
 import { Repository } from 'typeorm';
 
 @Controller()
-export class PayOrderBoundary {
-  private readonly logger = new Logger(PayOrderBoundary.name);
+export class PayOrderController {
+  private readonly logger = new Logger(PayOrderController.name);
 
   constructor(
     private readonly payThroughPaymentGatewayController: PayThroughPaymentGatewayController,

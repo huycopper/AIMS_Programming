@@ -1,6 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Order } from '../../order/entities/order.entity.js';
 import * as QRCode from 'qrcode';
+import { Order } from '../../order/entities/order.entity.js';
+
+export interface VietQRGenerationResult {
+  qrDataURL: string;
+  amount: number;
+  content: string;
+  orderId: string;
+}
 
 @Injectable()
 export class VietQRBoundary {
@@ -15,8 +22,15 @@ export class VietQRBoundary {
   private readonly BANK_ACCOUNT = process.env.BANK_ACCOUNT!;
   private readonly USER_BANK_NAME = process.env.USER_BANK_NAME!;
 
-  // Gọi API VietQR để lấy access token
+  private accessToken: string | null = null;
+  private accessTokenExpiresAt = 0;
+
   async getAccessToken(): Promise<string> {
+    const now = Date.now();
+    if (this.accessToken && now < this.accessTokenExpiresAt) {
+      return this.accessToken;
+    }
+
     this.logger.log('Calling VietQR API to get access token...');
 
     const credentials = `${this.VIETQR_USERNAME}:${this.VIETQR_PASSWORD}`;
@@ -44,33 +58,32 @@ export class VietQRBoundary {
       throw new Error('VietQR GetToken response missing access_token');
     }
 
-    this.logger.log(`VietQR access token obtained successfully (expires in ${data.expires_in}s)`);
-    return data.access_token;
+    const expiresInSeconds = data.expires_in ?? 300;
+    this.accessToken = data.access_token;
+    this.accessTokenExpiresAt = now + Math.max(expiresInSeconds - 30, 1) * 1000;
+
+    this.logger.log(`VietQR access token obtained successfully (expires in ${expiresInSeconds}s)`);
+    return this.accessToken;
   }
 
-  // Gọi API VietQR để sinh mã QR thanh toán
-  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string; amount: number; content: string }> {
+  async generateQRCode(order: Order): Promise<VietQRGenerationResult> {
     this.logger.log(`Calling VietQR API to generate QR for order ${order.orderId}`);
 
+    const accessToken = await this.getAccessToken();
     const shortOrderId = this.getShortOrderId(order);
     const amount = this.getPaymentAmount(order);
     const content = this.getPaymentContent(shortOrderId);
-
-    // Body gửi đi theo tài liệu VietQR 
     const body = {
       bankCode: this.BANK_CODE,
       bankAccount: this.BANK_ACCOUNT,
       userBankName: this.USER_BANK_NAME,
       content,
-      qrType: 0, // qrType = 0: QR Động
+      qrType: 0,
       amount,
       orderId: shortOrderId,
       transType: 'C',
     };
 
-    this.logger.log(`VietQR request body: ${JSON.stringify(body)}`);
-
-    // Gửi request tới VietQR API với Bearer token nhận được từ getAccessToken()
     const response = await fetch(this.VIETQR_GENERATE_URL, {
       method: 'POST',
       headers: {
@@ -96,44 +109,23 @@ export class VietQRBoundary {
       throw new Error('VietQR GenerateQR response missing qrCode');
     }
 
-    this.logger.log(`VietQR QR code generated successfully. qrLink: ${data.qrLink}`);
+    const qrDataURL = await QRCode.toDataURL(data.qrCode);
 
-    const qrDataURL = await QRCode.toDataURL(data.qrCode); // Chuyển QR thành URL
-
-    return { qrDataURL, amount, content };
+    return { qrDataURL, amount, content, orderId: shortOrderId };
   }
 
-  /**
-   * Gọi API Test Callback của VietQR Sandbox để giả lập giao dịch thanh toán thành công.
-   * Theo tài liệu 5-CallAPITestCallback.md:
-   *   - URL: POST https://dev.vietqr.org/vqr/bank/api/test/transaction-callback
-   *   - Headers: Authorization: Bearer <token từ VietQR>
-   *   - Body: { bankAccount, content, amount, transType, bankCode }
-   *
-   * Sau khi VietQR nhận request này, VietQR sẽ tự động gọi API Transaction Sync
-   * (postAPIToAIMS) tới endpoint vqr/bank/api/transaction-sync trên hệ thống AIMS
-   * để thông báo giao dịch đã hoàn thành.
-   *
-   * @param order - Đơn hàng cần xác nhận thanh toán
-   * @param accessToken - Token VietQR đã lấy được từ getAccessToken()
-   * @returns Kết quả từ VietQR Test Callback API { status, message }
-   */
-  async handleAPICallback(order: Order, accessToken: string): Promise<{ status: string; message: string }> {
+  async handleAPICallback(order: Order): Promise<{ status: string; message: string }> {
     this.logger.log(`Calling VietQR Test Callback API for order ${order.orderId}`);
 
+    const accessToken = await this.getAccessToken();
     const shortOrderId = this.getShortOrderId(order);
-    const content = this.getPaymentContent(shortOrderId);
-
-    // Body theo tài liệu 5-CallAPITestCallback.md
     const body = {
       bankAccount: this.BANK_ACCOUNT,
-      content,
+      content: this.getPaymentContent(shortOrderId),
       amount: this.getPaymentAmount(order),
-      transType: 'C', // Phân loại giao dịch là ghi nợ/ghi có (giá trị: D/C). Mặc định là 'C'.
+      transType: 'C',
       bankCode: this.BANK_CODE,
     };
-
-    this.logger.log(`VietQR Test Callback request body: ${JSON.stringify(body)}`);
 
     const response = await fetch(this.VIETQR_TEST_CALLBACK_URL, {
       method: 'POST',
@@ -154,8 +146,6 @@ export class VietQRBoundary {
       status?: string;
       message?: string;
     };
-
-    this.logger.log(`VietQR Test Callback response: ${JSON.stringify(data)}`);
 
     if (data.status === undefined || data.message === undefined) {
       this.logger.error(`VietQR Test Callback response missing status or message: ${JSON.stringify(data)}`);

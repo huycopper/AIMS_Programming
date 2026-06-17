@@ -66,10 +66,15 @@ export class ProductService {
       );
     }
 
-    // Filter by exact category (mapped to productType enum, supports multiple via comma)
+    // Filter by product type enum values from the UI, or exact product category text.
     if (category) {
       const categories = category.split(',');
-      qb.andWhere('product.productType IN (:...categories)', { categories });
+      const productTypes = ['BOOK', 'CD', 'DVD', 'NEWSPAPER'];
+      if (categories.every((value) => productTypes.includes(value))) {
+        qb.andWhere('product.productType IN (:...categories)', { categories });
+      } else {
+        qb.andWhere('product.category = :category', { category });
+      }
     }
 
     // Filter by price range

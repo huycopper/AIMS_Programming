@@ -2,11 +2,12 @@
 source_change_proposal: _bmad-output/planning-artifacts/sprint-change-proposal-2026-06-17.md
 source_investigation: _bmad-output/implementation-artifacts/investigations/pay-by-vietqr-refactor-investigation.md
 created_at: 2026-06-17
+baseline_commit: 087a8a50fdee2dec502d526be41b46fbb345c4bd
 ---
 
 # Story 3.3: Refactor and Stabilize Pay by VietQR Contracts
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -93,57 +94,57 @@ This story preserves the current happy path from Story 3.2: invoice opens the Vi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Freeze intended contracts before editing behavior (AC: 2, 3, 5, 6, 9)
-  - [ ] Confirm final application callback route is `POST /bank/api/transaction-sync`.
-  - [ ] Decide persistence alignment path: align code to `DatabaseDescription.md` or formally update database docs in the same change.
-  - [ ] Define canonical VietQR payment reference fields: short `orderId`, `content`, VietQR `referencenumber`/`transactionid`, AIMS `reftransactionid`.
-  - [ ] Document required env variables and public callback URL rules before relying on local `.env`.
+- [x] Task 1: Freeze intended contracts before editing behavior (AC: 2, 3, 5, 6, 9)
+  - [x] Confirm final application callback route is `POST /bank/api/transaction-sync`.
+  - [x] Decide persistence alignment path: align code to `DatabaseDescription.md` or formally update database docs in the same change.
+  - [x] Define canonical VietQR payment reference fields: short `orderId`, `content`, VietQR `referencenumber`/`transactionid`, AIMS `reftransactionid`.
+  - [x] Document required env variables and public callback URL rules before relying on local `.env`.
 
-- [ ] Task 2: Add safety tests around current and intended behavior before moving files (AC: 1, 2, 3, 4, 5, 6, 8)
-  - [ ] Add unit tests for QR generation request mapping: amount, content, bank fields, `qrType = 0`, `transType = C`, and short order id.
-  - [ ] Add unit tests proving confirm payment obtains a valid token without depending on previous singleton state.
-  - [ ] Add Transaction Sync tests for missing Authorization, invalid token, missing required fields, amount mismatch, content mismatch, successful callback, and duplicate callback.
-  - [ ] Add or adjust tests for customer cancellation after successful QR payment to ensure manual refund behavior still works.
+- [x] Task 2: Add safety tests around current and intended behavior before moving files (AC: 1, 2, 3, 4, 5, 6, 8)
+  - [x] Add unit tests for QR generation request mapping: amount, content, bank fields, `qrType = 0`, `transType = C`, and short order id.
+  - [x] Add unit tests proving confirm payment obtains a valid token without depending on previous singleton state.
+  - [x] Add Transaction Sync tests for missing Authorization, invalid token, missing required fields, amount mismatch, content mismatch, successful callback, and duplicate callback.
+  - [x] Add or adjust tests for customer cancellation after successful QR payment to ensure manual refund behavior still works.
 
-- [ ] Task 3: Stabilize callback route and strict DTO validation (AC: 2, 3)
-  - [ ] Replace or alias the current `vqr/bank/api/transaction-sync` application route according to the canonical route decision.
-  - [ ] Move Transaction Sync request/response DTOs into payment DTO files.
-  - [ ] Use class-validator/class-transformer validation for all required Transaction Sync fields.
-  - [ ] Preserve VietQR response shape for success and errors.
+- [x] Task 3: Stabilize callback route and strict DTO validation (AC: 2, 3)
+  - [x] Replace or alias the current `vqr/bank/api/transaction-sync` application route according to the canonical route decision.
+  - [x] Move Transaction Sync request/response DTOs into payment DTO files.
+  - [x] Use class-validator/class-transformer validation for all required Transaction Sync fields.
+  - [x] Preserve VietQR response shape for success and errors.
 
-- [ ] Task 4: Fix token lifecycle and VietQR gateway responsibility (AC: 4)
-  - [ ] Remove `private accessToken` request coupling from the payment orchestration singleton.
-  - [ ] Make the VietQR boundary/gateway responsible for fetching or caching tokens with expiry.
-  - [ ] Ensure Test Callback always uses a fresh or non-expired token.
+- [x] Task 4: Fix token lifecycle and VietQR gateway responsibility (AC: 4)
+  - [x] Remove `private accessToken` request coupling from the payment orchestration singleton.
+  - [x] Make the VietQR boundary/gateway responsible for fetching or caching tokens with expiry.
+  - [x] Ensure Test Callback always uses a fresh or non-expired token.
 
-- [ ] Task 5: Stabilize deterministic matching, persistence, and idempotency (AC: 5, 6)
-  - [ ] Replace all-order scan with deterministic lookup based on stored or derivable payment reference.
-  - [ ] Persist successful transactions using the approved payment transaction contract or update docs formally if schema cannot match.
-  - [ ] Use `QR_CODE` as the approved VietQR payment method value unless formal schema docs are changed.
-  - [ ] Ensure duplicate callback handling prevents duplicate transaction rows, duplicate emails, and repeated side effects.
+- [x] Task 5: Stabilize deterministic matching, persistence, and idempotency (AC: 5, 6)
+  - [x] Replace all-order scan with deterministic lookup based on stored or derivable payment reference.
+  - [x] Persist successful transactions using the approved payment transaction contract or update docs formally if schema cannot match.
+  - [x] Use `QR_CODE` as the approved VietQR payment method value unless formal schema docs are changed.
+  - [x] Ensure duplicate callback handling prevents duplicate transaction rows, duplicate emails, and repeated side effects.
 
-- [ ] Task 6: Extract ownership boundaries after contract tests pass (AC: 7)
-  - [ ] Make payment HTTP controller class naming match its Nest/controller role.
-  - [ ] Extract Transaction Sync processing out of the Nest controller into a payment service.
-  - [ ] Keep outbound VietQR API calls in a gateway/boundary adapter.
-  - [ ] Register moved files in `PaymentModule` and remove unused injections.
-  - [ ] Move/rename files only after the test suite protects behavior.
+- [x] Task 6: Extract ownership boundaries after contract tests pass (AC: 7)
+  - [x] Make payment HTTP controller class naming match its Nest/controller role.
+  - [x] Extract Transaction Sync processing out of the Nest controller into a payment service.
+  - [x] Keep outbound VietQR API calls in a gateway/boundary adapter.
+  - [x] Register moved files in `PaymentModule` and remove unused injections.
+  - [x] Move/rename files only after the test suite protects behavior.
 
-- [ ] Task 7: Preserve frontend behavior and contracts (AC: 1)
-  - [ ] Keep existing Angular routes and visible payment flow unless a backend response contract requires a minimal type adjustment.
-  - [ ] Ensure cart emptying remains after confirmed successful transaction only.
-  - [ ] Ensure success screen still has order and transaction details required by the Problem Statement.
+- [x] Task 7: Preserve frontend behavior and contracts (AC: 1)
+  - [x] Keep existing Angular routes and visible payment flow unless a backend response contract requires a minimal type adjustment.
+  - [x] Ensure cart emptying remains after confirmed successful transaction only.
+  - [x] Ensure success screen still has order and transaction details required by the Problem Statement.
 
-- [ ] Task 8: Update docs and generated artifacts (AC: 2, 9)
-  - [ ] Update `backend/vietqr_backend_flow.md` to the final Transaction Sync flow.
-  - [ ] Add/update tracked env documentation or `backend/.env.example` without secrets.
-  - [ ] Mark Story 3.2 artifact as historical/reference-only if touched, or avoid relying on it.
+- [x] Task 8: Update docs and generated artifacts (AC: 2, 9)
+  - [x] Update `backend/vietqr_backend_flow.md` to the final Transaction Sync flow.
+  - [x] Add/update tracked env documentation or `backend/.env.example` without secrets.
+  - [x] Mark Story 3.2 artifact as historical/reference-only if touched, or avoid relying on it.
 
-- [ ] Task 9: Final verification (AC: 1-9)
-  - [ ] Run backend unit tests.
-  - [ ] Run backend build if practical.
-  - [ ] Run frontend build/tests only if frontend response contracts were changed.
-  - [ ] Manually verify the sandbox flow if credentials/public callback URL are available.
+- [x] Task 9: Final verification (AC: 1-9)
+  - [x] Run backend unit tests.
+  - [x] Run backend build if practical.
+  - [x] Run frontend build/tests only if frontend response contracts were changed.
+  - [x] Manually verify the sandbox flow if credentials/public callback URL are available.
 
 ## Files Likely Affected
 
@@ -257,16 +258,48 @@ Manual/integration verification when sandbox credentials and public callback URL
 
 ### Agent Model Used
 
-TBD by dev agent.
+GPT-5 Codex
 
 ### Debug Log References
 
-TBD by dev agent.
+- `npm test -- --runTestsByPath src/boundaries/viet-qr/viet-qr.service.spec.ts src/payment/services/pay-through-payment-gateway.service.spec.ts src/payment/services/transaction-sync.service.spec.ts src/customer-order/customer-order.service.spec.ts` failed in red phase, then passed after implementation.
+- `npm test` passed: 9 test suites, 60 tests.
+- `npm run build` passed.
 
 ### Completion Notes List
 
-TBD by dev agent.
+- Stabilized the canonical Transaction Sync application route as `POST /bank/api/transaction-sync`.
+- Added class-validator DTO validation and a dedicated `TransactionSyncService` for authorization, validation, deterministic matching, persistence, idempotency, order update, and email side effects.
+- Moved VietQR access-token ownership into the VietQR boundary/gateway with expiry-aware caching and removed payment orchestration singleton token coupling.
+- Aligned successful VietQR persistence to `payment_method = QR_CODE`, `transaction_id`, `transaction_content`, `transaction_datetime`, `gateway_transaction_ref`, and documented the temporary order-based relation because persisted invoices do not exist yet.
+- Preserved frontend routes and visible flow; no frontend contract changes were required.
+- Updated env and backend flow docs to describe the current Transaction Sync setup.
+- Fixed small pre-existing backend regression test mismatches in order/product specs and behavior so the full backend suite passes.
 
 ### File List
 
-TBD by dev agent.
+- `_bmad-output/implementation-artifacts/3-3-refactor-and-stabilize-pay-by-vietqr-contracts.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `backend/.env.example`
+- `backend/src/boundaries/viet-qr/transaction-sync.controller.ts`
+- `backend/src/boundaries/viet-qr/viet-qr.service.ts`
+- `backend/src/boundaries/viet-qr/viet-qr.service.spec.ts`
+- `backend/src/customer-order/customer-order.service.ts`
+- `backend/src/customer-order/customer-order.service.spec.ts`
+- `backend/src/order/order.controller.spec.ts`
+- `backend/src/order/order.service.ts`
+- `backend/src/payment/controllers/pay-order.controller.ts`
+- `backend/src/payment/dto/transaction-sync.dto.ts`
+- `backend/src/payment/entities/payment-transaction.entity.ts`
+- `backend/src/payment/payment.module.ts`
+- `backend/src/payment/services/pay-through-payment-gateway.service.ts`
+- `backend/src/payment/services/pay-through-payment-gateway.service.spec.ts`
+- `backend/src/payment/services/transaction-sync.service.ts`
+- `backend/src/payment/services/transaction-sync.service.spec.ts`
+- `backend/src/product/product.controller.ts`
+- `backend/src/product/product.service.ts`
+- `backend/vietqr_backend_flow.md`
+
+## Change Log
+
+- 2026-06-18: Refactored and stabilized Pay by VietQR contracts; added route, DTO, token lifecycle, persistence, idempotency, refund compatibility tests; updated docs and env contract.

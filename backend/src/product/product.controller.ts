@@ -17,7 +17,9 @@ export class ProductController {
    */
   @Get('random')
   async getRandomProducts(@Query('category') category?: string) {
-    return this.productService.findRandom(20, category);
+    return category
+      ? this.productService.findRandom(20, category)
+      : this.productService.findRandom(20);
   }
 
   /**

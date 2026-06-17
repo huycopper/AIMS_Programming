@@ -1,19 +1,37 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { PlaceOrderController } from './order.controller';
 import { OrderService } from './order.service';
+import { DeliveryInfo, Order } from './entities/order.entity';
 
 describe('PlaceOrderController', () => {
   let controller: PlaceOrderController;
   let orderService: OrderService;
+  const orderRepo = {
+    create: jest.fn((entity) => entity),
+    save: jest.fn(async (entity) => ({
+      ...entity,
+      orderId: 'order-1',
+    })),
+    findOne: jest.fn(),
+  };
+  const deliveryInfoRepo = {
+    create: jest.fn((entity) => entity),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PlaceOrderController],
-      providers: [OrderService],
+      providers: [
+        OrderService,
+        { provide: getRepositoryToken(Order), useValue: orderRepo },
+        { provide: getRepositoryToken(DeliveryInfo), useValue: deliveryInfoRepo },
+      ],
     }).compile();
 
     controller = module.get<PlaceOrderController>(PlaceOrderController);
     orderService = module.get<OrderService>(OrderService);
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -61,7 +79,7 @@ describe('PlaceOrderController', () => {
   });
 
   describe('placeOrder', () => {
-    it('should return full invoice with delivery info and breakdown', () => {
+    it('should return full invoice with delivery info and breakdown', async () => {
       const dto = {
         name: 'Nguyễn Văn A',
         phone: '0912345678',
@@ -74,7 +92,7 @@ describe('PlaceOrderController', () => {
         ],
       };
 
-      const result = controller.placeOrder(dto);
+      const result = await controller.placeOrder(dto);
 
       // Check delivery info
       expect(result.deliveryInfo).toEqual({
