@@ -181,6 +181,39 @@ So that I can pay easily from my mobile banking app.
 
 ---
 
+### Story 3.3: Refactor and Stabilize Pay by VietQR Contracts
+As a Developer,
+I want the Pay by VietQR implementation to have stable contracts and clear ownership,
+So that the existing payment behavior can be maintained safely and extended without AI-generated technical debt.
+
+**Acceptance Criteria:**
+
+**Given** the current Pay by VietQR happy path exists
+**When** the refactor is performed
+**Then** user-visible behavior remains unchanged for QR generation, payment confirmation, success display, cart emptying, and payment success email.
+
+**Given** VietQR sends Transaction Sync
+**When** the callback reaches AIMS
+**Then** the canonical callback endpoint is `POST /bank/api/transaction-sync`, with any `/vqr` prefix treated only as an explicitly documented deployment/base-path decision.
+
+**Given** AIMS receives a Transaction Sync payload
+**When** required fields are missing or invalid
+**Then** the request is rejected with the documented VietQR error response shape and no transaction is persisted.
+
+**Given** multiple customers pay concurrently
+**When** they generate QR codes and confirm payment
+**Then** no confirmation depends on mutable singleton access-token state from another request.
+
+**Given** a successful VietQR payment
+**When** AIMS persists the transaction
+**Then** the persisted fields match the approved database contract and use the approved payment method value.
+
+**Given** the implementation is refactored
+**When** tests run
+**Then** tests cover QR generation orchestration, token handling, Transaction Sync validation, amount/content mismatch, order status update, duplicate/idempotent callback behavior, and customer-cancel manual refund.
+
+---
+
 ## Epic 4: Product Catalog Administration
 
 This epic covers product management actions and logging for Product Managers.
