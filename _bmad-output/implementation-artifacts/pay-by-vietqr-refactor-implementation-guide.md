@@ -665,7 +665,7 @@ Do not:
 
 ### Phase 5: Frontend Slice Refactor
 
-#### [ ] PVQR-5.1: Extract Frontend VietQR API Boundary From OrderService
+#### [x] PVQR-5.1: Extract Frontend VietQR API Boundary From OrderService
 
 Goal: Move frontend VietQR HTTP calls from the broad `OrderService` into a dedicated API boundary.
 
@@ -677,10 +677,10 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] VietQR API methods live in the new boundary.
-- [ ] API URL remains `http://localhost:8080/api/payment/pay-order`.
-- [ ] Component behavior remains unchanged.
-- [ ] Order placement and customer-order methods in `OrderService` remain unaffected.
+- [x] VietQR API methods live in the new boundary.
+- [x] API URL remains `http://localhost:8080/api/payment/pay-order`.
+- [x] Component behavior remains unchanged.
+- [x] Order placement and customer-order methods in `OrderService` remain unaffected.
 
 Do not:
 
@@ -688,7 +688,7 @@ Do not:
 - Do not change request/response types.
 - Do not alter order/customer-order service behavior.
 
-#### [ ] PVQR-5.2: Move Frontend VietQR Models Into Frontend Slice
+#### [x] PVQR-5.2: Move Frontend VietQR Models Into Frontend Slice
 
 Goal: Move VietQR-specific TypeScript interfaces out of the general order model file.
 
@@ -701,10 +701,10 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `VietQrPaymentRequest` lives in the VietQR slice.
-- [ ] `PaymentConfirmationResponse` and related confirmation interfaces live in the VietQR slice.
-- [ ] TypeScript field names and optionality remain unchanged.
-- [ ] Existing order-related models remain unaffected.
+- [x] `VietQrPaymentRequest` lives in the VietQR slice.
+- [x] `PaymentConfirmationResponse` and related confirmation interfaces live in the VietQR slice.
+- [x] TypeScript field names and optionality remain unchanged.
+- [x] Existing order-related models remain unaffected.
 
 Do not:
 

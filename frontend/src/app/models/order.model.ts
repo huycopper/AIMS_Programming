@@ -39,38 +39,10 @@ export interface InvoiceData extends ShippingFeeResult {
   cartItems: CartItemPayload[];
 }
 
-export interface VietQrPaymentRequest {
-  qrDataURL: string;
-  amount: number;
-  content: string;
-}
+export type {
+  VietQrPaymentRequest,
+  PaymentConfirmationOrder,
+  PaymentConfirmationTransaction,
+  PaymentConfirmationResponse,
+} from '../pay-order/pay-by-vietqr/entity/vietqr-payment.models';
 
-export interface PaymentConfirmationOrder {
-  orderId: string;
-  status: string;
-  customerName: string;
-  phoneNumber: string;
-  shippingAddress: string;
-  province: string;
-  totalAmount: number;
-  email: string;
-}
-
-export interface PaymentConfirmationTransaction {
-  transactionId: string;
-  paymentTransactionId: string;
-  transactionReference: string;
-  transactionContent: string;
-  transactionDatetime: string;
-  amount: number;
-  paymentMethod: string;
-  status: string;
-}
-
-export interface PaymentConfirmationResponse {
-  status: string;
-  message: string;
-  orderId: string;
-  order?: PaymentConfirmationOrder;
-  transaction?: PaymentConfirmationTransaction;
-}

@@ -8,7 +8,7 @@ describe('VietQRPaymentScreen (unit)', () => {
   let component: VietQRPaymentScreen;
   let mockActivatedRoute: any;
   let mockRouter: any;
-  let mockOrderService: any;
+  let mockVietQrPaymentBoundary: any;
   let mockCartService: any;
   let mockSanitizer: any;
   let mockCdr: any;
@@ -29,7 +29,7 @@ describe('VietQRPaymentScreen (unit)', () => {
       navigate: vi.fn()
     };
 
-    mockOrderService = {
+    mockVietQrPaymentBoundary = {
       requestVietQrPayment: vi.fn().mockReturnValue(of({
         qrDataURL: 'data:image/png;base64,fake-qr-data',
         amount: 132000,
@@ -64,7 +64,7 @@ describe('VietQRPaymentScreen (unit)', () => {
     component = new VietQRPaymentScreen(
       mockActivatedRoute,
       mockRouter,
-      mockOrderService,
+      mockVietQrPaymentBoundary,
       mockCartService,
       mockSanitizer,
       mockCdr,
@@ -97,8 +97,8 @@ describe('VietQRPaymentScreen (unit)', () => {
   it('should request and load QR code if status is not confirmed on init', () => {
     component.ngOnInit();
 
-    expect(mockOrderService.getPaymentConfirmation).toHaveBeenCalledWith('test-order-123');
-    expect(mockOrderService.requestVietQrPayment).toHaveBeenCalledWith('test-order-123');
+    expect(mockVietQrPaymentBoundary.getPaymentConfirmation).toHaveBeenCalledWith('test-order-123');
+    expect(mockVietQrPaymentBoundary.requestVietQrPayment).toHaveBeenCalledWith('test-order-123');
     expect(component.qrDataURL).toBe('data:image/png;base64,fake-qr-data');
     expect(component.amount).toBe(132000);
     expect(component.paymentContent).toBe('AIMS 1234');
@@ -114,12 +114,12 @@ describe('VietQRPaymentScreen (unit)', () => {
       order: { totalAmount: 132000 },
       transaction: { transactionContent: 'AIMS 1234', amount: 132000 }
     };
-    mockOrderService.getPaymentConfirmation = vi.fn().mockReturnValue(of(mockSuccessResponse));
+    mockVietQrPaymentBoundary.getPaymentConfirmation = vi.fn().mockReturnValue(of(mockSuccessResponse));
 
     component.ngOnInit();
 
-    expect(mockOrderService.getPaymentConfirmation).toHaveBeenCalledWith('test-order-123');
-    expect(mockOrderService.requestVietQrPayment).not.toHaveBeenCalled();
+    expect(mockVietQrPaymentBoundary.getPaymentConfirmation).toHaveBeenCalledWith('test-order-123');
+    expect(mockVietQrPaymentBoundary.requestVietQrPayment).not.toHaveBeenCalled();
     expect(component.paymentSuccess).toBe(true);
     expect(component.amount).toBe(132000);
     expect(component.paymentContent).toBe('AIMS 1234');
@@ -136,7 +136,7 @@ describe('VietQRPaymentScreen (unit)', () => {
     // Call confirmPayment
     component.confirmPayment();
     expect(component.confirmingPayment).toBe(true);
-    expect(mockOrderService.confirmVietQrPayment).toHaveBeenCalledWith('test-order-123');
+    expect(mockVietQrPaymentBoundary.confirmVietQrPayment).toHaveBeenCalledWith('test-order-123');
 
     // Fast-forward time for 12 polling attempts (each delay is 500ms)
     for (let i = 0; i <= 12; i++) {
@@ -153,7 +153,7 @@ describe('VietQRPaymentScreen (unit)', () => {
     vi.useFakeTimers();
 
     // Mock initial check: PENDING
-    mockOrderService.getPaymentConfirmation = vi.fn().mockReturnValue(of({
+    mockVietQrPaymentBoundary.getPaymentConfirmation = vi.fn().mockReturnValue(of({
       status: 'PENDING_CONFIRMATION',
       message: 'No transaction yet'
     }));
@@ -175,7 +175,7 @@ describe('VietQRPaymentScreen (unit)', () => {
       order: { totalAmount: 132000 },
       transaction: { transactionContent: 'AIMS 1234', amount: 132000 }
     };
-    mockOrderService.getPaymentConfirmation = vi.fn().mockReturnValue(of(mockSuccessResponse));
+    mockVietQrPaymentBoundary.getPaymentConfirmation = vi.fn().mockReturnValue(of(mockSuccessResponse));
 
     vi.advanceTimersByTime(500); // Poll 3: success
 

@@ -3,8 +3,8 @@ import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { OrderService } from '../../services/order.service';
-import { PaymentConfirmationResponse } from '../../models/order.model';
+import { VietQrPaymentBoundary } from '../../pay-order/pay-by-vietqr/boundary/api/vietqr-payment.boundary';
+import { PaymentConfirmationResponse } from '../../pay-order/pay-by-vietqr/entity/vietqr-payment.models';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
@@ -32,7 +32,7 @@ export class VietQRPaymentScreen implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private orderService: OrderService,
+    private vietQrPaymentBoundary: VietQrPaymentBoundary,
     private cartService: CartService,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
@@ -58,7 +58,7 @@ export class VietQRPaymentScreen implements OnInit {
     this.loading = true;
     this.errorMessage = null;
 
-    this.orderService.requestVietQrPayment(this.orderId).subscribe({
+    this.vietQrPaymentBoundary.requestVietQrPayment(this.orderId).subscribe({
       next: (res) => {
         this.qrDataURL = res.qrDataURL;
         this.amount = res.amount;
@@ -82,7 +82,7 @@ export class VietQRPaymentScreen implements OnInit {
     this.confirmingPayment = true;
     this.errorMessage = null;
 
-    this.orderService.confirmVietQrPayment(this.orderId).subscribe({
+    this.vietQrPaymentBoundary.confirmVietQrPayment(this.orderId).subscribe({
       next: (res) => {
         console.log('Payment confirmation result:', res);
 
@@ -124,7 +124,7 @@ export class VietQRPaymentScreen implements OnInit {
   private loadPaymentState(): void {
     this.loading = true;
 
-    this.orderService.getPaymentConfirmation(this.orderId).subscribe({
+    this.vietQrPaymentBoundary.getPaymentConfirmation(this.orderId).subscribe({
       next: (res) => {
         if (this.isConfirmed(res)) {
           this.applyPaymentSuccess(res);
@@ -144,7 +144,7 @@ export class VietQRPaymentScreen implements OnInit {
     const delayMs = 500;
 
     setTimeout(() => {
-      this.orderService.getPaymentConfirmation(this.orderId).subscribe({
+      this.vietQrPaymentBoundary.getPaymentConfirmation(this.orderId).subscribe({
         next: (res) => {
           if (this.isConfirmed(res)) {
             this.applyPaymentSuccess(res);

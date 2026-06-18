@@ -9,6 +9,7 @@ import {
   PaymentConfirmationResponse,
   VietQrPaymentRequest,
 } from '../models/order.model';
+import { VietQrPaymentBoundary } from '../pay-order/pay-by-vietqr/boundary/api/vietqr-payment.boundary';
 
 /**
  * OrderService — Angular service acting as the client-side Control (BCE pattern).
@@ -21,7 +22,10 @@ export class OrderService {
   private readonly apiUrl = 'http://localhost:8080/api/orders';
   private readonly paymentApiUrl = 'http://localhost:8080/api/payment/pay-order';
 
-  constructor(private readonly http: HttpClient) { }
+  constructor(
+    private readonly http: HttpClient,
+    private readonly vietQrPaymentBoundary: VietQrPaymentBoundary,
+  ) { }
 
   /**
    * AC-2: Calculate shipping fee dynamically.
@@ -57,15 +61,15 @@ export class OrderService {
   }
 
   requestVietQrPayment(orderId: string): Observable<VietQrPaymentRequest> {
-    return this.http.post<VietQrPaymentRequest>(`${this.paymentApiUrl}/${orderId}`, {});
+    return this.vietQrPaymentBoundary.requestVietQrPayment(orderId);
   }
 
   confirmVietQrPayment(orderId: string): Observable<PaymentConfirmationResponse> {
-    return this.http.post<PaymentConfirmationResponse>(`${this.paymentApiUrl}/${orderId}/confirm`, {});
+    return this.vietQrPaymentBoundary.confirmVietQrPayment(orderId);
   }
 
   getPaymentConfirmation(orderId: string): Observable<PaymentConfirmationResponse> {
-    return this.http.get<PaymentConfirmationResponse>(`${this.paymentApiUrl}/${orderId}/confirmation`);
+    return this.vietQrPaymentBoundary.getPaymentConfirmation(orderId);
   }
 
   getCustomerOrderByToken(viewToken: string): Observable<any> {
