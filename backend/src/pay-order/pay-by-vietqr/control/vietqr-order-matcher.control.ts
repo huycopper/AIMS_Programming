@@ -14,12 +14,17 @@ export class VietQrOrderMatcherControl {
     private readonly orderRepo: Repository<Order>,
   ) {}
 
-  async matchOrder(transactionSyncBody: TransactionCallbackDto): Promise<Order | null> {
+  async matchOrder(
+    transactionSyncBody: TransactionCallbackDto,
+  ): Promise<Order | null> {
     const allOrders = await this.orderRepo.find();
     return this.findMatchingOrder(transactionSyncBody, allOrders);
   }
 
-  private findMatchingOrder(transactionSyncBody: TransactionCallbackDto, orders: Order[]): Order | null {
+  private findMatchingOrder(
+    transactionSyncBody: TransactionCallbackDto,
+    orders: Order[],
+  ): Order | null {
     return (
       orders.find((order) => {
         const paymentCode = VietQrPaymentCode.fromOrder(order);
@@ -28,8 +33,7 @@ export class VietQrOrderMatcherControl {
           transactionSyncBody.content,
           order.orderId,
         );
-      })
-      ?? null
+      }) ?? null
     );
   }
 }

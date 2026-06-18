@@ -11,9 +11,7 @@ export class CustomerOrderController {
   }
 
   @Post('cancel/:cancelToken')
-  async cancelOrderByToken(
-    @Param('cancelToken') cancelToken: string,
-  ) {
+  async cancelOrderByToken(@Param('cancelToken') cancelToken: string) {
     return this.customerOrderService.cancelOrderByToken(cancelToken);
   }
 

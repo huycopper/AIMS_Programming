@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { VietQRBoundary } from '../../boundaries/viet-qr/viet-qr.service.js';
 import { Order } from '../../order/entities/order.entity.js';
@@ -21,7 +27,7 @@ export class PayThroughPaymentGatewayController {
     private readonly paymentTransactionRepo: Repository<PaymentTransaction>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-  ) { }
+  ) {}
 
   /*
   Dưới đây là cách Promise hoạt động cụ thể trong hàm generateQRCode của bạn:
@@ -53,11 +59,16 @@ export class PayThroughPaymentGatewayController {
   qrResult cũng biến thành promise do hàm được khai báo là async.
   */
 
-  async generateQRCode(order: Order): Promise<{ qrDataURL: string; amount: number; content: string }> {
+  async generateQRCode(
+    order: Order,
+  ): Promise<{ qrDataURL: string; amount: number; content: string }> {
     this.logger.log(`Generating QR Code for invoice ${order.orderId}`);
 
     this.accessToken = await this.vietQRBoundary.getAccessToken();
-    const qrResult = await this.vietQRBoundary.generateQRCode(order, this.accessToken);
+    const qrResult = await this.vietQRBoundary.generateQRCode(
+      order,
+      this.accessToken,
+    );
 
     return qrResult;
   }
@@ -65,15 +76,28 @@ export class PayThroughPaymentGatewayController {
   async confirmPayment(order: Order): Promise<PaymentConfirmationResponse> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
-    const callbackResult = await this.vietQRBoundary.handleAPICallback(order, this.accessToken);
+    const callbackResult = await this.vietQRBoundary.handleAPICallback(
+      order,
+      this.accessToken,
+    );
 
-    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`);
+    this.logger.log(
+      `API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`,
+    );
 
     if (callbackResult.status !== 'SUCCESS') {
-      return this.buildPaymentConfirmationResponse(order, null, callbackResult.status, callbackResult.message);
+      return this.buildPaymentConfirmationResponse(
+        order,
+        null,
+        callbackResult.status,
+        callbackResult.message,
+      );
     }
 
-    const confirmation = await this.waitForSuccessfulPayment(order.orderId, callbackResult.message);
+    const confirmation = await this.waitForSuccessfulPayment(
+      order.orderId,
+      callbackResult.message,
+    );
     if (confirmation.transaction) {
       return confirmation;
     }
@@ -81,11 +105,14 @@ export class PayThroughPaymentGatewayController {
     return {
       ...confirmation,
       status: 'PENDING_CONFIRMATION',
-      message: 'VietQR accepted the payment callback request. Waiting for transaction sync.',
+      message:
+        'VietQR accepted the payment callback request. Waiting for transaction sync.',
     };
   }
 
-  async getPaymentConfirmation(orderId: string): Promise<PaymentConfirmationResponse> {
+  async getPaymentConfirmation(
+    orderId: string,
+  ): Promise<PaymentConfirmationResponse> {
     const order = await this.orderRepo.findOne({ where: { orderId } });
     if (!order) {
       throw new BadRequestException('Order not found');
@@ -139,7 +166,9 @@ export class PayThroughPaymentGatewayController {
     };
   }
 
-  private async findLatestSuccessfulTransaction(orderId: string): Promise<PaymentTransaction | null> {
+  private async findLatestSuccessfulTransaction(
+    orderId: string,
+  ): Promise<PaymentTransaction | null> {
     const transaction = await this.paymentTransactionRepo
       .createQueryBuilder('transaction')
       .innerJoin('transaction.order', 'order')
@@ -171,7 +200,9 @@ export class PayThroughPaymentGatewayController {
         totalAmount: Number(order.totalAmount),
         email: order.deliveryInfo?.email || '',
       },
-      transaction: transaction ? this.buildTransactionSummary(transaction) : undefined,
+      transaction: transaction
+        ? this.buildTransactionSummary(transaction)
+        : undefined,
     };
   }
 
@@ -179,9 +210,13 @@ export class PayThroughPaymentGatewayController {
     const details = transaction.paymentDetails || {};
 
     return {
-      transactionId: details.transactionid || transaction.transactionRef || transaction.paymentTransactionId,
+      transactionId:
+        details.transactionid ||
+        transaction.transactionRef ||
+        transaction.paymentTransactionId,
       paymentTransactionId: transaction.paymentTransactionId,
-      transactionReference: transaction.transactionRef || details.referencenumber || '',
+      transactionReference:
+        transaction.transactionRef || details.referencenumber || '',
       transactionContent: details.content || '',
       transactionDatetime: this.resolveTransactionDatetime(transaction),
       amount: Number(transaction.amount),
@@ -194,14 +229,16 @@ export class PayThroughPaymentGatewayController {
     const rawDatetime = transaction.paymentDetails?.transactiontime;
 
     if (typeof rawDatetime === 'number' && Number.isFinite(rawDatetime)) {
-      const epochMs = rawDatetime < 1_000_000_000_000 ? rawDatetime * 1000 : rawDatetime;
+      const epochMs =
+        rawDatetime < 1_000_000_000_000 ? rawDatetime * 1000 : rawDatetime;
       return new Date(epochMs).toISOString();
     }
 
     if (typeof rawDatetime === 'string' && rawDatetime.trim()) {
       const parsedNumber = Number(rawDatetime);
       if (Number.isFinite(parsedNumber)) {
-        const epochMs = parsedNumber < 1_000_000_000_000 ? parsedNumber * 1000 : parsedNumber;
+        const epochMs =
+          parsedNumber < 1_000_000_000_000 ? parsedNumber * 1000 : parsedNumber;
         return new Date(epochMs).toISOString();
       }
 
@@ -217,6 +254,4 @@ export class PayThroughPaymentGatewayController {
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-
-
 }

@@ -42,7 +42,11 @@ export class VietQrPaymentTransactionFactory {
     });
   }
 
-  private getCallbackBankAccount(transactionSyncBody: TransactionCallbackDto): string {
-    return transactionSyncBody.bankaccount ?? transactionSyncBody.bankAccount ?? '';
+  private getCallbackBankAccount(
+    transactionSyncBody: TransactionCallbackDto,
+  ): string {
+    return (
+      transactionSyncBody.bankaccount ?? transactionSyncBody.bankAccount ?? ''
+    );
   }
 }

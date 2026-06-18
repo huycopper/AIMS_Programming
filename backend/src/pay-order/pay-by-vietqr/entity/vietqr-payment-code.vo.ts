@@ -34,15 +34,23 @@ export class VietQrPaymentCode {
     }
 
     if (roundedCallbackAmount !== this.amount) {
-      throw new Error(`Amount mismatch: expected ${this.amount}, received ${roundedCallbackAmount}`);
+      throw new Error(
+        `Amount mismatch: expected ${this.amount}, received ${roundedCallbackAmount}`,
+      );
     }
 
     if (!callbackContent?.includes(this.content)) {
-      throw new Error(`Content mismatch: expected content to include ${this.content}`);
+      throw new Error(
+        `Content mismatch: expected content to include ${this.content}`,
+      );
     }
   }
 
-  matchesCallback(callbackOrderId: string | undefined, callbackContent: string | undefined, fullOrderId: string): boolean {
+  matchesCallback(
+    callbackOrderId: string | undefined,
+    callbackContent: string | undefined,
+    fullOrderId: string,
+  ): boolean {
     const trimmedCallbackOrderId = callbackOrderId?.trim();
     const content = callbackContent ?? '';
 

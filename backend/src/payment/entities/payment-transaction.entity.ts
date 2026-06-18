@@ -18,7 +18,12 @@ export class PaymentTransaction {
   @JoinColumn({ name: 'order_id' })
   order: Order;
 
-  @Column({ name: 'transaction_ref', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'transaction_ref',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   transactionRef: string;
 
   @Column({ name: 'amount', type: 'numeric', precision: 14, scale: 2 })

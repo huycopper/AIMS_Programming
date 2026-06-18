@@ -1,8 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument, @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-return, @typescript-eslint/require-await */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PaymentTransaction } from '../../../payment/entities/payment-transaction.entity.js';
 import { Order } from '../../../order/entities/order.entity.js';
 import { NotificationService } from '../../../notification/notification.service.js';
@@ -62,10 +66,18 @@ describe('VietQR Split Webhook Components', () => {
       ],
     }).compile();
 
-    callbackValidator = module.get<VietQrCallbackValidatorControl>(VietQrCallbackValidatorControl);
-    orderMatcher = module.get<VietQrOrderMatcherControl>(VietQrOrderMatcherControl);
-    transactionFactory = module.get<VietQrPaymentTransactionFactory>(VietQrPaymentTransactionFactory);
-    transactionSyncControl = module.get<VietQrTransactionSyncControl>(VietQrTransactionSyncControl);
+    callbackValidator = module.get<VietQrCallbackValidatorControl>(
+      VietQrCallbackValidatorControl,
+    );
+    orderMatcher = module.get<VietQrOrderMatcherControl>(
+      VietQrOrderMatcherControl,
+    );
+    transactionFactory = module.get<VietQrPaymentTransactionFactory>(
+      VietQrPaymentTransactionFactory,
+    );
+    transactionSyncControl = module.get<VietQrTransactionSyncControl>(
+      VietQrTransactionSyncControl,
+    );
   });
 
   describe('VietQrCallbackValidatorControl', () => {
@@ -85,7 +97,9 @@ describe('VietQR Split Webhook Components', () => {
       jwtServiceMock.verify.mockReturnValue({});
       const result = callbackValidator.validateCallbackToken('valid-token');
       expect(result).toBe(true);
-      expect(jwtServiceMock.verify).toHaveBeenCalledWith('valid-token', { secret: 'test-secret' });
+      expect(jwtServiceMock.verify).toHaveBeenCalledWith('valid-token', {
+        secret: 'test-secret',
+      });
     });
 
     it('should return false if token verification fails', () => {
@@ -191,7 +205,12 @@ describe('VietQR Split Webhook Components', () => {
         bankaccount: 'bank-1',
       };
 
-      const transaction = transactionFactory.createPaymentTransaction(mockOrder, body, 'ref-1', 'aims-txn-1');
+      const transaction = transactionFactory.createPaymentTransaction(
+        mockOrder,
+        body,
+        'ref-1',
+        'aims-txn-1',
+      );
       expect(transaction).toBeDefined();
       expect(paymentTransactionRepoMock.create).toHaveBeenCalled();
     });
@@ -212,7 +231,9 @@ describe('VietQR Split Webhook Components', () => {
         receiptEmailSentAt: undefined,
         receiptEmailError: undefined,
       } as any;
-      jest.spyOn(transactionFactory, 'createPaymentTransaction').mockReturnValue(paymentTxMock);
+      jest
+        .spyOn(transactionFactory, 'createPaymentTransaction')
+        .mockReturnValue(paymentTxMock);
 
       const callbackDto: TransactionCallbackDto = {
         transactionid: 'tx-123',
@@ -233,16 +254,18 @@ describe('VietQR Split Webhook Components', () => {
         callSequence.push(`save_order_${ord.orderId}`);
         return Promise.resolve(ord);
       });
-      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(async () => {
-        callSequence.push('send_email');
-        return Promise.resolve();
-      });
+      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(
+        async () => {
+          callSequence.push('send_email');
+          return Promise.resolve();
+        },
+      );
 
       const result = await transactionSyncControl.syncTransaction(callbackDto);
 
       expect(result).toHaveProperty('refTransactionId');
       expect(mockOrder.status).toBe('PENDING_PROCESSING');
-      
+
       // Verify sequence of operations:
       // 1. Save initial payment transaction
       // 2. Save updated order status (PENDING_PROCESSING)
@@ -272,7 +295,9 @@ describe('VietQR Split Webhook Components', () => {
         receiptEmailSentAt: undefined,
         receiptEmailError: undefined,
       } as any;
-      jest.spyOn(transactionFactory, 'createPaymentTransaction').mockReturnValue(paymentTxMock);
+      jest
+        .spyOn(transactionFactory, 'createPaymentTransaction')
+        .mockReturnValue(paymentTxMock);
 
       const callbackDto: TransactionCallbackDto = {
         transactionid: 'tx-123',
@@ -293,16 +318,18 @@ describe('VietQR Split Webhook Components', () => {
         callSequence.push(`save_order_${ord.orderId}`);
         return Promise.resolve(ord);
       });
-      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(async () => {
-        callSequence.push('send_email');
-        throw new Error('SMTP error');
-      });
+      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(
+        async () => {
+          callSequence.push('send_email');
+          throw new Error('SMTP error');
+        },
+      );
 
       const result = await transactionSyncControl.syncTransaction(callbackDto);
 
       expect(result).toHaveProperty('refTransactionId');
       expect(mockOrder.status).toBe('PENDING_PROCESSING');
-      
+
       // Verify sequence of operations for failed email:
       // 1. Save initial payment transaction
       // 2. Save updated order status (PENDING_PROCESSING)
@@ -331,7 +358,9 @@ describe('VietQR Split Webhook Components', () => {
         orderId: 'order123',
       };
 
-      await expect(transactionSyncControl.syncTransaction(callbackDto)).rejects.toThrow('Order not found for orderId: order123');
+      await expect(
+        transactionSyncControl.syncTransaction(callbackDto),
+      ).rejects.toThrow('Order not found for orderId: order123');
     });
 
     it('should throw error when amount mismatch', async () => {
@@ -353,7 +382,9 @@ describe('VietQR Split Webhook Components', () => {
         orderId: 'order123',
       };
 
-      await expect(transactionSyncControl.syncTransaction(callbackDto)).rejects.toThrow('Amount mismatch');
+      await expect(
+        transactionSyncControl.syncTransaction(callbackDto),
+      ).rejects.toThrow('Amount mismatch');
     });
   });
 });

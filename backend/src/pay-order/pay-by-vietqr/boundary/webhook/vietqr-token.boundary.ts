@@ -1,4 +1,11 @@
-import { Controller, Post, Headers, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Headers,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { VietQrCallbackValidatorControl } from '../../control/vietqr-callback-validator.control.js';
 
 @Controller()
@@ -21,7 +28,9 @@ export class VietQrTokenBoundary {
     }
 
     const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
+    const credentials = Buffer.from(base64Credentials, 'base64').toString(
+      'utf-8',
+    );
     const [username, password] = credentials.split(':');
 
     return this.callbackValidator.generateJWTToken(username, password);

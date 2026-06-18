@@ -1,4 +1,9 @@
-import { Injectable, Logger, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -55,7 +60,9 @@ export class VietQrCallbackValidatorControl {
         expires_in: 300,
       };
     } else {
-      this.logger.warn(`Invalid credentials provided for username: ${username}`);
+      this.logger.warn(
+        `Invalid credentials provided for username: ${username}`,
+      );
       throw new UnauthorizedException({
         status: 'FAILED',
         message: 'INVALID_CREDENTIALS',

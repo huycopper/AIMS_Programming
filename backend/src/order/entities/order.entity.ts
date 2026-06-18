@@ -79,10 +79,22 @@ export class Order {
   })
   items: OrderItem[];
 
-  @Column({ name: 'order_view_token', type: 'varchar', length: 255, unique: true, nullable: true })
+  @Column({
+    name: 'order_view_token',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    nullable: true,
+  })
   orderViewToken: string;
 
-  @Column({ name: 'cancel_token', type: 'varchar', length: 255, unique: true, nullable: true })
+  @Column({
+    name: 'cancel_token',
+    type: 'varchar',
+    length: 255,
+    unique: true,
+    nullable: true,
+  })
   cancelToken: string;
 
   @Column({ name: 'cancelled_at', type: 'timestamp', nullable: true })

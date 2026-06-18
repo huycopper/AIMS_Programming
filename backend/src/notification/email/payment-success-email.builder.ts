@@ -8,8 +8,11 @@ export function buildPaymentSuccessEmail(
 ) {
   const viewOrderUrl = `${appPublicUrl}/orders/view/${order.orderViewToken}`;
   const cancelOrderUrl = `${appPublicUrl}/orders/cancel/${order.cancelToken}`;
-  
-  const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+
+  const formatter = new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  });
   const totalAmount = formatter.format(Number(order.totalAmount));
 
   const subject = `[AIMS] Payment Successful - Order #${order.orderId}`;

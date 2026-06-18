@@ -7,8 +7,11 @@ export function buildOrderCancelledEmail(
   appPublicUrl: string,
 ) {
   const viewOrderUrl = `${appPublicUrl}/orders/view/${order.orderViewToken}`;
-  
-  const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+
+  const formatter = new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+  });
   const totalAmount = formatter.format(Number(order.totalAmount));
   const refundAmount = formatter.format(Number(refund.refundAmount));
 

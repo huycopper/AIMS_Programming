@@ -31,7 +31,11 @@ describe('VietQrPaymentCode Value Object', () => {
     let paymentCode: VietQrPaymentCode;
 
     beforeEach(() => {
-      paymentCode = new VietQrPaymentCode('a1b2c3d4e5f67', 132000, 'AIMS a1b2c3d4e5f67');
+      paymentCode = new VietQrPaymentCode(
+        'a1b2c3d4e5f67',
+        132000,
+        'AIMS a1b2c3d4e5f67',
+      );
     });
 
     it('should pass if amount and content match exactly', () => {
@@ -48,7 +52,10 @@ describe('VietQrPaymentCode Value Object', () => {
 
     it('should pass if callback content contains expected payment content', () => {
       expect(() => {
-        paymentCode.validateMatches(132000, 'Chuyen khoan AIMS a1b2c3d4e5f67 de mua hang');
+        paymentCode.validateMatches(
+          132000,
+          'Chuyen khoan AIMS a1b2c3d4e5f67 de mua hang',
+        );
       }).not.toThrow();
     });
 
@@ -61,7 +68,9 @@ describe('VietQrPaymentCode Value Object', () => {
     it('should throw if content mismatch', () => {
       expect(() => {
         paymentCode.validateMatches(132000, 'AIMS WRONGCONTENT');
-      }).toThrow('Content mismatch: expected content to include AIMS a1b2c3d4e5f67');
+      }).toThrow(
+        'Content mismatch: expected content to include AIMS a1b2c3d4e5f67',
+      );
     });
 
     it('should throw if amount is not finite', () => {
@@ -75,26 +84,46 @@ describe('VietQrPaymentCode Value Object', () => {
     let paymentCode: VietQrPaymentCode;
 
     beforeEach(() => {
-      paymentCode = new VietQrPaymentCode('a1b2c3d4e5f67', 132000, 'AIMS a1b2c3d4e5f67');
+      paymentCode = new VietQrPaymentCode(
+        'a1b2c3d4e5f67',
+        132000,
+        'AIMS a1b2c3d4e5f67',
+      );
     });
 
     it('should match if full orderId matches callback orderId', () => {
-      const match = paymentCode.matchesCallback('full-order-uuid', 'AIMS a1b2c3d4e5f67', 'full-order-uuid');
+      const match = paymentCode.matchesCallback(
+        'full-order-uuid',
+        'AIMS a1b2c3d4e5f67',
+        'full-order-uuid',
+      );
       expect(match).toBe(true);
     });
 
     it('should match if short orderId matches callback orderId', () => {
-      const match = paymentCode.matchesCallback('a1b2c3d4e5f67', 'some random content', 'full-order-uuid');
+      const match = paymentCode.matchesCallback(
+        'a1b2c3d4e5f67',
+        'some random content',
+        'full-order-uuid',
+      );
       expect(match).toBe(true);
     });
 
     it('should match if callback content includes expected payment content', () => {
-      const match = paymentCode.matchesCallback(undefined, 'some prefix AIMS a1b2c3d4e5f67 suffix', 'full-order-uuid');
+      const match = paymentCode.matchesCallback(
+        undefined,
+        'some prefix AIMS a1b2c3d4e5f67 suffix',
+        'full-order-uuid',
+      );
       expect(match).toBe(true);
     });
 
     it('should not match if none of the criteria match', () => {
-      const match = paymentCode.matchesCallback('other-short-id', 'AIMS other-short-id', 'full-order-uuid');
+      const match = paymentCode.matchesCallback(
+        'other-short-id',
+        'AIMS other-short-id',
+        'full-order-uuid',
+      );
       expect(match).toBe(false);
     });
   });

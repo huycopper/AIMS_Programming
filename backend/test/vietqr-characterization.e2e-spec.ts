@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
@@ -28,8 +29,12 @@ describe('VietQR Flow Characterization (e2e)', () => {
     await app.init();
 
     orderRepo = moduleFixture.get<Repository<Order>>(getRepositoryToken(Order));
-    deliveryInfoRepo = moduleFixture.get<Repository<DeliveryInfo>>(getRepositoryToken(DeliveryInfo));
-    paymentTransactionRepo = moduleFixture.get<Repository<PaymentTransaction>>(getRepositoryToken(PaymentTransaction));
+    deliveryInfoRepo = moduleFixture.get<Repository<DeliveryInfo>>(
+      getRepositoryToken(DeliveryInfo),
+    );
+    paymentTransactionRepo = moduleFixture.get<Repository<PaymentTransaction>>(
+      getRepositoryToken(PaymentTransaction),
+    );
     emailService = moduleFixture.get<EmailService>(EmailService);
     configService = moduleFixture.get<ConfigService>(ConfigService);
   });
@@ -42,7 +47,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
     it('should generate a Bearer token with valid Basic Auth', async () => {
       const username = process.env.CLIENT_USERNAME || 'aims1234';
       const password = process.env.CLIENT_PASSWORD || 'password';
-      const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+      const credentials = Buffer.from(`${username}:${password}`).toString(
+        'base64',
+      );
 
       const response = await request(app.getHttpServer())
         .post('/vqr/api/token_generate')
@@ -103,10 +110,14 @@ describe('VietQR Flow Characterization (e2e)', () => {
     afterEach(async () => {
       // Cleanup transactions and orders
       if (testOrder) {
-        await paymentTransactionRepo.delete({ order: { orderId: testOrder.orderId } });
+        await paymentTransactionRepo.delete({
+          order: { orderId: testOrder.orderId },
+        });
         await orderRepo.delete({ orderId: testOrder.orderId });
         if (testOrder.deliveryInfo) {
-          await deliveryInfoRepo.delete({ deliveryInfoId: testOrder.deliveryInfo.deliveryInfoId });
+          await deliveryInfoRepo.delete({
+            deliveryInfoId: testOrder.deliveryInfo.deliveryInfoId,
+          });
         }
       }
     });
@@ -138,7 +149,10 @@ describe('VietQR Flow Characterization (e2e)', () => {
           .expect(200);
 
         expect(response.body).toHaveProperty('status', 'PENDING');
-        expect(response.body).toHaveProperty('message', 'Payment transaction has not been recorded yet.');
+        expect(response.body).toHaveProperty(
+          'message',
+          'Payment transaction has not been recorded yet.',
+        );
         expect(response.body).toHaveProperty('orderId', testOrder.orderId);
       });
 
@@ -158,7 +172,10 @@ describe('VietQR Flow Characterization (e2e)', () => {
           .expect(200);
 
         expect(response.body).toHaveProperty('status', 'SUCCESS');
-        expect(response.body).toHaveProperty('message', 'Payment confirmed successfully.');
+        expect(response.body).toHaveProperty(
+          'message',
+          'Payment confirmed successfully.',
+        );
         expect(response.body).toHaveProperty('transaction');
         expect(response.body.transaction).toHaveProperty('status', 'SUCCESS');
         expect(Number(response.body.transaction.amount)).toBe(132000);
@@ -183,7 +200,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
         // Obtain token for transaction sync auth
         const username = process.env.CLIENT_USERNAME || 'aims1234';
         const password = process.env.CLIENT_PASSWORD || 'password';
-        const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+        const credentials = Buffer.from(`${username}:${password}`).toString(
+          'base64',
+        );
 
         const tokenRes = await request(app.getHttpServer())
           .post('/vqr/api/token_generate')
@@ -196,7 +215,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
         // Spy on email send
         const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
 
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-' + randomUUID().substring(0, 8),
           transactiontime: Date.now(),
@@ -219,12 +240,16 @@ describe('VietQR Flow Characterization (e2e)', () => {
           errorReason: null,
           toastMessage: 'Transaction processed successfully',
           object: {
-            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+            reftransactionid: expect.stringMatching(
+              /^AIMS_TXN_\d+_[a-f0-9]{8}$/,
+            ),
           },
         });
 
         // Check database changes
-        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        const updatedOrder = await orderRepo.findOne({
+          where: { orderId: testOrder.orderId },
+        });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
 
         const txn = await paymentTransactionRepo.findOne({
@@ -243,22 +268,39 @@ describe('VietQR Flow Characterization (e2e)', () => {
         expect(sendEmailSpy).toHaveBeenCalledTimes(1);
         const [to, subject, html, text] = sendEmailSpy.mock.calls[0];
         expect(to).toBe(testOrder.deliveryInfo.email);
-        expect(subject).toBe(`[AIMS] Payment Successful - Order #${testOrder.orderId}`);
+        expect(subject).toBe(
+          `[AIMS] Payment Successful - Order #${testOrder.orderId}`,
+        );
 
-        const appPublicUrl = configService.get<string>('APP_PUBLIC_URL', 'http://localhost:4200');
-        expect(html).toContain(`${appPublicUrl}/orders/view/${testOrder.orderViewToken}`);
-        expect(html).toContain(`${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`);
-        expect(text).toContain(`${appPublicUrl}/orders/view/${testOrder.orderViewToken}`);
-        expect(text).toContain(`${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`);
+        const appPublicUrl = configService.get<string>(
+          'APP_PUBLIC_URL',
+          'http://localhost:4200',
+        );
+        expect(html).toContain(
+          `${appPublicUrl}/orders/view/${testOrder.orderViewToken}`,
+        );
+        expect(html).toContain(
+          `${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`,
+        );
+        expect(text).toContain(
+          `${appPublicUrl}/orders/view/${testOrder.orderViewToken}`,
+        );
+        expect(text).toContain(
+          `${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`,
+        );
 
         sendEmailSpy.mockRestore();
       });
 
       it('should handle email delivery failure but still succeed transaction sync', async () => {
         // Mock sendEmail to throw an error
-        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail').mockRejectedValue(new Error('SMTP failure'));
+        const sendEmailSpy = jest
+          .spyOn(emailService, 'sendEmail')
+          .mockRejectedValue(new Error('SMTP failure'));
 
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-' + randomUUID().substring(0, 8),
           transactiontime: Date.now(),
@@ -281,12 +323,16 @@ describe('VietQR Flow Characterization (e2e)', () => {
           errorReason: null,
           toastMessage: 'Transaction processed successfully',
           object: {
-            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+            reftransactionid: expect.stringMatching(
+              /^AIMS_TXN_\d+_[a-f0-9]{8}$/,
+            ),
           },
         });
 
         // Email failure does not roll back order status PENDING_PROCESSING
-        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        const updatedOrder = await orderRepo.findOne({
+          where: { orderId: testOrder.orderId },
+        });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
 
         // Email failure does not roll back PaymentTransaction persistence, and saves receiptEmailError
@@ -308,7 +354,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
 
         const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
 
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-' + randomUUID().substring(0, 8),
           transactiontime: Date.now(),
@@ -330,11 +378,15 @@ describe('VietQR Flow Characterization (e2e)', () => {
           errorReason: null,
           toastMessage: 'Transaction processed successfully',
           object: {
-            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+            reftransactionid: expect.stringMatching(
+              /^AIMS_TXN_\d+_[a-f0-9]{8}$/,
+            ),
           },
         });
 
-        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        const updatedOrder = await orderRepo.findOne({
+          where: { orderId: testOrder.orderId },
+        });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
 
         const txn = await paymentTransactionRepo.findOne({
@@ -354,17 +406,24 @@ describe('VietQR Flow Characterization (e2e)', () => {
       it('should simulate sending email when EMAIL_ENABLED=false', async () => {
         // Mock ConfigService.get to return 'false' for EMAIL_ENABLED
         const originalGet = configService.get.bind(configService);
-        const configGetSpy = jest.spyOn(configService, 'get').mockImplementation((key: string, ...args: any[]) => {
-          if (key === 'EMAIL_ENABLED') {
-            return 'false';
-          }
-          return originalGet(key, ...args);
-        });
+        const configGetSpy = jest
+          .spyOn(configService, 'get')
+          .mockImplementation((key: string, ...args: any[]) => {
+            if (key === 'EMAIL_ENABLED') {
+              return 'false';
+            }
+            return originalGet(key, ...args);
+          });
 
         // Verify that nodemailer transporter.sendMail is not called
-        const transporterSendMailSpy = jest.spyOn((emailService as any).transporter, 'sendMail');
+        const transporterSendMailSpy = jest.spyOn(
+          (emailService as any).transporter,
+          'sendMail',
+        );
 
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-' + randomUUID().substring(0, 8),
           transactiontime: Date.now(),
@@ -386,11 +445,15 @@ describe('VietQR Flow Characterization (e2e)', () => {
           errorReason: null,
           toastMessage: 'Transaction processed successfully',
           object: {
-            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+            reftransactionid: expect.stringMatching(
+              /^AIMS_TXN_\d+_[a-f0-9]{8}$/,
+            ),
           },
         });
 
-        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        const updatedOrder = await orderRepo.findOne({
+          where: { orderId: testOrder.orderId },
+        });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
 
         const txn = await paymentTransactionRepo.findOne({
@@ -410,7 +473,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
       });
 
       it('should fail transaction sync with invalid/missing token', async () => {
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-123',
           transactiontime: Date.now(),
@@ -429,7 +494,9 @@ describe('VietQR Flow Characterization (e2e)', () => {
       });
 
       it('should fail transaction sync when amount mismatch', async () => {
-        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const shortOrderId = testOrder.orderId
+          .replace(/-/g, '')
+          .substring(0, 13);
         const payload = {
           transactionid: 'TXN-123',
           transactiontime: Date.now(),

@@ -14,7 +14,7 @@ import { RefundModule } from './refund/refund.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true
+      isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -41,4 +41,4 @@ import { RefundModule } from './refund/refund.module.js';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

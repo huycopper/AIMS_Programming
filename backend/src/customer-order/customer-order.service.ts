@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from '../order/entities/order.entity.js';
@@ -39,7 +45,8 @@ export class CustomerOrderService {
       order: { createdAt: 'DESC' },
     });
 
-    const canCancel = order.status === 'PENDING' || order.status === 'PENDING_PROCESSING';
+    const canCancel =
+      order.status === 'PENDING' || order.status === 'PENDING_PROCESSING';
 
     const cartItems = (order.items || []).map((item) => ({
       productId: item.productId,
@@ -48,7 +55,10 @@ export class CustomerOrderService {
       weight: Number(item.weight),
       currentPrice: Number(item.unitPrice),
     }));
-    const invoice = this.orderService.calculateShippingFee(order.deliveryInfo.province, cartItems);
+    const invoice = this.orderService.calculateShippingFee(
+      order.deliveryInfo.province,
+      cartItems,
+    );
 
     return {
       orderId: order.orderId,
@@ -96,13 +106,15 @@ export class CustomerOrderService {
     }
 
     if (order.status !== 'PENDING' && order.status !== 'PENDING_PROCESSING') {
-      throw new ConflictException(`Order cannot be cancelled in status ${order.status}`);
+      throw new ConflictException(
+        `Order cannot be cancelled in status ${order.status}`,
+      );
     }
 
     // Process cancellation
     order.status = 'CANCELLED';
     order.cancelledAt = new Date();
-    
+
     await this.orderRepo.save(order);
     this.logger.log(`Order ${order.orderId} cancelled by customer.`);
 
@@ -116,20 +128,30 @@ export class CustomerOrderService {
 
     if (transaction) {
       if (transaction.paymentMethod === 'VIETQR') {
-        const refund = await this.refundService.createManualRefundForVietQR(transaction, 'Customer requested cancellation');
+        const refund = await this.refundService.createManualRefundForVietQR(
+          transaction,
+          'Customer requested cancellation',
+        );
         refundSummary = {
           refundStatus: refund.refundStatus,
           refundMethod: refund.refundMethod,
           refundAmount: Number(refund.refundAmount),
         };
-        
+
         // Fire and forget notification
-        this.notificationService.sendOrderCancelledNotification(order, refund).catch((err) => {
-          this.logger.error(`Failed to send cancellation notification for order ${order.orderId}`, err.stack);
-        });
+        this.notificationService
+          .sendOrderCancelledNotification(order, refund)
+          .catch((err) => {
+            this.logger.error(
+              `Failed to send cancellation notification for order ${order.orderId}`,
+              err.stack,
+            );
+          });
       } else {
         // PayPal or other methods would go here in the future
-        this.logger.warn(`Refund for payment method ${transaction.paymentMethod} is not yet implemented.`);
+        this.logger.warn(
+          `Refund for payment method ${transaction.paymentMethod} is not yet implemented.`,
+        );
       }
     }
 
@@ -154,14 +176,16 @@ export class CustomerOrderService {
     }
 
     let refundSummary: any = null;
-    
+
     const transaction = await this.paymentTransactionRepo.findOne({
       where: { order: { orderId: order.orderId }, status: 'SUCCESS' },
       order: { createdAt: 'DESC' },
     });
 
     if (transaction) {
-      const refund = await this.refundService.getRefundByPaymentTransaction(transaction.paymentTransactionId);
+      const refund = await this.refundService.getRefundByPaymentTransaction(
+        transaction.paymentTransactionId,
+      );
       if (refund) {
         refundSummary = {
           refundStatus: refund.refundStatus,

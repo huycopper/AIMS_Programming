@@ -19,17 +19,27 @@ export class EmailService {
     });
   }
 
-  async sendEmail(to: string, subject: string, html: string, text: string): Promise<void> {
+  async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    text: string,
+  ): Promise<void> {
     const isEnabledStr = this.configService.get<string>('EMAIL_ENABLED');
     const isEnabled = isEnabledStr === 'true'; // Default to false if not explicitly true
-    
+
     if (!isEnabled) {
-      this.logger.log(`[EMAIL_ENABLED=false] Simulated email to ${to}: ${subject}`);
+      this.logger.log(
+        `[EMAIL_ENABLED=false] Simulated email to ${to}: ${subject}`,
+      );
       return;
     }
 
     try {
-      const from = this.configService.get<string>('SMTP_FROM', '"AIMS Store" <no-reply@aims.com>');
+      const from = this.configService.get<string>(
+        'SMTP_FROM',
+        '"AIMS Store" <no-reply@aims.com>',
+      );
       const info = await this.transporter.sendMail({
         from,
         to,
@@ -37,9 +47,14 @@ export class EmailService {
         text,
         html,
       });
-      this.logger.log(`Email sent successfully to ${to}. Message ID: ${info.messageId}`);
+      this.logger.log(
+        `Email sent successfully to ${to}. Message ID: ${info.messageId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to send email to ${to}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send email to ${to}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

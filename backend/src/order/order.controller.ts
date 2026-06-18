@@ -1,4 +1,13 @@
-import { Body, Controller, Get, NotFoundException, Param, Post, ValidationPipe, Logger } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  ValidationPipe,
+  Logger,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -23,7 +32,7 @@ export class PlaceOrderController {
     private readonly orderRepo: Repository<Order>,
     @InjectRepository(DeliveryInfo)
     private readonly deliveryInfoRepo: Repository<DeliveryInfo>,
-  ) { }
+  ) {}
 
   /**
    * POST /api/orders/calculate-shipping
@@ -65,7 +74,7 @@ export class PlaceOrderController {
     });
 
     // 2. Build OrderItems from cart
-    const orderItems: Partial<OrderItem>[] = dto.cartItems.map(item => ({
+    const orderItems: Partial<OrderItem>[] = dto.cartItems.map((item) => ({
       productId: item.productId,
       productTitle: item.productTitle || item.productId,
       quantity: item.quantity,
@@ -124,7 +133,10 @@ export class PlaceOrderController {
       weight: Number(item.weight),
       currentPrice: Number(item.unitPrice),
     }));
-    const invoice = this.orderService.calculateShippingFee(order.deliveryInfo.province, cartItems);
+    const invoice = this.orderService.calculateShippingFee(
+      order.deliveryInfo.province,
+      cartItems,
+    );
 
     return {
       orderId: order.orderId,
