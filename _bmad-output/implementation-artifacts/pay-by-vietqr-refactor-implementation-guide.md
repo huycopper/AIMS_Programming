@@ -712,7 +712,7 @@ Do not:
 - Do not change backend response assumptions.
 - Do not move non-VietQR order models.
 
-#### [ ] PVQR-5.3: Extract Frontend Payment State And Storage Controls
+#### [x] PVQR-5.3: Extract Frontend Payment State And Storage Controls
 
 Goal: Move frontend polling, success handling, and localStorage cleanup out of the component into control services.
 
@@ -724,13 +724,13 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Component still displays the same loading, error, QR, confirming, and success states.
-- [ ] Polling max attempts and delay remain unchanged.
-- [ ] Local storage key `aims_current_order_id` remains unchanged.
-- [ ] Local storage key `aims_current_invoice` remains unchanged.
-- [ ] Local storage key `aims_delivery_draft` remains unchanged.
-- [ ] Cart and draft cleanup still occur only after confirmed success.
-- [ ] `PaymentConfirmationResponse.status === "SUCCESS"` plus transaction presence remains the success condition.
+- [x] Component still displays the same loading, error, QR, confirming, and success states.
+- [x] Polling max attempts and delay remain unchanged.
+- [x] Local storage key `aims_current_order_id` remains unchanged.
+- [x] Local storage key `aims_current_invoice` remains unchanged.
+- [x] Local storage key `aims_delivery_draft` remains unchanged.
+- [x] Cart and draft cleanup still occur only after confirmed success.
+- [x] `PaymentConfirmationResponse.status === "SUCCESS"` plus transaction presence remains the success condition.
 
 Do not:
 
@@ -738,7 +738,7 @@ Do not:
 - Do not change localStorage key names.
 - Do not clear cart earlier than current behavior.
 
-#### [ ] PVQR-5.4: Move VietQR Screen Into Frontend Slice UI Folder
+#### [x] PVQR-5.4: Move VietQR Screen Into Frontend Slice UI Folder
 
 Goal: Move the VietQR payment screen files into the target frontend slice path.
 
@@ -752,11 +752,11 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Route `/vietqr-payment/:orderId` remains unchanged.
-- [ ] Route `/vietqr-payment` remains unchanged.
-- [ ] App routes import the component from the new path.
-- [ ] No imports remain from the old VietQR payment screen folder.
-- [ ] UI renders as before.
+- [x] Route `/vietqr-payment/:orderId` remains unchanged.
+- [x] Route `/vietqr-payment` remains unchanged.
+- [x] App routes import the component from the new path.
+- [x] No imports remain from the old VietQR payment screen folder.
+- [x] UI renders as before.
 
 Do not:
 

@@ -3,7 +3,7 @@ import { ProductListComponent } from './boundaries/product-list/product-list';
 import { CartScreen } from './boundaries/cart-screen/cart-screen';
 import { DeliveryInfoScreen } from './boundaries/delivery-info-screen/delivery-info-screen';
 import { InvoiceScreen } from './boundaries/invoice-screen/invoice-screen';
-import { VietQRPaymentScreen } from './boundaries/vietqr-payment-screen/vietqr-payment-screen.component';
+import { VietQRPaymentScreen } from './pay-order/pay-by-vietqr/boundary/ui/vietqr-payment-screen.component';
 import { CustomerOrderDetailsScreen } from './boundaries/customer-order-details-screen/customer-order-details-screen';
 import { CancelOrderScreen } from './boundaries/cancel-order-screen/cancel-order-screen';
 

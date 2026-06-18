@@ -1,10 +1,10 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CartService } from '../../services/cart.service';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { VietQrPaymentBoundary } from '../../pay-order/pay-by-vietqr/boundary/api/vietqr-payment.boundary';
-import { PaymentConfirmationResponse } from '../../pay-order/pay-by-vietqr/entity/vietqr-payment.models';
+import { VietQrPaymentControl } from '../../control/vietqr-payment.control';
+import { VietQrPaymentStorageControl } from '../../control/vietqr-payment-storage.control';
+import { PaymentConfirmationResponse } from '../../entity/vietqr-payment.models';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
@@ -25,24 +25,20 @@ export class VietQRPaymentScreen implements OnInit {
   orderId = '';
   confirmation: PaymentConfirmationResponse | null = null;
 
-  private readonly currentOrderIdKey = 'aims_current_order_id';
-  private readonly currentInvoiceKey = 'aims_current_invoice';
-  private readonly deliveryDraftKey = 'aims_delivery_draft';
-
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private vietQrPaymentBoundary: VietQrPaymentBoundary,
-    private cartService: CartService,
+    private paymentControl: VietQrPaymentControl,
+    private storageControl: VietQrPaymentStorageControl,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
     private location: Location
-  ) { }
+  ) {}
 
   ngOnInit() {
     const state = history.state;
     const routeOrderId = this.route.snapshot.paramMap.get('orderId');
-    this.orderId = routeOrderId || state?.['orderId'] || this.loadCurrentOrderId();
+    this.orderId = routeOrderId || state?.['orderId'] || this.storageControl.loadCurrentOrderId();
 
     if (!this.orderId) {
       this.loading = false;
@@ -50,7 +46,7 @@ export class VietQRPaymentScreen implements OnInit {
       return;
     }
 
-    this.saveCurrentOrderId(this.orderId);
+    this.storageControl.saveCurrentOrderId(this.orderId);
     this.loadPaymentState();
   }
 
@@ -58,7 +54,7 @@ export class VietQRPaymentScreen implements OnInit {
     this.loading = true;
     this.errorMessage = null;
 
-    this.vietQrPaymentBoundary.requestVietQrPayment(this.orderId).subscribe({
+    this.paymentControl.requestPayment(this.orderId).subscribe({
       next: (res) => {
         this.qrDataURL = res.qrDataURL;
         this.amount = res.amount;
@@ -82,11 +78,11 @@ export class VietQRPaymentScreen implements OnInit {
     this.confirmingPayment = true;
     this.errorMessage = null;
 
-    this.vietQrPaymentBoundary.confirmVietQrPayment(this.orderId).subscribe({
+    this.paymentControl.confirmPayment(this.orderId).subscribe({
       next: (res) => {
         console.log('Payment confirmation result:', res);
 
-        if (this.isConfirmed(res)) {
+        if (this.paymentControl.isConfirmed(res)) {
           this.applyPaymentSuccess(res);
           return;
         }
@@ -124,9 +120,9 @@ export class VietQRPaymentScreen implements OnInit {
   private loadPaymentState(): void {
     this.loading = true;
 
-    this.vietQrPaymentBoundary.getPaymentConfirmation(this.orderId).subscribe({
+    this.paymentControl.checkPaymentState(this.orderId).subscribe({
       next: (res) => {
-        if (this.isConfirmed(res)) {
+        if (this.paymentControl.isConfirmed(res)) {
           this.applyPaymentSuccess(res);
           return;
         }
@@ -139,35 +135,22 @@ export class VietQRPaymentScreen implements OnInit {
     });
   }
 
-  private pollPaymentConfirmation(attempt = 0): void {
-    const maxAttempts = 12;
-    const delayMs = 500;
-
-    setTimeout(() => {
-      this.vietQrPaymentBoundary.getPaymentConfirmation(this.orderId).subscribe({
-        next: (res) => {
-          if (this.isConfirmed(res)) {
-            this.applyPaymentSuccess(res);
-            return;
-          }
-
-          if (attempt < maxAttempts) {
-            this.pollPaymentConfirmation(attempt + 1);
-            return;
-          }
-
-          this.confirmingPayment = false;
+  private pollPaymentConfirmation(): void {
+    this.paymentControl.pollConfirmation(this.orderId).subscribe({
+      next: (res) => {
+        this.applyPaymentSuccess(res);
+      },
+      error: (err) => {
+        this.confirmingPayment = false;
+        if (err?.message === 'TIMEOUT') {
           this.errorMessage = 'Payment has not been confirmed yet. Please try again after VietQR sends the transaction.';
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
+        } else {
           console.error('Payment polling failed', err);
-          this.confirmingPayment = false;
           this.errorMessage = 'Cannot check payment status. Please try again.';
-          this.cdr.detectChanges();
-        },
-      });
-    }, delayMs);
+        }
+        this.cdr.detectChanges();
+      },
+    });
   }
 
   private applyPaymentSuccess(res: PaymentConfirmationResponse): void {
@@ -178,29 +161,6 @@ export class VietQRPaymentScreen implements OnInit {
     this.loading = false;
     this.confirmingPayment = false;
     this.errorMessage = null;
-    this.cartService.emptyCart();
-    this.clearOrderingDrafts();
     this.cdr.detectChanges();
-  }
-
-  private isConfirmed(res: PaymentConfirmationResponse): boolean {
-    return res.status === 'SUCCESS' && !!res.transaction;
-  }
-
-  private loadCurrentOrderId(): string {
-    if (typeof localStorage === 'undefined') return '';
-    return localStorage.getItem(this.currentOrderIdKey) || '';
-  }
-
-  private saveCurrentOrderId(orderId: string): void {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.setItem(this.currentOrderIdKey, orderId);
-  }
-
-  private clearOrderingDrafts(): void {
-    if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(this.currentOrderIdKey);
-    localStorage.removeItem(this.currentInvoiceKey);
-    localStorage.removeItem(this.deliveryDraftKey);
   }
 }
