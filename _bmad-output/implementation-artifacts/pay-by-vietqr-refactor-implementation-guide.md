@@ -377,7 +377,7 @@ Do not:
 - Do not move `Order` entity.
 - Do not change order-not-found behavior.
 
-#### [ ] PVQR-3.4: Split Transaction Sync Webhook Boundary And Control
+#### [x] PVQR-3.4: Split Transaction Sync Webhook Boundary And Control
 
 Goal: Split the large transaction sync controller into thin webhook boundaries and control services.
 
@@ -393,24 +393,24 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `POST /vqr/api/token_generate` response behavior remains unchanged.
-- [ ] `POST /vqr/bank/api/transaction-sync` success and error response shapes remain unchanged.
-- [ ] Bearer token validation behavior remains unchanged.
-- [ ] Basic credential validation behavior remains unchanged.
-- [ ] Order matching still queries all orders and matches using existing logic.
-- [ ] Amount and content validation behavior remains unchanged.
-- [ ] Transaction creation fields remain unchanged.
-- [ ] Order status update to `PENDING_PROCESSING` remains unchanged.
-- [ ] Receipt email success/error handling remains unchanged through current notification dependency until Phase 4 replaces it.
-- [ ] Transaction sync control exposes a clear delegation point for payment success notification.
+- [x] `POST /vqr/api/token_generate` response behavior remains unchanged.
+- [x] `POST /vqr/bank/api/transaction-sync` success and error response shapes remain unchanged.
+- [x] Bearer token validation behavior remains unchanged.
+- [x] Basic credential validation behavior remains unchanged.
+- [x] Order matching still queries all orders and matches using existing logic.
+- [x] Amount and content validation behavior remains unchanged.
+- [x] Transaction creation fields remain unchanged.
+- [x] Order status update to `PENDING_PROCESSING` remains unchanged.
+- [x] Receipt email success/error handling remains unchanged through current notification dependency until Phase 4 replaces it.
+- [x] Transaction sync control exposes a clear delegation point for payment success notification.
 
 Tests/checks:
 
-- [ ] Add tests for invalid/missing Basic auth.
-- [ ] Add tests for invalid/missing Bearer auth.
-- [ ] Add tests for no matching order, amount mismatch, content mismatch, and successful transaction sync.
-- [ ] Add tests for email failure after transaction persistence, or preserve equivalent evidence from `PVQR-4.1` if implemented first.
-- [ ] Run backend unit and e2e smoke tests.
+- [x] Add tests for invalid/missing Basic auth.
+- [x] Add tests for invalid/missing Bearer auth.
+- [x] Add tests for no matching order, amount mismatch, content mismatch, and successful transaction sync.
+- [x] Add tests for email failure after transaction persistence, or preserve equivalent evidence from `PVQR-4.1` if implemented first.
+- [x] Run backend unit and e2e smoke tests.
 
 Do not:
 
@@ -420,7 +420,7 @@ Do not:
 - Do not redesign notification behavior.
 - Do not change transaction persistence fields.
 
-#### [ ] PVQR-3.5: Create And Wire PayByVietQrModule
+#### [x] PVQR-3.5: Create And Wire PayByVietQrModule
 
 Goal: Create a dedicated NestJS module for the backend VietQR slice and wire it into the existing backend module graph.
 
@@ -432,11 +432,11 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] VietQR controllers/providers are owned by `PayByVietQrModule`.
-- [ ] `TypeOrmModule.forFeature([PaymentTransaction, Order])` remains available where needed.
-- [ ] `JwtModule`, `ConfigModule`, and `NotificationModule` dependencies remain available where needed.
-- [ ] No duplicate routes/providers remain.
-- [ ] Backend compiles and tests pass.
+- [x] VietQR controllers/providers are owned by `PayByVietQrModule`.
+- [x] `TypeOrmModule.forFeature([PaymentTransaction, Order])` remains available where needed.
+- [x] `JwtModule`, `ConfigModule`, and `NotificationModule` dependencies remain available where needed.
+- [x] No duplicate routes/providers remain.
+- [x] Backend compiles and tests pass.
 
 Do not:
 
