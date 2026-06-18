@@ -2,9 +2,9 @@
 
 ## Context
 
-The Pay by VietQR use case is already implemented and working, but the current code is spread across multiple backend and frontend paths. Several classes mix Boundary, Control, and Entity responsibilities, especially the VietQR transaction sync callback handling and payment orchestration.
+The Pay by VietQR use case is already implemented and working. This backlog is intentionally lean because the current 15-story plan is too fine-grained for the actual goal.
 
-This backlog converts the agreed architecture decision into small, reviewable refactor stories. The refactor goal is to move the use case into dedicated BCE-oriented slices without changing runtime behavior.
+This is a code organization refactor, not a feature rewrite. The objective is to move the existing Pay by VietQR code into the correct ECB/OOP-oriented folders while preserving the current endpoint contract, route behavior, runtime behavior, and business logic.
 
 Target slice paths:
 
@@ -17,779 +17,251 @@ Shared entities, especially `PaymentTransaction`, remain in their current shared
 
 These constraints apply to every story in this backlog:
 
-- Do not change any public endpoint.
+- Do not change any public endpoint, route, HTTP method, or response JSON field name.
 - Do not change business behavior.
-- Do not move `PaymentTransaction` out of its shared location.
-- Do not optimize order matching in this refactor.
+- Do not rewrite the Pay by VietQR feature.
+- Do not optimize order matching.
+- Do not move `PaymentTransaction` out of its shared entity location.
 - Do not change the database schema.
 - Do not change the VietQR success state transition: successful VietQR payment still updates the order to `PENDING_PROCESSING`.
 - Do not change cart cleanup behavior: the frontend clears cart and ordering drafts only after confirmed success with a transaction.
-- Do not change the VietQR Sandbox Test Callback behavior.
+- Do not change VietQR Sandbox Test Callback behavior.
 - Do not implement automatic VietQR refund behavior.
 - Keep VietQR manual refund behavior unchanged.
 - Keep existing environment variable names unchanged.
-- Keep response JSON field names unchanged.
-- For `PVQR-1.1`, the primary acceptance signal is live endpoint / integration characterization against the local backend, not mock-only unit tests.
-- Mock tests may be used only as supporting coverage where useful; they do not replace acceptance verification through the real local backend endpoints.
-- Agents may read `.env` during test execution and manual verification so the backend and VietQR sandbox use the correct local configuration.
+- Agents may read `.env` during backend/test execution so local backend and VietQR sandbox configuration are correct.
 - Never copy, print, commit, or write secret values from `.env` into artifacts, logs, test output, commits, or final responses.
-- When VietQR callback behavior is verified, ensure the local backend on port `8080` is publicly reachable through `https://carefully-nectar-gulf.ngrok-free.dev` by running `ngrok http 8080` when needed.
-
-## Test Strategy
-
-`PVQR-1.1` must characterize Pay by VietQR through live endpoint / integration verification against the local backend. The verification should exercise the currently implemented HTTP contract and VietQR sandbox callback path using the project configuration loaded from `.env`, while keeping all secret values out of artifacts, logs, commits, and responses.
-
-Mock-based tests are allowed as supporting checks for hard-to-isolate dependencies, but they are not the acceptance mechanism for `PVQR-1.1`. The acceptance mechanism is evidence that the real local backend endpoints preserve current behavior:
-
-- `POST /api/payment/pay-order/:orderId`
-- `POST /api/payment/pay-order/:orderId/confirm`
-- `GET /api/payment/pay-order/:orderId/confirmation`
-- `POST /vqr/api/token_generate`
-- `POST /vqr/bank/api/transaction-sync`
-
-For VietQR callback verification, the backend must listen on local port `8080` and be exposed through `https://carefully-nectar-gulf.ngrok-free.dev`. Start the tunnel with:
+- For callback verification, expose the local backend on port `8080` through ngrok when needed:
 
 ```bash
 ngrok http 8080
 ```
 
-## Target Backend Structure
+Expected public callback URL:
 
 ```text
-backend/src/pay-order/pay-by-vietqr/
-  pay-by-vietqr.module.ts
-
-  entity/
-    vietqr-payment-code.vo.ts
-    vietqr-transaction-sync.dto.ts
-    vietqr-payment-details.vo.ts
-    payment-confirmation.model.ts
-
-  control/
-    pay-through-vietqr.controller.ts
-    vietqr-qr-generation.control.ts
-    vietqr-payment-confirmation.control.ts
-    vietqr-transaction-sync.control.ts
-    vietqr-callback-validator.control.ts
-    vietqr-order-matcher.control.ts
-    vietqr-payment-transaction-factory.ts
-
-  boundary/
-    http/
-      pay-order.controller.ts
-      dto/
-        generate-vietqr-payment.response.ts
-        payment-confirmation.response.ts
-
-    webhook/
-      vietqr-token.boundary.ts
-      vietqr-transaction-sync.boundary.ts
-      dto/
-        vietqr-token.response.ts
-        vietqr-transaction-sync.response.ts
-
-    gateway/
-      vietqr.boundary.ts
-      vietqr-boundary.types.ts
+https://carefully-nectar-gulf.ngrok-free.dev
 ```
 
-## Target Frontend Structure
+## Lean Implementation Order
 
-```text
-frontend/src/app/pay-order/pay-by-vietqr/
-  entity/
-    vietqr-payment.models.ts
+1. `PVQR-1` - Baseline & Live Smoke Check
+2. `PVQR-2` - Backend Restructure
+3. `PVQR-3` - Frontend Restructure
+4. `PVQR-4` - Cleanup & Regression
 
-  control/
-    vietqr-payment.control.ts
-    vietqr-payment-storage.control.ts
+## PVQR-1: Baseline & Live Smoke Check
 
-  boundary/
-    api/
-      vietqr-payment.boundary.ts
+### Goal
 
-    ui/
-      vietqr-payment-screen.component.ts
-      vietqr-payment-screen.component.html
-      vietqr-payment-screen.component.css
-```
+Establish a reliable baseline for the already-working Pay by VietQR flow before moving files. This story characterizes current behavior; it should not modify production code unless a test harness or verification script is strictly necessary.
 
-## Implementation Order
+### File Scope
 
-1. `PVQR-1.1` - Live endpoint characterization for backend VietQR flow.
-2. `PVQR-1.2` - Frontend characterization tests for VietQR screen.
-3. `PVQR-2.1` - Extract VietQR DTO and response models.
-4. `PVQR-2.2` - Extract VietQR payment code value object.
-5. `PVQR-3.1` - Move VietQR external client into Boundary/Gateway.
-6. `PVQR-3.2` - Extract `PayThroughVietQRController` control.
-7. `PVQR-3.3` - Move Pay Order HTTP boundary into the backend slice.
-8. `PVQR-3.4` - Split Transaction Sync webhook boundary and control.
-9. `PVQR-3.5` - Create and wire `PayByVietQrModule`.
-10. `PVQR-4.1` - Extract frontend VietQR API boundary from `OrderService`.
-11. `PVQR-4.2` - Move frontend VietQR models into the frontend slice.
-12. `PVQR-4.3` - Extract frontend payment state and storage controls.
-13. `PVQR-4.4` - Move VietQR screen into the frontend slice UI folder.
-14. `PVQR-5.1` - Remove old VietQR files and imports safely.
-15. `PVQR-5.2` - Run full regression checklist for Pay by VietQR.
+- Existing backend VietQR/payment files, read-only for behavior inspection:
+  - `backend/src/payment/`
+  - `backend/src/boundaries/viet-qr/`
+- Existing frontend VietQR screen/service files, read-only for behavior inspection:
+  - `frontend/src/app/boundaries/vietqr-payment-screen/`
+  - `frontend/src/app/services/order.service.ts`
+  - `frontend/src/app/models/order.model.ts`
+- Optional supporting test or verification files if the repository already has a suitable test location.
+- No production refactor in this story.
 
-## Epic 1: Backend Safety Net Before Refactor
+### Main Tasks
 
-### PVQR-1.1: Live Endpoint Characterization Tests For Backend VietQR Flow
+- Identify the current backend endpoints and frontend routes used by Pay by VietQR.
+- Run a live local backend smoke check for the current VietQR flow.
+- Read `.env` only as needed to run backend/test configuration; do not expose secret values.
+- Start the backend on port `8080`.
+- Start ngrok with `ngrok http 8080` when callback verification is needed.
+- Verify that the callback public URL is `https://carefully-nectar-gulf.ngrok-free.dev`.
+- Record only non-secret observations needed to protect behavior during the refactor.
 
-**Goal**
+### Acceptance Criteria
 
-Capture the current backend VietQR behavior through live local backend endpoint characterization and manual integration verification before moving or splitting production files.
-
-**Expected File Scope**
-
-- `backend/src/payment/controllers/pay-order.controller.ts`
-- `backend/src/payment/services/pay-through-payment-gateway.service.ts`
-- `backend/src/boundaries/viet-qr/viet-qr.service.ts`
-- `backend/src/boundaries/viet-qr/transaction-sync.controller.ts`
-- New backend test files for VietQR behavior.
-
-**Acceptance Criteria**
-
-- Live endpoint verification covers QR generation through `POST /api/payment/pay-order/:orderId`.
-- Live endpoint verification covers payment confirmation through `POST /api/payment/pay-order/:orderId/confirm`.
-- Live endpoint verification covers confirmation query/polling behavior through `GET /api/payment/pay-order/:orderId/confirmation`.
-- Live endpoint verification covers VietQR token generation through `POST /vqr/api/token_generate`.
-- Live endpoint verification covers transaction sync success and basic error paths through `POST /vqr/bank/api/transaction-sync`.
-- VietQR sandbox callback behavior is verified with the local backend on port `8080` exposed through `https://carefully-nectar-gulf.ngrok-free.dev`.
-- Supporting mock tests may be added for repositories, JWT, notification, QR conversion, or external dependency isolation, but the story is not accepted on mock-only evidence.
-- Test and manual verification may read `.env` for configuration, but no `.env` secret value is copied, printed, committed, or written to artifacts, logs, test output, or final responses.
-- Production behavior remains unchanged while the live endpoint behavior is characterized.
-
-**Tests To Run Or Add**
-
-- Read `.env` for local backend and VietQR sandbox configuration without exposing secret values.
-- Start the backend on local port `8080`.
-- Start ngrok with `ngrok http 8080`.
-- Verify the public callback URL is `https://carefully-nectar-gulf.ngrok-free.dev`.
-- Exercise the five live endpoints listed in the acceptance criteria using current VietQR sandbox callback configuration.
-- Add supporting automated tests where useful, but keep the acceptance evidence tied to live endpoint behavior.
-- Run the backend test suite with `npm test` from `backend` after adding or updating automated tests.
-
-**Risks**
-
-- Live verification depends on correct `.env` configuration, backend startup, local database state, VietQR sandbox availability, and a working ngrok tunnel.
-- Mock-only tests can miss callback, routing, provider wiring, and environment configuration issues.
-- Logs or artifacts could accidentally expose secrets if verification output is not scrubbed.
-
-**Do Not Do**
-
-- Do not modify production behavior unless strictly required to make tests possible.
-- Do not accept this story based only on mocks.
-- Do not expose secret values from `.env`.
-- Do not commit `.env` content or verification output containing secrets.
-- Do not change endpoints.
-- Do not optimize order matching.
-
-**Suggested Implementation Order**
-
-Implement first, before any file movement.
-
-### PVQR-1.2: Frontend Characterization Tests For VietQR Screen
-
-**Goal**
-
-Capture current frontend VietQR UI states before extracting API/control/storage concerns.
-
-**Expected File Scope**
-
-- `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.ts`
-- `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.html`
-- `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.css`
-- New or updated frontend spec files.
-
-**Acceptance Criteria**
-
-- Missing `orderId` displays an error state.
-- Successful QR loading displays QR image, amount, and content.
-- Successful payment confirmation renders success details.
-- Cart and ordering drafts are cleared only after confirmed success.
-- Polling timeout displays the existing non-success error state.
-
-**Tests To Run Or Add**
-
-- Add Angular component tests with mocked `OrderService` and `CartService`.
-- Use fake timers for polling behavior.
-- Run frontend test suite.
-
-**Risks**
-
-- Polling tests can become flaky if real timers are used.
-- Component setup may be fragile because the component currently owns state, polling, storage cleanup, and UI.
-
-**Do Not Do**
-
-- Do not change UI text or visual behavior unless required by existing tests.
-- Do not change route paths.
-- Do not change backend API paths.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-1.1`.
-
-## Epic 2: Backend Entity, DTO, And Value Object Extraction
-
-### PVQR-2.1: Extract VietQR DTO And Response Models
-
-**Goal**
-
-Move VietQR request/response model definitions out of large controllers and into the new backend slice.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/entity/vietqr-transaction-sync.dto.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/entity/payment-confirmation.model.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/webhook/dto/vietqr-token.response.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/webhook/dto/vietqr-transaction-sync.response.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/http/dto/generate-vietqr-payment.response.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/http/dto/payment-confirmation.response.ts`
-- Update imports in the current backend VietQR files.
-
-**Acceptance Criteria**
-
-- DTO and response shapes remain unchanged.
-- `transaction-sync.controller.ts` no longer defines inline response classes.
-- Existing endpoints still return the same JSON field names.
-- Backend tests from Epic 1 still pass.
-
-**Tests To Run Or Add**
-
-- Run backend unit tests from `PVQR-1.1`.
-- Add lightweight tests for response DTO construction if useful.
-
-**Risks**
-
-- Circular imports between the new slice and shared payment/order entities.
-- Response field casing could accidentally change.
-
-**Do Not Do**
-
-- Do not change response JSON field names.
-- Do not change endpoint paths.
-- Do not move `PaymentTransaction`.
-
-**Suggested Implementation Order**
-
-Implement after Epic 1 safety tests.
-
-### PVQR-2.2: Extract VietQR Payment Code Value Object
-
-**Goal**
-
-Centralize VietQR payment code rules: short order id, payment content, and rounded amount.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/entity/vietqr-payment-code.vo.ts`
-- Update `backend/src/boundaries/viet-qr/viet-qr.service.ts`
-- Update `backend/src/boundaries/viet-qr/transaction-sync.controller.ts`
-
-**Acceptance Criteria**
-
-- Short order id remains the order UUID without hyphens, truncated to the first 13 characters.
-- Payment content remains `AIMS <shortOrderId>`.
-- Payment amount remains the rounded numeric `order.totalAmount`.
-- QR generation and transaction sync validation use the same value object.
-
-**Tests To Run Or Add**
-
-- Add unit tests for `VietQrPaymentCode`.
-- Run backend tests from Epic 1.
-
-**Risks**
-
-- Any mismatch in payment content will break transaction sync matching.
-- Any mismatch in amount rounding can reject valid callbacks.
-
-**Do Not Do**
-
-- Do not change payment content format.
-- Do not change short order id length or derivation.
-- Do not change amount validation semantics.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-2.1`.
-
-## Epic 3: Backend Control And Boundary Split
-
-### PVQR-3.1: Move VietQR External Client Into Boundary/Gateway
-
-**Goal**
-
-Move external VietQR API calls into the new backend slice while keeping request behavior unchanged.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/gateway/vietqr.boundary.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/gateway/vietqr-boundary.types.ts`
-- Update imports/providers in `backend/src/payment/payment.module.ts`
-- Update imports in current payment orchestration code.
-
-**Acceptance Criteria**
-
-- `getAccessToken`, `generateQRCode`, and `handleAPICallback` behavior remains unchanged.
-- VietQR token request headers remain unchanged.
-- VietQR QR generation request body remains unchanged.
-- VietQR Sandbox Test Callback request body remains unchanged.
-- QR conversion still uses `qrcode.toDataURL`.
-
-**Tests To Run Or Add**
-
-- Add or update tests that mock `fetch`.
-- Run backend tests from Epic 1.
-
-**Risks**
-
-- NestJS provider registration may fail after path movement.
-- Environment variable lookup may accidentally change.
-
-**Do Not Do**
-
-- Do not change environment variable names.
-- Do not change VietQR request body fields.
-- Do not introduce a new HTTP client abstraction unless needed for this move.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-2.2`.
-
-### PVQR-3.2: Extract PayThroughVietQRController Control
-
-**Goal**
-
-Rename and move payment orchestration into a BCE-aligned VietQR control class.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/control/pay-through-vietqr.controller.ts`
-- Optionally create `backend/src/pay-order/pay-by-vietqr/control/vietqr-payment-confirmation.control.ts`
-- Update imports in `backend/src/payment/controllers/pay-order.controller.ts`
-- Update providers in `backend/src/payment/payment.module.ts`
-
-**Acceptance Criteria**
-
-- `PayThroughPaymentGatewayController` responsibilities are represented by `PayThroughVietQRController`.
-- Public control methods preserve current semantics: generate QR, confirm payment, get confirmation.
-- Confirmation response remains unchanged.
-- The mutable access token behavior is not redesigned in this story.
-
-**Tests To Run Or Add**
-
-- Run backend unit tests.
-- Add provider wiring test if dependency injection becomes non-trivial.
-
-**Risks**
-
-- Renaming class/provider can break NestJS dependency injection.
-- Splitting confirmation logic too aggressively can change polling behavior.
-
-**Do Not Do**
-
-- Do not change confirmation response shape.
-- Do not change polling attempts or delay.
-- Do not redesign access token caching in this story.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-3.1`.
-
-### PVQR-3.3: Move Pay Order HTTP Boundary Into Backend Slice
-
-**Goal**
-
-Move the frontend-facing pay order controller into the VietQR backend slice.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/http/pay-order.controller.ts`
-- Update `backend/src/payment/payment.module.ts`
-- Retire or replace imports from `backend/src/payment/controllers/pay-order.controller.ts`
-
-**Acceptance Criteria**
-
-- These endpoints remain exactly unchanged:
+- Current behavior is understood and documented sufficiently for the refactor.
+- These existing backend contracts are confirmed unchanged as the baseline:
   - `POST /api/payment/pay-order/:orderId`
   - `POST /api/payment/pay-order/:orderId/confirm`
   - `GET /api/payment/pay-order/:orderId/confirmation`
-- Controller acts as a thin HTTP boundary and delegates to control.
-- Order lookup behavior remains unchanged.
-- No duplicate route registration exists.
-
-**Tests To Run Or Add**
-
-- Run backend controller tests.
-- Add e2e smoke tests for the three endpoints if absent.
-
-**Risks**
-
-- Duplicate controller registration can cause confusing route behavior.
-- Missing repository injection can fail at runtime.
-
-**Do Not Do**
-
-- Do not change route path, HTTP method, or response shape.
-- Do not move `Order` entity.
-- Do not change order-not-found behavior.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-3.2`.
-
-### PVQR-3.4: Split Transaction Sync Webhook Boundary And Control
-
-**Goal**
-
-Split the large transaction sync controller into thin webhook boundaries and control services.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/webhook/vietqr-token.boundary.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/boundary/webhook/vietqr-transaction-sync.boundary.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/control/vietqr-transaction-sync.control.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/control/vietqr-callback-validator.control.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/control/vietqr-order-matcher.control.ts`
-- Create `backend/src/pay-order/pay-by-vietqr/control/vietqr-payment-transaction-factory.ts`
-- Update module providers/controllers.
-
-**Acceptance Criteria**
-
-- `POST /vqr/api/token_generate` response behavior remains unchanged.
-- `POST /vqr/bank/api/transaction-sync` success and error response shapes remain unchanged.
-- Bearer token validation behavior remains unchanged.
-- Basic credential validation behavior remains unchanged.
-- Order matching still queries all orders and matches using the existing logic.
-- Amount and content validation behavior remains unchanged.
-- Transaction creation fields remain unchanged.
-- Order status update to `PENDING_PROCESSING` remains unchanged.
-- Receipt email success/error handling remains unchanged.
-
-**Tests To Run Or Add**
-
-- Add tests for invalid/missing Basic auth.
-- Add tests for invalid/missing Bearer auth.
-- Add tests for no matching order.
-- Add tests for amount mismatch.
-- Add tests for content mismatch.
-- Add tests for successful transaction sync.
-- Add tests for email failure after transaction persistence.
-- Run backend unit and e2e smoke tests.
-
-**Risks**
-
-- This is the largest backend refactor story.
-- Splitting persistence, validation, and response handling can accidentally change error timing or response shape.
-- Email handling can accidentally become blocking in a different way.
-
-**Do Not Do**
-
-- Do not optimize order matching.
-- Do not replace the all-orders query in this story.
-- Do not change transaction response JSON shape.
-- Do not change notification behavior.
-- Do not change transaction persistence fields.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-3.3`. Keep the commit focused and review carefully.
-
-### PVQR-3.5: Create And Wire PayByVietQrModule
-
-**Goal**
-
-Create a dedicated NestJS module for the backend VietQR slice and wire it into the existing backend module graph.
-
-**Expected File Scope**
-
-- Create `backend/src/pay-order/pay-by-vietqr/pay-by-vietqr.module.ts`
-- Update `backend/src/payment/payment.module.ts`
-- Optionally update `backend/src/app.module.ts` if the final module graph requires direct import.
-
-**Acceptance Criteria**
-
-- VietQR controllers/providers are owned by `PayByVietQrModule`.
-- `TypeOrmModule.forFeature([PaymentTransaction, Order])` remains available where needed.
-- `JwtModule`, `ConfigModule`, and `NotificationModule` dependencies remain available where needed.
-- No duplicate routes/providers remain.
-- Backend compiles and tests pass.
-
-**Tests To Run Or Add**
-
-- Run backend compile/test suite.
-- Run e2e smoke tests for pay-order and transaction-sync endpoints.
-
-**Risks**
-
-- Module dependency wiring may be incomplete.
-- Importing both old and new modules can duplicate controllers.
-
-**Do Not Do**
-
-- Do not move shared entities.
-- Do not change module behavior unrelated to VietQR.
-- Do not introduce circular module imports.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-3.4`.
-
-## Epic 4: Frontend Slice Refactor
-
-### PVQR-4.1: Extract Frontend VietQR API Boundary From OrderService
-
-**Goal**
-
-Move frontend VietQR HTTP calls from the broad `OrderService` into a dedicated API boundary.
-
-**Expected File Scope**
-
-- Create `frontend/src/app/pay-order/pay-by-vietqr/boundary/api/vietqr-payment.boundary.ts`
-- Update `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.ts`
-- Optionally keep temporary compatibility wrappers in `frontend/src/app/services/order.service.ts`.
-
-**Acceptance Criteria**
-
-- VietQR API methods live in the new boundary.
-- API URL remains `http://localhost:8080/api/payment/pay-order`.
-- Component behavior remains unchanged.
-- Order placement and customer-order methods in `OrderService` remain unaffected.
-
-**Tests To Run Or Add**
-
-- Add tests for the new API boundary.
-- Run frontend component tests from Epic 1.
-
-**Risks**
-
-- Angular dependency injection may fail if the service is not provided correctly.
-- A temporary wrapper can hide old imports if not cleaned later.
-
-**Do Not Do**
-
-- Do not change backend API paths.
-- Do not change request/response types.
-- Do not alter order/customer-order service behavior.
-
-**Suggested Implementation Order**
-
-Implement after backend slice is stable, or in parallel after Epic 1 if the API contract is unchanged.
-
-### PVQR-4.2: Move Frontend VietQR Models Into Frontend Slice
-
-**Goal**
-
-Move VietQR-specific TypeScript interfaces out of the general order model file.
-
-**Expected File Scope**
-
-- Create `frontend/src/app/pay-order/pay-by-vietqr/entity/vietqr-payment.models.ts`
-- Update imports in the new VietQR API boundary.
-- Update imports in the VietQR payment screen.
-- Optionally leave compatibility exports in `frontend/src/app/models/order.model.ts` until cleanup.
-
-**Acceptance Criteria**
-
-- `VietQrPaymentRequest` lives in the VietQR slice.
-- `PaymentConfirmationResponse` and related confirmation interfaces live in the VietQR slice.
-- TypeScript field names and optionality remain unchanged.
-- Existing order-related models remain unaffected.
-
-**Tests To Run Or Add**
-
-- Run frontend compile/test suite.
-- Run component tests for VietQR screen.
-
-**Risks**
-
-- Import paths can be missed because models are referenced from multiple files.
-- Removing compatibility exports too early can break unrelated code.
-
-**Do Not Do**
-
-- Do not change interface field names.
-- Do not change backend response assumptions.
-- Do not move non-VietQR order models.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-4.1`.
-
-### PVQR-4.3: Extract Frontend Payment State And Storage Controls
-
-**Goal**
-
-Move frontend polling, success handling, and localStorage cleanup out of the component into control services.
-
-**Expected File Scope**
-
-- Create `frontend/src/app/pay-order/pay-by-vietqr/control/vietqr-payment.control.ts`
-- Create `frontend/src/app/pay-order/pay-by-vietqr/control/vietqr-payment-storage.control.ts`
-- Update `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.ts`
-
-**Acceptance Criteria**
-
-- Component still displays the same loading, error, QR, confirming, and success states.
-- Polling max attempts and delay remain unchanged.
-- Current localStorage keys remain unchanged:
+  - `POST /vqr/api/token_generate`
+  - `POST /vqr/bank/api/transaction-sync`
+- VietQR callback behavior is verified through the local backend exposed by ngrok when the environment is available.
+- No production code is restructured in this story.
+- No `.env` secret value appears in artifacts, logs, commits, or final responses.
+
+### Test / Verification
+
+- Run the backend with `.env` configuration.
+- Exercise the five baseline endpoints listed above.
+- Verify the VietQR sandbox callback path through `https://carefully-nectar-gulf.ngrok-free.dev` when available.
+- Run existing backend tests if they are available and practical.
+- Run existing frontend tests if they are available and practical.
+
+## PVQR-2: Backend Restructure
+
+### Goal
+
+Move the existing backend Pay by VietQR implementation into `backend/src/pay-order/pay-by-vietqr/` using ECB/OOP organization while preserving the current endpoint contract and business behavior.
+
+This story is a file and responsibility restructure, not a backend feature rewrite.
+
+### File Scope
+
+- Target backend slice:
+  - `backend/src/pay-order/pay-by-vietqr/`
+- Existing backend sources to move, split, or rewire as needed:
+  - `backend/src/payment/controllers/pay-order.controller.ts`
+  - `backend/src/payment/services/pay-through-payment-gateway.service.ts`
+  - `backend/src/boundaries/viet-qr/`
+  - `backend/src/payment/payment.module.ts`
+  - Related NestJS module imports/providers/controllers.
+- Shared entities stay where they are:
+  - `PaymentTransaction`
+  - `Order`
+  - Other shared payment/order entities.
+
+### Main Tasks
+
+- Create the backend target folder structure under `backend/src/pay-order/pay-by-vietqr/`.
+- Move VietQR-specific HTTP/webhook boundary responsibilities into boundary classes.
+- Move VietQR orchestration and validation responsibilities into control classes.
+- Move VietQR-specific DTOs, value objects, and models into entity/model files inside the slice where appropriate.
+- Keep shared persistence entities in their current shared locations.
+- Wire the new slice through NestJS modules without duplicate route registration.
+- Update imports to point to the new slice.
+- Preserve existing endpoint paths, request shapes, response shapes, and provider behavior.
+
+### Acceptance Criteria
+
+- Backend VietQR code lives under `backend/src/pay-order/pay-by-vietqr/` where it is specific to the Pay by VietQR use case.
+- Existing public backend endpoints remain exactly the same:
+  - `POST /api/payment/pay-order/:orderId`
+  - `POST /api/payment/pay-order/:orderId/confirm`
+  - `GET /api/payment/pay-order/:orderId/confirmation`
+  - `POST /vqr/api/token_generate`
+  - `POST /vqr/bank/api/transaction-sync`
+- Response JSON field names remain unchanged.
+- VietQR token generation, QR generation, payment confirmation, and transaction sync behavior remain unchanged.
+- Order matching behavior remains unchanged and is not optimized.
+- `PaymentTransaction` remains in its shared entity location.
+- Successful VietQR payment still updates the order to `PENDING_PROCESSING`.
+- No duplicate NestJS controllers/providers/routes remain after wiring.
+
+### Test / Verification
+
+- Run backend compile/type checks if available.
+- Run backend unit/e2e tests if available.
+- Repeat the PVQR-1 live smoke endpoints after the move.
+- Verify callback behavior through ngrok when the environment is available:
+  - local backend port: `8080`
+  - public URL: `https://carefully-nectar-gulf.ngrok-free.dev`
+- Search for stale imports pointing to old VietQR backend paths.
+
+## PVQR-3: Frontend Restructure
+
+### Goal
+
+Move the existing frontend Pay by VietQR UI, API boundary, models, and control logic into `frontend/src/app/pay-order/pay-by-vietqr/` using ECB/OOP organization while preserving current routes and UI behavior.
+
+This story is a frontend code organization refactor, not a redesign.
+
+### File Scope
+
+- Target frontend slice:
+  - `frontend/src/app/pay-order/pay-by-vietqr/`
+- Existing frontend sources to move, split, or rewire as needed:
+  - `frontend/src/app/boundaries/vietqr-payment-screen/`
+  - `frontend/src/app/services/order.service.ts`
+  - `frontend/src/app/models/order.model.ts`
+  - `frontend/src/app/app.routes.ts`
+- Shared frontend services and models remain shared when they are used outside Pay by VietQR.
+
+### Main Tasks
+
+- Create the frontend target folder structure under `frontend/src/app/pay-order/pay-by-vietqr/`.
+- Move VietQR-specific UI files into a boundary UI folder.
+- Move VietQR-specific API calls into a boundary API service.
+- Move VietQR-specific models into an entity/model file inside the slice.
+- Move payment polling, success handling, and local storage cleanup into control classes/services where appropriate.
+- Update routes and imports to use the new slice paths.
+- Preserve existing route paths, API paths, UI states, polling behavior, and cleanup timing.
+
+### Acceptance Criteria
+
+- Frontend VietQR-specific code lives under `frontend/src/app/pay-order/pay-by-vietqr/`.
+- Existing frontend routes remain unchanged:
+  - `/vietqr-payment/:orderId`
+  - `/vietqr-payment`
+- Existing backend API usage remains unchanged.
+- QR loading, error, confirming, timeout, and success UI behavior remain unchanged.
+- Cart and ordering drafts are still cleared only after confirmed success with a transaction.
+- Current local storage keys remain unchanged:
   - `aims_current_order_id`
   - `aims_current_invoice`
   - `aims_delivery_draft`
-- Cart and draft cleanup still occur only after confirmed success.
-- `PaymentConfirmationResponse.status === "SUCCESS"` plus transaction presence remains the success condition.
+- Shared order/customer-order behavior outside Pay by VietQR remains unaffected.
 
-**Tests To Run Or Add**
+### Test / Verification
 
-- Add unit tests for storage control.
-- Add unit tests for payment control using fake timers.
-- Run component tests.
+- Run frontend compile/type checks if available.
+- Run frontend unit/component tests if available.
+- Manually navigate to the VietQR payment route if the frontend app is running.
+- Verify QR generation and confirmation polling still call the same backend endpoints.
+- Search for stale imports pointing to old VietQR frontend paths.
 
-**Risks**
+## PVQR-4: Cleanup & Regression
 
-- Async state updates can cause UI regressions.
-- `ChangeDetectorRef` usage can be lost during extraction.
+### Goal
 
-**Do Not Do**
+Remove obsolete VietQR-specific files/imports after the backend and frontend slices are wired, then verify that the full Pay by VietQR flow still behaves exactly as before.
 
-- Do not change polling window.
-- Do not change localStorage key names.
-- Do not clear cart earlier than the current behavior.
+This story closes the refactor; it should not introduce new business behavior.
 
-**Suggested Implementation Order**
+### File Scope
 
-Implement after `PVQR-4.2`.
-
-### PVQR-4.4: Move VietQR Screen Into Frontend Slice UI Folder
-
-**Goal**
-
-Move the VietQR payment screen files into the target frontend slice path.
-
-**Expected File Scope**
-
-- Move `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.ts`
-- Move `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.html`
-- Move `frontend/src/app/boundaries/vietqr-payment-screen/vietqr-payment-screen.component.css`
-- Target path: `frontend/src/app/pay-order/pay-by-vietqr/boundary/ui/`
-- Update `frontend/src/app/app.routes.ts`
-
-**Acceptance Criteria**
-
-- Route `/vietqr-payment/:orderId` remains unchanged.
-- Route `/vietqr-payment` remains unchanged.
-- App routes import the component from the new path.
-- No imports remain from the old VietQR payment screen folder.
-- UI renders as before.
-
-**Tests To Run Or Add**
-
-- Run frontend compile/test suite.
-- Run route/component smoke test.
-- Manually navigate to `/vietqr-payment/:orderId` if a running app is available.
-
-**Risks**
-
-- Angular `templateUrl` or `styleUrls` can break after move.
-- Route import can point to the old component.
-
-**Do Not Do**
-
-- Do not change route paths.
-- Do not change component selector unless unavoidable.
-- Do not change UI behavior.
-
-**Suggested Implementation Order**
-
-Implement after `PVQR-4.3`.
-
-## Epic 5: Cleanup And Verification
-
-### PVQR-5.1: Remove Old VietQR Files And Imports Safely
-
-**Goal**
-
-Remove old VietQR files/imports after backend and frontend slices are fully wired.
-
-**Expected File Scope**
-
-- Old backend files under `backend/src/boundaries/viet-qr/`
-- Old backend files under `backend/src/payment/controllers/` and `backend/src/payment/services/` that are fully replaced by the slice.
-- Old frontend files under `frontend/src/app/boundaries/vietqr-payment-screen/`
+- Old backend VietQR-specific files that are fully replaced by the new backend slice.
+- Old frontend VietQR-specific files that are fully replaced by the new frontend slice.
 - Import references across backend and frontend.
+- Test files or verification notes as needed.
+- Shared entities and shared services remain untouched unless an import update is required.
 
-**Acceptance Criteria**
+### Main Tasks
 
-- No duplicate VietQR classes/providers/controllers remain.
-- No imports point to old VietQR paths.
-- Shared `PaymentTransaction` remains in its shared location.
+- Remove old VietQR-specific files only after confirming no imports still depend on them.
+- Remove temporary compatibility exports or wrappers if they are no longer needed.
+- Search backend and frontend for stale old-path imports.
+- Run backend and frontend regression checks.
+- Re-run the live Pay by VietQR smoke flow.
+- Verify callback behavior through ngrok when the environment is available.
+- Confirm no production behavior changed during the refactor.
+
+### Acceptance Criteria
+
+- No duplicate VietQR backend controllers, providers, or routes remain.
+- No duplicate VietQR frontend screens, API services, models, or controls remain.
+- No imports point to old VietQR-specific paths.
+- `PaymentTransaction` remains in its shared entity location.
 - Backend and frontend compile.
-- Tests pass.
+- Pay by VietQR still supports QR generation, confirmation, callback transaction sync, order status update, and success display.
+- Receipt email success/error behavior remains unchanged.
+- VietQR manual refund behavior remains unchanged.
+- No `.env` secret value appears in artifacts, logs, commits, or final responses.
 
-**Tests To Run Or Add**
+### Test / Verification
 
-- Run `rg` searches for old path/class references.
-- Run backend tests.
-- Run frontend tests.
-
-**Risks**
-
-- Deleting a file still referenced by module wiring can break startup.
-- Removing compatibility exports too early can break imports.
-
-**Do Not Do**
-
-- Do not delete shared entities.
-- Do not delete payment/refund/customer-order code outside the VietQR refactor scope.
-- Do not cleanup unrelated code.
-
-**Suggested Implementation Order**
-
-Implement after all backend and frontend move stories are complete.
-
-### PVQR-5.2: Full Regression Checklist For Pay By VietQR
-
-**Goal**
-
-Verify that the refactor preserved end-to-end Pay by VietQR behavior.
-
-**Expected File Scope**
-
-- Test files and optional verification notes.
-- No production code changes expected unless regressions are found.
-
-**Acceptance Criteria**
-
-- QR generation succeeds.
-- Payment confirmation triggers VietQR Sandbox Test Callback.
-- Transaction Sync persists `PaymentTransaction`.
-- Transaction Sync updates order status to `PENDING_PROCESSING`.
-- Receipt email success behavior remains unchanged.
-- Receipt email failure records error and does not roll back payment persistence.
-- Frontend success screen displays order details.
-- Frontend success screen displays transaction details.
-- Cart and ordering drafts are cleared only after confirmed success.
-- VietQR manual refund constraint remains unchanged.
-
-**Tests To Run Or Add**
-
-- Run backend unit tests.
-- Run backend e2e smoke tests.
-- Run frontend unit/component tests.
-- Run manual VietQR sandbox flow if environment and public callback URL are available.
-
-**Risks**
-
-- Manual sandbox verification depends on environment variables and public callback/tunnel configuration.
-- Passing compile/tests without exercising callback path may miss the most important behavior.
-
-**Do Not Do**
-
-- Do not merge the refactor solely on compile success.
-- Do not alter business behavior while fixing regression issues unless a separate story is created.
-
-**Suggested Implementation Order**
-
-Implement last, after cleanup.
+- Run backend compile/type checks and tests if available.
+- Run frontend compile/type checks and tests if available.
+- Run repository searches for old VietQR paths/classes.
+- Run manual or scripted smoke checks for:
+  - QR generation.
+  - Payment confirmation.
+  - VietQR Sandbox Test Callback.
+  - Transaction sync persistence.
+  - Order status update to `PENDING_PROCESSING`.
+  - Frontend success screen.
+  - Cart and draft cleanup after confirmed success.
+- Use ngrok for callback verification when needed:
+  - command: `ngrok http 8080`
+  - public URL: `https://carefully-nectar-gulf.ngrok-free.dev`
