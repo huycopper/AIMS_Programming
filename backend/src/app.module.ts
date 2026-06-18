@@ -27,6 +27,7 @@ import { RefundModule } from './refund/refund.module.js';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [join(process.cwd(), 'dist/**/*.entity.js')], // Tự động tìm các entity
+        autoLoadEntities: true,
         synchronize: true, // Auto create table
       }),
     }),

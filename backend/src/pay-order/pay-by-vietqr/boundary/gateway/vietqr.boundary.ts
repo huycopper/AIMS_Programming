@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Order } from '../../order/entities/order.entity.js';
+import { Order } from '../../../../order/entities/order.entity.js';
 import * as QRCode from 'qrcode';
-import { VietQrPaymentCode } from '../../pay-order/pay-by-vietqr/entity/vietqr-payment-code.vo.js';
+import { VietQrPaymentCode } from '../../entity/vietqr-payment-code.vo.js';
+import { GenerateQrCodeResult, ApiCallbackResult } from './vietqr-boundary.types.js';
 
 @Injectable()
 export class VietQRBoundary {
@@ -50,7 +51,7 @@ export class VietQRBoundary {
   }
 
   // Gọi API VietQR để sinh mã QR thanh toán
-  async generateQRCode(order: Order, accessToken: string): Promise<{ qrDataURL: string; amount: number; content: string }> {
+  async generateQRCode(order: Order, accessToken: string): Promise<GenerateQrCodeResult> {
     this.logger.log(`Calling VietQR API to generate QR for order ${order.orderId}`);
 
     const paymentCode = VietQrPaymentCode.fromOrder(order);
@@ -120,7 +121,7 @@ export class VietQRBoundary {
    * @param accessToken - Token VietQR đã lấy được từ getAccessToken()
    * @returns Kết quả từ VietQR Test Callback API { status, message }
    */
-  async handleAPICallback(order: Order, accessToken: string): Promise<{ status: string; message: string }> {
+  async handleAPICallback(order: Order, accessToken: string): Promise<ApiCallbackResult> {
     this.logger.log(`Calling VietQR Test Callback API for order ${order.orderId}`);
 
     const paymentCode = VietQrPaymentCode.fromOrder(order);
@@ -167,4 +168,3 @@ export class VietQRBoundary {
     return { status: data.status, message: data.message };
   }
 }
-

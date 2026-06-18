@@ -1,0 +1,360 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from '../src/app.module.js';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Order, DeliveryInfo } from '../src/order/entities/order.entity.js';
+import { PaymentTransaction } from '../src/payment/entities/payment-transaction.entity.js';
+import { EmailService } from '../src/notification/email/email.service.js';
+import { randomUUID } from 'crypto';
+
+describe('VietQR Flow Characterization (e2e)', () => {
+  let app: INestApplication<App>;
+  let orderRepo: Repository<Order>;
+  let deliveryInfoRepo: Repository<DeliveryInfo>;
+  let paymentTransactionRepo: Repository<PaymentTransaction>;
+  let emailService: EmailService;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+
+    orderRepo = moduleFixture.get<Repository<Order>>(getRepositoryToken(Order));
+    deliveryInfoRepo = moduleFixture.get<Repository<DeliveryInfo>>(getRepositoryToken(DeliveryInfo));
+    paymentTransactionRepo = moduleFixture.get<Repository<PaymentTransaction>>(getRepositoryToken(PaymentTransaction));
+    emailService = moduleFixture.get<EmailService>(EmailService);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('JWT Token Generation (/vqr/api/token_generate)', () => {
+    it('should generate a Bearer token with valid Basic Auth', async () => {
+      const username = process.env.CLIENT_USERNAME || 'aims1234';
+      const password = process.env.CLIENT_PASSWORD || 'password';
+      const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+
+      const response = await request(app.getHttpServer())
+        .post('/vqr/api/token_generate')
+        .set('Authorization', `Basic ${credentials}`)
+        .expect(201);
+
+      expect(response.body).toHaveProperty('access_token');
+      expect(response.body).toHaveProperty('token_type', 'Bearer');
+      expect(response.body).toHaveProperty('expires_in');
+    });
+
+    it('should return 401 Unauthorized with invalid credentials', async () => {
+      const credentials = Buffer.from('invalid:wrong').toString('base64');
+
+      await request(app.getHttpServer())
+        .post('/vqr/api/token_generate')
+        .set('Authorization', `Basic ${credentials}`)
+        .expect(401);
+    });
+
+    it('should return 400 Bad Request with missing Auth header', async () => {
+      await request(app.getHttpServer())
+        .post('/vqr/api/token_generate')
+        .expect(400);
+    });
+  });
+
+  describe('Order Payment Operations', () => {
+    let testOrder: Order;
+
+    beforeEach(async () => {
+      // Create a clean order for testing
+      const deliveryInfo = deliveryInfoRepo.create({
+        name: 'John Doe',
+        phone: '0912345678',
+        email: 'john.doe@example.com',
+        province: 'Hà Nội',
+        address: '123 Test Street',
+        note: 'Deliver fast',
+      });
+
+      testOrder = orderRepo.create({
+        orderId: randomUUID(),
+        deliveryInfo,
+        subtotal: 100000,
+        vat: 10000,
+        shippingFee: 22000,
+        totalAmount: 132000,
+        totalWeight: 1.5,
+        status: 'PENDING',
+        orderViewToken: 'view-' + randomUUID(),
+        cancelToken: 'cancel-' + randomUUID(),
+      });
+
+      await orderRepo.save(testOrder);
+    });
+
+    afterEach(async () => {
+      // Cleanup transactions and orders
+      if (testOrder) {
+        await paymentTransactionRepo.delete({ order: { orderId: testOrder.orderId } });
+        await orderRepo.delete({ orderId: testOrder.orderId });
+        if (testOrder.deliveryInfo) {
+          await deliveryInfoRepo.delete({ deliveryInfoId: testOrder.deliveryInfo.deliveryInfoId });
+        }
+      }
+    });
+
+    describe('QR Generation (POST /api/payment/pay-order/:orderId)', () => {
+      it('should generate QR code successfully', async () => {
+        const response = await request(app.getHttpServer())
+          .post(`/api/payment/pay-order/${testOrder.orderId}`)
+          .expect(201);
+
+        expect(response.body).toHaveProperty('qrDataURL');
+        expect(response.body.qrDataURL).toContain('data:image/png;base64');
+        expect(response.body).toHaveProperty('amount', 132000);
+        expect(response.body).toHaveProperty('content');
+        expect(response.body.content).toContain('AIMS');
+      });
+
+      it('should return 400 Bad Request if order not found', async () => {
+        await request(app.getHttpServer())
+          .post(`/api/payment/pay-order/${randomUUID()}`)
+          .expect(400);
+      });
+    });
+
+    describe('Payment Polling Status (GET /api/payment/pay-order/:orderId/confirmation)', () => {
+      it('should return PENDING status when no transaction recorded', async () => {
+        const response = await request(app.getHttpServer())
+          .get(`/api/payment/pay-order/${testOrder.orderId}/confirmation`)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('status', 'PENDING');
+        expect(response.body).toHaveProperty('message', 'Payment transaction has not been recorded yet.');
+        expect(response.body).toHaveProperty('orderId', testOrder.orderId);
+      });
+
+      it('should return SUCCESS status when a transaction is completed', async () => {
+        // Mock a success transaction
+        const txn = paymentTransactionRepo.create({
+          order: testOrder,
+          transactionRef: 'REF123',
+          amount: 132000,
+          paymentMethod: 'VIETQR',
+          status: 'SUCCESS',
+        });
+        await paymentTransactionRepo.save(txn);
+
+        const response = await request(app.getHttpServer())
+          .get(`/api/payment/pay-order/${testOrder.orderId}/confirmation`)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('status', 'SUCCESS');
+        expect(response.body).toHaveProperty('message', 'Payment confirmed successfully.');
+        expect(response.body).toHaveProperty('transaction');
+        expect(response.body.transaction).toHaveProperty('status', 'SUCCESS');
+        expect(Number(response.body.transaction.amount)).toBe(132000);
+      });
+    });
+
+    describe('Confirm Payment (POST /api/payment/pay-order/:orderId/confirm)', () => {
+      it('should initiate payment confirmation and return PENDING_CONFIRMATION if webhook not received yet', async () => {
+        const response = await request(app.getHttpServer())
+          .post(`/api/payment/pay-order/${testOrder.orderId}/confirm`)
+          .expect(201);
+
+        expect(response.body).toHaveProperty('status');
+        expect(response.body.status).toMatch(/PENDING_CONFIRMATION|SUCCESS/);
+      }, 15000); // 15s timeout because of internal confirm polling delay
+    });
+
+    describe('Transaction Sync (POST /vqr/bank/api/transaction-sync)', () => {
+      let token: string;
+
+      beforeEach(async () => {
+        // Obtain token for transaction sync auth
+        const username = process.env.CLIENT_USERNAME || 'aims1234';
+        const password = process.env.CLIENT_PASSWORD || 'password';
+        const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+
+        const tokenRes = await request(app.getHttpServer())
+          .post('/vqr/api/token_generate')
+          .set('Authorization', `Basic ${credentials}`);
+
+        token = tokenRes.body.access_token;
+      });
+
+      it('should successfully sync transaction, update order, and send email successfully', async () => {
+        // Spy on email send
+        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
+
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-' + randomUUID().substring(0, 8),
+          transactiontime: Date.now(),
+          referencenumber: 'REF-' + randomUUID().substring(0, 8),
+          amount: 132000,
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer ${token}`)
+          .send(payload)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('error', false);
+        expect(response.body).toHaveProperty('toastMessage', 'Transaction processed successfully');
+        expect(response.body.object).toHaveProperty('reftransactionid');
+
+        // Check database changes
+        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
+
+        const txn = await paymentTransactionRepo.findOne({
+          where: { order: { orderId: testOrder.orderId } },
+        });
+        expect(txn).toBeDefined();
+        expect(txn?.status).toBe('SUCCESS');
+        expect(Number(txn?.amount)).toBe(132000);
+
+        // Verify receipt email sent behavior
+        expect(txn?.receiptEmailSentAt).toBeDefined();
+        expect(txn?.receiptEmailSentAt).not.toBeNull();
+        expect(txn?.receiptEmailError).toBeNull();
+
+        sendEmailSpy.mockRestore();
+      });
+
+      it('should handle email delivery failure but still succeed transaction sync', async () => {
+        // Mock sendEmail to throw an error
+        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail').mockRejectedValue(new Error('SMTP failure'));
+
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-' + randomUUID().substring(0, 8),
+          transactiontime: Date.now(),
+          referencenumber: 'REF-' + randomUUID().substring(0, 8),
+          amount: 132000,
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer ${token}`)
+          .send(payload)
+          .expect(200);
+
+        // Transaction sync itself should succeed
+        expect(response.body).toHaveProperty('error', false);
+
+        // Order status should still be updated
+        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
+
+        // Transaction record should be persisted with the error
+        const txn = await paymentTransactionRepo.findOne({
+          where: { order: { orderId: testOrder.orderId } },
+        });
+        expect(txn).toBeDefined();
+        expect(txn?.receiptEmailSentAt).toBeNull();
+        expect(txn?.receiptEmailError).toBe('SMTP failure');
+
+        sendEmailSpy.mockRestore();
+      });
+
+      it('should succeed transaction sync when order has no delivery email', async () => {
+        // Update order to have no delivery email (empty string)
+        testOrder.deliveryInfo.email = '';
+        await deliveryInfoRepo.save(testOrder.deliveryInfo);
+
+        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
+
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-' + randomUUID().substring(0, 8),
+          transactiontime: Date.now(),
+          referencenumber: 'REF-' + randomUUID().substring(0, 8),
+          amount: 132000,
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer ${token}`)
+          .send(payload)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('error', false);
+
+        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
+
+        const txn = await paymentTransactionRepo.findOne({
+          where: { order: { orderId: testOrder.orderId } },
+        });
+        expect(txn).toBeDefined();
+        // Since no email address was provided, sendEmail should not be called,
+        // and receiptEmailSentAt should be populated (since notification service resolved successfully), and error is null.
+        expect(sendEmailSpy).not.toHaveBeenCalled();
+        expect(txn?.receiptEmailSentAt).toBeDefined();
+        expect(txn?.receiptEmailSentAt).not.toBeNull();
+        expect(txn?.receiptEmailError).toBeNull();
+
+        sendEmailSpy.mockRestore();
+      });
+
+      it('should fail transaction sync with invalid/missing token', async () => {
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-123',
+          transactiontime: Date.now(),
+          referencenumber: 'REF-123',
+          amount: 132000,
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer invalid-token`)
+          .send(payload)
+          .expect(401);
+      });
+
+      it('should fail transaction sync when amount mismatch', async () => {
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-123',
+          transactiontime: Date.now(),
+          referencenumber: 'REF-123',
+          amount: 100000, // Expected 132000
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer ${token}`)
+          .send(payload)
+          .expect(400);
+
+        expect(response.body).toHaveProperty('error', true);
+        expect(response.body.errorReason).toBe('TRANSACTION_FAILED');
+      });
+    });
+  });
+});

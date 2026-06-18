@@ -169,7 +169,7 @@ frontend/src/app/pay-order/pay-by-vietqr/
 
 ### Phase 1: Backend and Frontend Safety Net
 
-#### [ ] PVQR-1.1: Live Endpoint Characterization Tests For Backend VietQR Flow
+#### [x] PVQR-1.1: Live Endpoint Characterization Tests For Backend VietQR Flow
 
 Goal: Capture current backend VietQR behavior through live local backend endpoint characterization and manual integration verification before moving or splitting production files.
 
@@ -183,22 +183,22 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Live endpoint verification covers QR generation through `POST /api/payment/pay-order/:orderId`.
-- [ ] Live endpoint verification covers payment confirmation through `POST /api/payment/pay-order/:orderId/confirm`.
-- [ ] Live endpoint verification covers confirmation query/polling through `GET /api/payment/pay-order/:orderId/confirmation`.
-- [ ] Live endpoint verification covers VietQR token generation through `POST /vqr/api/token_generate`.
-- [ ] Live endpoint verification covers transaction sync success and basic error paths through `POST /vqr/bank/api/transaction-sync`.
-- [ ] VietQR sandbox callback behavior is verified with backend port `8080` exposed through `https://carefully-nectar-gulf.ngrok-free.dev`.
-- [ ] Supporting mock tests are only supporting coverage, not the acceptance mechanism.
-- [ ] `.env` may be read for configuration, but secret values are never copied, printed, committed, or written to artifacts/logs/output.
-- [ ] Production behavior remains unchanged.
+- [x] Live endpoint verification covers QR generation through `POST /api/payment/pay-order/:orderId`.
+- [x] Live endpoint verification covers payment confirmation through `POST /api/payment/pay-order/:orderId/confirm`.
+- [x] Live endpoint verification covers confirmation query/polling through `GET /api/payment/pay-order/:orderId/confirmation`.
+- [x] Live endpoint verification covers VietQR token generation through `POST /vqr/api/token_generate`.
+- [x] Live endpoint verification covers transaction sync success and basic error paths through `POST /vqr/bank/api/transaction-sync`.
+- [x] VietQR sandbox callback behavior is verified with backend port `8080` exposed through `https://carefully-nectar-gulf.ngrok-free.dev`.
+- [x] Supporting mock tests are only supporting coverage, not the acceptance mechanism.
+- [x] `.env` may be read for configuration, but secret values are never copied, printed, committed, or written to artifacts/logs/output.
+- [x] Production behavior remains unchanged.
 
 Tests/checks:
 
-- [ ] Start backend on local port `8080`.
-- [ ] Start tunnel with `ngrok http 8080` when callback verification is needed.
-- [ ] Exercise the five live endpoints above.
-- [ ] Run `npm test` from `backend` after automated test updates.
+- [x] Start backend on local port `8080`.
+- [x] Start tunnel with `ngrok http 8080` when callback verification is needed.
+- [x] Exercise the five live endpoints above.
+- [x] Run `npm test` from `backend` after automated test updates.
 
 Do not:
 
@@ -208,7 +208,7 @@ Do not:
 - Do not change endpoints.
 - Do not optimize order matching.
 
-#### [ ] PVQR-1.2: Frontend Characterization Tests For VietQR Screen
+#### [x] PVQR-1.2: Frontend Characterization Tests For VietQR Screen
 
 Goal: Capture current frontend VietQR UI states before extracting API/control/storage concerns.
 
@@ -221,17 +221,17 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Missing `orderId` displays an error state.
-- [ ] Successful QR loading displays QR image, amount, and content.
-- [ ] Successful payment confirmation renders success details.
-- [ ] Cart and ordering drafts are cleared only after confirmed success.
-- [ ] Polling timeout displays the existing non-success error state.
+- [x] Missing `orderId` displays an error state.
+- [x] Successful QR loading displays QR image, amount, and content.
+- [x] Successful payment confirmation renders success details.
+- [x] Cart and ordering drafts are cleared only after confirmed success.
+- [x] Polling timeout displays the existing non-success error state.
 
 Tests/checks:
 
-- [ ] Add Angular component tests with mocked `OrderService` and `CartService`.
-- [ ] Use fake timers for polling behavior.
-- [ ] Run frontend test suite.
+- [x] Add Angular component tests with mocked `OrderService` and `CartService`.
+- [x] Use fake timers for polling behavior.
+- [x] Run frontend test suite.
 
 Do not:
 
@@ -241,7 +241,7 @@ Do not:
 
 ### Phase 2: Backend Entity, DTO, And Value Object Extraction
 
-#### [ ] PVQR-2.1: Extract VietQR DTO And Response Models
+#### [x] PVQR-2.1: Extract VietQR DTO And Response Models
 
 Goal: Move VietQR request/response model definitions out of large controllers and into the new backend slice.
 
@@ -257,10 +257,10 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] DTO and response shapes remain unchanged.
-- [ ] `transaction-sync.controller.ts` no longer defines inline response classes.
-- [ ] Existing endpoints still return the same JSON field names.
-- [ ] Backend tests from Phase 1 still pass.
+- [x] DTO and response shapes remain unchanged.
+- [x] `transaction-sync.controller.ts` no longer defines inline response classes.
+- [x] Existing endpoints still return the same JSON field names.
+- [x] Backend tests from Phase 1 still pass.
 
 Do not:
 
@@ -268,7 +268,7 @@ Do not:
 - Do not change endpoint paths.
 - Do not move `PaymentTransaction`.
 
-#### [ ] PVQR-2.2: Extract VietQR Payment Code Value Object
+#### [x] PVQR-2.2: Extract VietQR Payment Code Value Object
 
 Goal: Centralize VietQR payment code rules: short order id, payment content, and rounded amount.
 
@@ -280,15 +280,15 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Short order id remains the order UUID without hyphens, truncated to the first 13 characters.
-- [ ] Payment content remains `AIMS <shortOrderId>`.
-- [ ] Payment amount remains the rounded numeric `order.totalAmount`.
-- [ ] QR generation and transaction sync validation use the same value object.
+- [x] Short order id remains the order UUID without hyphens, truncated to the first 13 characters.
+- [x] Payment content remains `AIMS <shortOrderId>`.
+- [x] Payment amount remains the rounded numeric `order.totalAmount`.
+- [x] QR generation and transaction sync validation use the same value object.
 
 Tests/checks:
 
-- [ ] Add unit tests for `VietQrPaymentCode`.
-- [ ] Run backend tests from Phase 1.
+- [x] Add unit tests for `VietQrPaymentCode`.
+- [x] Run backend tests from Phase 1.
 
 Do not:
 
@@ -298,7 +298,7 @@ Do not:
 
 ### Phase 3: Backend Control And Boundary Split
 
-#### [ ] PVQR-3.1: Move VietQR External Client Into Boundary/Gateway
+#### [x] PVQR-3.1: Move VietQR External Client Into Boundary/Gateway
 
 Goal: Move external VietQR API calls into the new backend slice while keeping request behavior unchanged.
 
@@ -311,16 +311,16 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `getAccessToken`, `generateQRCode`, and `handleAPICallback` behavior remains unchanged.
-- [ ] VietQR token request headers remain unchanged.
-- [ ] VietQR QR generation request body remains unchanged.
-- [ ] VietQR Sandbox Test Callback request body remains unchanged.
-- [ ] QR conversion still uses `qrcode.toDataURL`.
+- [x] `getAccessToken`, `generateQRCode`, and `handleAPICallback` behavior remains unchanged.
+- [x] VietQR token request headers remain unchanged.
+- [x] VietQR QR generation request body remains unchanged.
+- [x] VietQR Sandbox Test Callback request body remains unchanged.
+- [x] QR conversion still uses `qrcode.toDataURL`.
 
 Tests/checks:
 
-- [ ] Add or update tests that mock `fetch`.
-- [ ] Run backend tests from Phase 1.
+- [x] Add or update tests that mock `fetch`.
+- [x] Run backend tests from Phase 1.
 
 Do not:
 
@@ -328,7 +328,7 @@ Do not:
 - Do not change VietQR request body fields.
 - Do not introduce a new HTTP client abstraction unless needed for this move.
 
-#### [ ] PVQR-3.2: Extract PayThroughVietQRController Control
+#### [x] PVQR-3.2: Extract PayThroughVietQRController Control
 
 Goal: Rename and move payment orchestration into a BCE-aligned VietQR control class.
 
@@ -341,10 +341,10 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `PayThroughPaymentGatewayController` responsibilities are represented by `PayThroughVietQRController`.
-- [ ] Public control methods preserve current semantics: generate QR, confirm payment, get confirmation.
-- [ ] Confirmation response remains unchanged.
-- [ ] Mutable access token behavior is not redesigned.
+- [x] `PayThroughPaymentGatewayController` responsibilities are represented by `PayThroughVietQRController`.
+- [x] Public control methods preserve current semantics: generate QR, confirm payment, get confirmation.
+- [x] Confirmation response remains unchanged.
+- [x] Mutable access token behavior is not redesigned.
 
 Do not:
 
@@ -352,7 +352,7 @@ Do not:
 - Do not change polling attempts or delay.
 - Do not redesign access token caching.
 
-#### [ ] PVQR-3.3: Move Pay Order HTTP Boundary Into Backend Slice
+#### [x] PVQR-3.3: Move Pay Order HTTP Boundary Into Backend Slice
 
 Goal: Move the frontend-facing pay order controller into the VietQR backend slice.
 
@@ -364,12 +364,12 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `POST /api/payment/pay-order/:orderId` remains exactly unchanged.
-- [ ] `POST /api/payment/pay-order/:orderId/confirm` remains exactly unchanged.
-- [ ] `GET /api/payment/pay-order/:orderId/confirmation` remains exactly unchanged.
-- [ ] Controller acts as a thin HTTP boundary and delegates to control.
-- [ ] Order lookup behavior remains unchanged.
-- [ ] No duplicate route registration exists.
+- [x] `POST /api/payment/pay-order/:orderId` remains exactly unchanged.
+- [x] `POST /api/payment/pay-order/:orderId/confirm` remains exactly unchanged.
+- [x] `GET /api/payment/pay-order/:orderId/confirmation` remains exactly unchanged.
+- [x] Controller acts as a thin HTTP boundary and delegates to control.
+- [x] Order lookup behavior remains unchanged.
+- [x] No duplicate route registration exists.
 
 Do not:
 

@@ -1,16 +1,15 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { VietQRBoundary } from '../../boundaries/viet-qr/viet-qr.service.js';
-import { Order } from '../../order/entities/order.entity.js';
-import { PaymentTransaction } from '../entities/payment-transaction.entity.js';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-
-import { PaymentConfirmationResponse } from '../../pay-order/pay-by-vietqr/boundary/http/dto/payment-confirmation.response.js';
+import { VietQRBoundary } from '../boundary/gateway/vietqr.boundary.js';
+import { Order } from '../../../order/entities/order.entity.js';
+import { PaymentTransaction } from '../../../payment/entities/payment-transaction.entity.js';
+import { PaymentConfirmationResponse } from '../boundary/http/dto/payment-confirmation.response.js';
 
 @Injectable()
-export class PayThroughPaymentGatewayController {
-  private readonly logger = new Logger(PayThroughPaymentGatewayController.name); // Logger là class dùng để ghi log
+export class PayThroughVietQRController {
+  private readonly logger = new Logger(PayThroughVietQRController.name);
 
   private accessToken: string;
 
@@ -22,36 +21,6 @@ export class PayThroughPaymentGatewayController {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
   ) { }
-
-  /*
-  Dưới đây là cách Promise hoạt động cụ thể trong hàm generateQRCode của bạn:
-
-  1. Hàm trả về một Promise (Promise<{ qrDataURL: string }>)
-  
-    async generateQRCode(invoice: Order): Promise<{ qrDataURL: string }> {
-    
-  Việc tạo QR code đòi hỏi phải gọi API qua mạng tới hệ thống VietQR. Việc này tốn thời gian (có thể mất vài trăm mili-giây đến vài giây).
-  Thay vì bắt toàn bộ hệ thống phải "đóng băng" đứng chờ VietQR trả lời, hàm này lập tức trả về một Promise.
-  Dấu <{ qrDataURL: string }> mang ý nghĩa: "Tôi hứa rằng khi nào gọi API xong, tôi sẽ trả lại cho bạn một object có chứa chuỗi qrDataURL".
-  Từ khóa async ở đầu hàm khai báo rằng đây là một hàm bất đồng bộ. Bất cứ hàm nào có chữ async đều sẽ tự động trả về một Promise.
- 
-  2. Tạm dừng để chờ Promise hoàn thành với từ khóa await
- 
-    const accessToken = await this.vietQRBoundary.getAccessToken();
-
-  Hàm getAccessToken() bản thân nó cũng phải gọi mạng và trả về một Promise.
-  Từ khóa await ở đây giống như việc bạn nói: "Hãy tạm dừng chạy các dòng code tiếp theo trong hàm này, đứng chờ cho đến khi cái Promise của getAccessToken hoàn thành và lấy được chuỗi token thật, rồi mới gán vào biến accessToken".
- 
-    const qrResult = await this.vietQRBoundary.generateQRCode(invoice, accessToken);
-  
-  Tương tự, ta lại có một await khác. Code sẽ tiếp tục chờ generateQRCode của VietQR gọi xong API và trả về kết quả thật, rồi mới gán vào qrResult.
-  
-  3. Trả về kết quả thực tế
-  
-    return qrResult;
-  
-  qrResult cũng biến thành promise do hàm được khai báo là async.
-  */
 
   async generateQRCode(order: Order): Promise<{ qrDataURL: string; amount: number; content: string }> {
     this.logger.log(`Generating QR Code for invoice ${order.orderId}`);
@@ -217,6 +186,4 @@ export class PayThroughPaymentGatewayController {
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
-
-
 }

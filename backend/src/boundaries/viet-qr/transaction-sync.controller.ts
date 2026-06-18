@@ -11,79 +11,11 @@ import { PaymentTransaction } from '../../payment/entities/payment-transaction.e
 import { Order } from '../../order/entities/order.entity.js';
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
-import { PayThroughPaymentGatewayController } from '../../payment/services/pay-through-payment-gateway.service.js';
+import { PayThroughVietQRController } from '../../pay-order/pay-by-vietqr/control/pay-through-vietqr.controller.js';
 import { NotificationService } from '../../notification/notification.service.js';
-
-// ===== Model cho request body =====
-/**
- * DTO cho request body từ VietQR Transaction Sync
- * Theo tài liệu 2-APITransactionSync.md
- */
-export class TransactionCallbackDto {
-  transactionid: string; // ID của giao dịch (Required)
-  transactiontime: number; // Thời gian giao dịch timestamp ms (Required)
-  referencenumber: string; // Mã giao dịch (Required)
-  amount: number; // Số tiền giao dịch (Required)
-  content: string; // Nội dung chuyển tiền (Required)
-  bankaccount: string; // Tài khoản ngân hàng tạo mã thanh toán (Required)
-  bankAccount?: string; // Fallback nếu sandbox gửi camelCase
-  orderId?: string; // Sandbox có thể gửi rỗng; fallback theo content
-  sign?: string; // Chữ ký (Optional)
-  terminalCode?: string; // Mã cửa hàng/điểm bán (Optional)
-  urlLink?: string; // Link điều hướng sau thanh toán (Optional)
-  serviceCode?: string; // Mã sản phẩm/dịch vụ (Optional)
-  subTerminalCode?: string; // Mã cửa hàng phụ (Optional)
-  transType?: string; // Phân loại giao dịch: D (ghi nợ) / C (ghi có)
-}
-
-// ===== Lớp model cho success response =====
-class SuccessResponse {
-  error: boolean;
-  errorReason: string | null;
-  toastMessage: string;
-  object: TransactionResponseObject;
-
-  constructor(
-    error: boolean,
-    errorReason: string | null,
-    toastMessage: string,
-    object: TransactionResponseObject,
-  ) {
-    this.error = error;
-    this.errorReason = errorReason;
-    this.toastMessage = toastMessage;
-    this.object = object;
-  }
-}
-
-// ===== Lớp model cho error response =====
-class ErrorResponse {
-  error: boolean;
-  errorReason: string;
-  toastMessage: string;
-  object: null;
-
-  constructor(
-    error: boolean,
-    errorReason: string,
-    toastMessage: string,
-    object: null,
-  ) {
-    this.error = error;
-    this.errorReason = errorReason;
-    this.toastMessage = toastMessage;
-    this.object = object;
-  }
-}
-
-// ===== Lớp model cho object trả về trong success response =====
-class TransactionResponseObject {
-  reftransactionid: string;
-
-  constructor(reftransactionid: string) {
-    this.reftransactionid = reftransactionid;
-  }
-}
+import { TransactionCallbackDto } from '../../pay-order/pay-by-vietqr/entity/vietqr-transaction-sync.dto.js';
+import { SuccessResponse, ErrorResponse, TransactionResponseObject } from '../../pay-order/pay-by-vietqr/boundary/webhook/dto/vietqr-transaction-sync.response.js';
+import { VietQrPaymentCode } from '../../pay-order/pay-by-vietqr/entity/vietqr-payment-code.vo.js';
 
 @Controller()
 export class TransactionSyncController {
@@ -95,7 +27,7 @@ export class TransactionSyncController {
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
     private readonly jwtService: JwtService,
-    private readonly payThroughPaymentGatewayController: PayThroughPaymentGatewayController,
+    private readonly payThroughVietQRController: PayThroughVietQRController,
     private readonly notificationService: NotificationService,
   ) { }
 
@@ -282,17 +214,13 @@ export class TransactionSyncController {
   }
 
   private findMatchingOrder(transactionSyncBody: TransactionCallbackDto, orders: Order[]): Order | null {
-    const callbackOrderId = transactionSyncBody.orderId?.trim();
-    const callbackContent = transactionSyncBody.content ?? '';
-
     return (
       orders.find((order) => {
-        const shortOrderId = this.getShortOrderId(order);
-        const expectedContent = this.getPaymentContent(shortOrderId);
-        return (
-          order.orderId === callbackOrderId ||
-          shortOrderId === callbackOrderId ||
-          callbackContent.includes(expectedContent)
+        const paymentCode = VietQrPaymentCode.fromOrder(order);
+        return paymentCode.matchesCallback(
+          transactionSyncBody.orderId,
+          transactionSyncBody.content,
+          order.orderId,
         );
       })
       ?? null
@@ -300,36 +228,12 @@ export class TransactionSyncController {
   }
 
   private validateTransactionAgainstOrder(transactionSyncBody: TransactionCallbackDto, order: Order): void {
-    const callbackAmount = Math.round(Number(transactionSyncBody.amount));
-    const orderAmount = Math.round(Number(order.totalAmount));
-
-    // check if transaction amount is a valid number (not NaN, not Infinity, ...)
-    if (!Number.isFinite(callbackAmount)) {
-      throw new Error('Invalid transaction amount');
-    }
-
-    // check if transaction amount match with order amount
-    if (callbackAmount !== orderAmount) {
-      throw new Error(`Amount mismatch: expected ${orderAmount}, received ${callbackAmount}`);
-    }
-
-    // check if transaction content match with order content
-    const expectedContent = this.getPaymentContent(this.getShortOrderId(order));
-    if (!transactionSyncBody.content?.includes(expectedContent)) {
-      throw new Error(`Content mismatch: expected content to include ${expectedContent}`);
-    }
+    const paymentCode = VietQrPaymentCode.fromOrder(order);
+    paymentCode.validateMatches(transactionSyncBody.amount, transactionSyncBody.content);
   }
 
   private getCallbackBankAccount(transactionSyncBody: TransactionCallbackDto): string {
     return transactionSyncBody.bankaccount ?? transactionSyncBody.bankAccount ?? '';
-  }
-
-  private getShortOrderId(order: Order): string {
-    return order.orderId.replace(/-/g, '').substring(0, 13);
-  }
-
-  private getPaymentContent(shortOrderId: string): string {
-    return `AIMS ${shortOrderId}`;
   }
 
   private buildPaymentTransaction(
