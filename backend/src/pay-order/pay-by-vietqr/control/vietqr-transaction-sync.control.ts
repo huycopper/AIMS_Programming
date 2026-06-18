@@ -7,7 +7,7 @@ import { TransactionCallbackDto } from '../entity/vietqr-transaction-sync.dto.js
 import { VietQrOrderMatcherControl } from './vietqr-order-matcher.control.js';
 import { VietQrPaymentTransactionFactory } from './vietqr-payment-transaction-factory.js';
 import { VietQrPaymentCode } from '../entity/vietqr-payment-code.vo.js';
-import { NotificationService } from '../../../notification/notification.service.js';
+import { PaymentSuccessNotificationControl } from '../../notification/control/payment-success-notification.control.js';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class VietQrTransactionSyncControl {
     private readonly orderRepo: Repository<Order>,
     private readonly orderMatcher: VietQrOrderMatcherControl,
     private readonly transactionFactory: VietQrPaymentTransactionFactory,
-    private readonly notificationService: NotificationService,
+    private readonly paymentSuccessNotificationControl: PaymentSuccessNotificationControl,
   ) {}
 
   async syncTransaction(
@@ -74,23 +74,17 @@ export class VietQrTransactionSyncControl {
 
     // Bước 6: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
     if (!paymentTransaction.receiptEmailSentAt) {
-      try {
-        await this.notificationService.sendPaymentSuccessNotification(
-          order,
-          paymentTransaction,
-        );
-        paymentTransaction.receiptEmailSentAt = new Date();
+      const result = await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(
+        order,
+        paymentTransaction,
+      );
+      if (result.success) {
+        paymentTransaction.receiptEmailSentAt = result.sentAt || new Date();
         paymentTransaction.receiptEmailError = null;
-        await this.paymentTransactionRepo.save(paymentTransaction);
-      } catch (emailError: unknown) {
-        const err = emailError as Error;
-        this.logger.error(
-          `Failed to send receipt email for order ${order.orderId}`,
-          err.stack,
-        );
-        paymentTransaction.receiptEmailError = err.message;
-        await this.paymentTransactionRepo.save(paymentTransaction);
+      } else {
+        paymentTransaction.receiptEmailError = result.error || 'Unknown error';
       }
+      await this.paymentTransactionRepo.save(paymentTransaction);
     }
 
     return { refTransactionId };

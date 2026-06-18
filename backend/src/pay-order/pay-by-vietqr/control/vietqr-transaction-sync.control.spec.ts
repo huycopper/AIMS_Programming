@@ -9,12 +9,13 @@ import {
 } from '@nestjs/common';
 import { PaymentTransaction } from '../../../payment/entities/payment-transaction.entity.js';
 import { Order } from '../../../order/entities/order.entity.js';
-import { NotificationService } from '../../../notification/notification.service.js';
 import { VietQrCallbackValidatorControl } from './vietqr-callback-validator.control.js';
 import { VietQrOrderMatcherControl } from './vietqr-order-matcher.control.js';
 import { VietQrPaymentTransactionFactory } from './vietqr-payment-transaction-factory.js';
 import { VietQrTransactionSyncControl } from './vietqr-transaction-sync.control.js';
 import { TransactionCallbackDto } from '../entity/vietqr-transaction-sync.dto.js';
+import { PaymentSuccessNotificationControl } from '../../notification/control/payment-success-notification.control.js';
+import { PaymentSuccessNotificationResult } from '../../notification/entity/payment-success-notification-result.model.js';
 
 describe('VietQR Split Webhook Components', () => {
   let callbackValidator: VietQrCallbackValidatorControl;
@@ -23,7 +24,7 @@ describe('VietQR Split Webhook Components', () => {
   let transactionSyncControl: VietQrTransactionSyncControl;
 
   let jwtServiceMock: jest.Mocked<JwtService>;
-  let notificationServiceMock: jest.Mocked<NotificationService>;
+  let paymentSuccessNotificationControlMock: jest.Mocked<PaymentSuccessNotificationControl>;
   let paymentTransactionRepoMock: jest.Mocked<Repository<PaymentTransaction>>;
   let orderRepoMock: jest.Mocked<Repository<Order>>;
 
@@ -33,7 +34,7 @@ describe('VietQR Split Webhook Components', () => {
       sign: jest.fn(),
     } as any;
 
-    notificationServiceMock = {
+    paymentSuccessNotificationControlMock = {
       sendPaymentSuccessNotification: jest.fn(),
     } as any;
 
@@ -54,7 +55,7 @@ describe('VietQR Split Webhook Components', () => {
         VietQrPaymentTransactionFactory,
         VietQrTransactionSyncControl,
         { provide: JwtService, useValue: jwtServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: PaymentSuccessNotificationControl, useValue: paymentSuccessNotificationControlMock },
         {
           provide: getRepositoryToken(PaymentTransaction),
           useValue: paymentTransactionRepoMock,
@@ -254,10 +255,10 @@ describe('VietQR Split Webhook Components', () => {
         callSequence.push(`save_order_${ord.orderId}`);
         return Promise.resolve(ord);
       });
-      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(
+      paymentSuccessNotificationControlMock.sendPaymentSuccessNotification.mockImplementation(
         async () => {
           callSequence.push('send_email');
-          return Promise.resolve();
+          return PaymentSuccessNotificationResult.success(new Date('2026-06-18T20:00:00Z'));
         },
       );
 
@@ -318,10 +319,10 @@ describe('VietQR Split Webhook Components', () => {
         callSequence.push(`save_order_${ord.orderId}`);
         return Promise.resolve(ord);
       });
-      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(
+      paymentSuccessNotificationControlMock.sendPaymentSuccessNotification.mockImplementation(
         async () => {
           callSequence.push('send_email');
-          throw new Error('SMTP error');
+          return PaymentSuccessNotificationResult.failure('SMTP error');
         },
       );
 

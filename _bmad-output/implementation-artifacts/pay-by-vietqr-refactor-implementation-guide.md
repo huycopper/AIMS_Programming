@@ -542,7 +542,7 @@ Do not:
 - Do not change order view/cancel URL routes.
 - Do not change transaction field names used in email content.
 
-#### [ ] PVQR-4.4: Extract Payment Success Notification Orchestration Control
+#### [x] PVQR-4.4: Extract Payment Success Notification Orchestration Control
 
 Goal: Move payment success notification orchestration into a dedicated Control that coordinates recipient checks, template creation, email Boundary sending, and notification result state.
 
@@ -555,14 +555,14 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `PaymentSuccessNotificationControl` orchestrates payment success notification for an `Order` and `PaymentTransaction`.
-- [ ] Missing delivery email preserves current behavior, does not throw, and produces a result that lets transaction-sync preserve current `receiptEmailSentAt`/`receiptEmailError` outcome.
-- [ ] Successful email send returns a result that lets transaction-sync set `receiptEmailSentAt` and clear `receiptEmailError`.
-- [ ] Failed email send returns or throws in a way transaction-sync can preserve current `receiptEmailError` behavior.
-- [ ] Control does not save `PaymentTransaction` directly unless deliberately keeping an equivalent persistence boundary documented in tests.
-- [ ] Control does not update order status.
-- [ ] Control does not construct VietQR transaction-sync responses.
-- [ ] Existing `NotificationService.sendPaymentSuccessNotification` may delegate to the new control temporarily.
+- [x] `PaymentSuccessNotificationControl` orchestrates payment success notification for an `Order` and `PaymentTransaction`.
+- [x] Missing delivery email preserves current behavior, does not throw, and produces a result that lets transaction-sync preserve current `receiptEmailSentAt`/`receiptEmailError` outcome.
+- [x] Successful email send returns a result that lets transaction-sync set `receiptEmailSentAt` and clear `receiptEmailError`.
+- [x] Failed email send returns or throws in a way transaction-sync can preserve current `receiptEmailError` behavior.
+- [x] Control does not save `PaymentTransaction` directly unless deliberately keeping an equivalent persistence boundary documented in tests.
+- [x] Control does not update order status.
+- [x] Control does not construct VietQR transaction-sync responses.
+- [x] Existing `NotificationService.sendPaymentSuccessNotification` may delegate to the new control temporarily.
 
 Do not:
 
@@ -570,7 +570,7 @@ Do not:
 - Do not let notification control own VietQR validation, order matching, transaction creation, or response construction.
 - Do not change `receiptEmailSentAt`/`receiptEmailError` semantics.
 
-#### [ ] PVQR-4.5: Create And Wire PayOrderNotificationModule
+#### [x] PVQR-4.5: Create And Wire PayOrderNotificationModule
 
 Goal: Create a dedicated NestJS module for Pay Order notification providers and wire it into the backend module graph.
 
@@ -583,13 +583,13 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `PayOrderNotificationModule` provides and exports payment success notification control.
-- [ ] Module provides the email Boundary implementation.
-- [ ] Module imports `ConfigModule` as needed for email config.
-- [ ] `PayByVietQrModule` or the module owning transaction-sync can inject `PaymentSuccessNotificationControl`.
-- [ ] Existing `NotificationModule` remains available for order cancellation email or delegates safely.
-- [ ] No circular module imports are introduced.
-- [ ] Backend compiles.
+- [x] `PayOrderNotificationModule` provides and exports payment success notification control.
+- [x] Module provides the email Boundary implementation.
+- [x] Module imports `ConfigModule` as needed for email config.
+- [x] `PayByVietQrModule` or the module owning transaction-sync can inject `PaymentSuccessNotificationControl`.
+- [x] Existing `NotificationModule` remains available for order cancellation email or delegates safely.
+- [x] No circular module imports are introduced.
+- [x] Backend compiles.
 
 Do not:
 
@@ -597,7 +597,7 @@ Do not:
 - Do not register duplicate transaction-sync controllers.
 - Do not move shared TypeORM entities.
 
-#### [ ] PVQR-4.6: Update Transaction Sync Control To Call Payment Success Notification Control
+#### [x] PVQR-4.6: Update Transaction Sync Control To Call Payment Success Notification Control
 
 Goal: Replace direct use of the old payment success notification service from transaction-sync with the new Pay Order notification control while preserving all transaction-sync behavior.
 
@@ -611,14 +611,14 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Transaction sync calls `PaymentSuccessNotificationControl` after `PaymentTransaction` is saved.
-- [ ] Transaction sync still updates order status to `PENDING_PROCESSING`.
-- [ ] Email success sets `receiptEmailSentAt` to current time, clears `receiptEmailError`, saves transaction, and returns existing success response shape.
-- [ ] Email failure stores `receiptEmailError`, saves transaction, and still returns existing success response shape.
-- [ ] Missing delivery email preserves current non-throwing behavior and current receipt field outcome.
-- [ ] Email failure does not roll back transaction persistence or order status persistence.
-- [ ] Existing non-email error paths return the same error response shape.
-- [ ] No database schema changes are required.
+- [x] Transaction sync calls `PaymentSuccessNotificationControl` after `PaymentTransaction` is saved.
+- [x] Transaction sync still updates order status to `PENDING_PROCESSING`.
+- [x] Email success sets `receiptEmailSentAt` to current time, clears `receiptEmailError`, saves transaction, and returns existing success response shape.
+- [x] Email failure stores `receiptEmailError`, saves transaction, and still returns existing success response shape.
+- [x] Missing delivery email preserves current non-throwing behavior and current receipt field outcome.
+- [x] Email failure does not roll back transaction persistence or order status persistence.
+- [x] Existing non-email error paths return the same error response shape.
+- [x] No database schema changes are required.
 
 Do not:
 
@@ -628,7 +628,7 @@ Do not:
 - Do not change payment success email content.
 - Do not update database schema.
 
-#### [ ] PVQR-4.7: Preserve Order Cancellation Notification Compatibility
+#### [x] PVQR-4.7: Preserve Order Cancellation Notification Compatibility
 
 Goal: Ensure the Pay Order payment success notification refactor does not break order cancellation email in `customer-order`.
 
@@ -643,11 +643,11 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `CustomerOrderService` can still call `sendOrderCancelledNotification` as before.
-- [ ] Order cancellation email still uses the same recipient source, subject/content builder, and email transport behavior.
-- [ ] Any compatibility wrapper is temporary and limited to preserving current imports/API.
-- [ ] Payment success email implementation no longer needs to live in the old generic notification path once transaction-sync uses the new control.
-- [ ] No unrelated customer-order behavior changes.
+- [x] `CustomerOrderService` can still call `sendOrderCancelledNotification` as before.
+- [x] Order cancellation email still uses the same recipient source, subject/content builder, and email transport behavior.
+- [x] Any compatibility wrapper is temporary and limited to preserving current imports/API.
+- [x] Payment success email implementation no longer needs to live in the old generic notification path once transaction-sync uses the new control.
+- [x] No unrelated customer-order behavior changes.
 
 Do not:
 

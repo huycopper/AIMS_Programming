@@ -13,7 +13,7 @@ import { VietQrTransactionSyncControl } from './control/vietqr-transaction-sync.
 import { VietQrCallbackValidatorControl } from './control/vietqr-callback-validator.control.js';
 import { VietQrOrderMatcherControl } from './control/vietqr-order-matcher.control.js';
 import { VietQrPaymentTransactionFactory } from './control/vietqr-payment-transaction-factory.js';
-import { NotificationModule } from '../../notification/notification.module.js';
+import { PayOrderNotificationModule } from '../notification/pay-order-notification.module.js';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { NotificationModule } from '../../notification/notification.module.js';
         signOptions: { expiresIn: '1h' },
       }),
     }),
-    NotificationModule,
+    PayOrderNotificationModule,
   ],
   controllers: [
     PayOrderController,
