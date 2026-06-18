@@ -766,7 +766,7 @@ Do not:
 
 ### Phase 6: Cleanup And Verification
 
-#### [ ] PVQR-6.1: Remove Old VietQR And Payment Success Notification Files And Imports Safely
+#### [x] PVQR-6.1: Remove Old VietQR And Payment Success Notification Files And Imports Safely
 
 Goal: Remove old VietQR and payment success notification files/imports after backend, notification, and frontend slices are fully wired.
 
@@ -780,21 +780,21 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] No duplicate VietQR classes/providers/controllers remain.
-- [ ] No imports point to old VietQR paths.
-- [ ] No transaction-sync imports point to old payment success notification service/builder.
-- [ ] Payment success email providers live under `backend/src/pay-order/notification/`.
-- [ ] Order cancellation email remains compatible through `NotificationService` or another retained compatibility path.
-- [ ] Shared `PaymentTransaction` remains in its shared location.
-- [ ] Backend and frontend compile.
-- [ ] Tests pass.
+- [x] No duplicate VietQR classes/providers/controllers remain.
+- [x] No imports point to old VietQR paths.
+- [x] No transaction-sync imports point to old payment success notification service/builder.
+- [x] Payment success email providers live under `backend/src/pay-order/notification/`.
+- [x] Order cancellation email remains compatible through `NotificationService` or another retained compatibility path.
+- [x] Shared `PaymentTransaction` remains in its shared location.
+- [x] Backend and frontend compile.
+- [x] Tests pass.
 
 Tests/checks:
 
-- [ ] Run `rg` searches for old path/class references.
-- [ ] Run `rg` searches for old payment success notification references.
-- [ ] Run backend tests.
-- [ ] Run frontend tests.
+- [x] Run `rg` searches for old path/class references.
+- [x] Run `rg` searches for old payment success notification references.
+- [x] Run backend tests.
+- [x] Run frontend tests.
 
 Do not:
 
