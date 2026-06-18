@@ -224,15 +224,36 @@ describe('VietQR Split Webhook Components', () => {
         orderId: 'order123',
       };
 
-      notificationServiceMock.sendPaymentSuccessNotification.mockResolvedValue(undefined);
+      const callSequence: string[] = [];
+      paymentTransactionRepoMock.save.mockImplementation((tx: any) => {
+        callSequence.push(`save_tx_${tx.paymentTransactionId || 'new'}`);
+        return Promise.resolve(tx);
+      });
+      orderRepoMock.save.mockImplementation((ord: any) => {
+        callSequence.push(`save_order_${ord.orderId}`);
+        return Promise.resolve(ord);
+      });
+      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(async () => {
+        callSequence.push('send_email');
+        return Promise.resolve();
+      });
 
       const result = await transactionSyncControl.syncTransaction(callbackDto);
 
       expect(result).toHaveProperty('refTransactionId');
       expect(mockOrder.status).toBe('PENDING_PROCESSING');
-      expect(orderRepoMock.save).toHaveBeenCalledWith(mockOrder);
-      expect(paymentTransactionRepoMock.save).toHaveBeenCalled();
-      expect(notificationServiceMock.sendPaymentSuccessNotification).toHaveBeenCalled();
+      
+      // Verify sequence of operations:
+      // 1. Save initial payment transaction
+      // 2. Save updated order status (PENDING_PROCESSING)
+      // 3. Send payment success notification email
+      // 4. Save updated receipt email info to payment transaction
+      expect(callSequence).toEqual([
+        'save_tx_pt-123',
+        'save_order_order-123',
+        'send_email',
+        'save_tx_pt-123',
+      ]);
       expect(paymentTxMock.receiptEmailSentAt).toBeDefined();
       expect(paymentTxMock.receiptEmailError).toBeNull();
     });
@@ -263,15 +284,38 @@ describe('VietQR Split Webhook Components', () => {
         orderId: 'order123',
       };
 
-      notificationServiceMock.sendPaymentSuccessNotification.mockRejectedValue(new Error('SMTP error'));
+      const callSequence: string[] = [];
+      paymentTransactionRepoMock.save.mockImplementation((tx: any) => {
+        callSequence.push(`save_tx_${tx.paymentTransactionId || 'new'}`);
+        return Promise.resolve(tx);
+      });
+      orderRepoMock.save.mockImplementation((ord: any) => {
+        callSequence.push(`save_order_${ord.orderId}`);
+        return Promise.resolve(ord);
+      });
+      notificationServiceMock.sendPaymentSuccessNotification.mockImplementation(async () => {
+        callSequence.push('send_email');
+        throw new Error('SMTP error');
+      });
 
       const result = await transactionSyncControl.syncTransaction(callbackDto);
 
       expect(result).toHaveProperty('refTransactionId');
       expect(mockOrder.status).toBe('PENDING_PROCESSING');
+      
+      // Verify sequence of operations for failed email:
+      // 1. Save initial payment transaction
+      // 2. Save updated order status (PENDING_PROCESSING)
+      // 3. Attempt to send payment success notification email (fails)
+      // 4. Save updated receipt email failure error details to payment transaction
+      expect(callSequence).toEqual([
+        'save_tx_pt-123',
+        'save_order_order-123',
+        'send_email',
+        'save_tx_pt-123',
+      ]);
       expect(paymentTxMock.receiptEmailSentAt).toBeUndefined();
       expect(paymentTxMock.receiptEmailError).toBe('SMTP error');
-      expect(paymentTransactionRepoMock.save).toHaveBeenCalled();
     });
 
     it('should throw error when order not found', async () => {

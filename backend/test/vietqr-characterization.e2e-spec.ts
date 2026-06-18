@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Order, DeliveryInfo } from '../src/order/entities/order.entity.js';
 import { PaymentTransaction } from '../src/payment/entities/payment-transaction.entity.js';
 import { EmailService } from '../src/notification/email/email.service.js';
+import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
 describe('VietQR Flow Characterization (e2e)', () => {
@@ -16,6 +17,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
   let deliveryInfoRepo: Repository<DeliveryInfo>;
   let paymentTransactionRepo: Repository<PaymentTransaction>;
   let emailService: EmailService;
+  let configService: ConfigService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -29,6 +31,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
     deliveryInfoRepo = moduleFixture.get<Repository<DeliveryInfo>>(getRepositoryToken(DeliveryInfo));
     paymentTransactionRepo = moduleFixture.get<Repository<PaymentTransaction>>(getRepositoryToken(PaymentTransaction));
     emailService = moduleFixture.get<EmailService>(EmailService);
+    configService = moduleFixture.get<ConfigService>(ConfigService);
   });
 
   afterAll(async () => {
@@ -210,9 +213,15 @@ describe('VietQR Flow Characterization (e2e)', () => {
           .send(payload)
           .expect(200);
 
-        expect(response.body).toHaveProperty('error', false);
-        expect(response.body).toHaveProperty('toastMessage', 'Transaction processed successfully');
-        expect(response.body.object).toHaveProperty('reftransactionid');
+        // Assert success response shape
+        expect(response.body).toEqual({
+          error: false,
+          errorReason: null,
+          toastMessage: 'Transaction processed successfully',
+          object: {
+            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+          },
+        });
 
         // Check database changes
         const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
@@ -225,10 +234,22 @@ describe('VietQR Flow Characterization (e2e)', () => {
         expect(txn?.status).toBe('SUCCESS');
         expect(Number(txn?.amount)).toBe(132000);
 
-        // Verify receipt email sent behavior
+        // Verify receipt email sent behavior (receiptEmailSentAt set and receiptEmailError cleared on success)
         expect(txn?.receiptEmailSentAt).toBeDefined();
         expect(txn?.receiptEmailSentAt).not.toBeNull();
         expect(txn?.receiptEmailError).toBeNull();
+
+        // Verify email builder and APP_PUBLIC_URL link behavior without exposing env secrets
+        expect(sendEmailSpy).toHaveBeenCalledTimes(1);
+        const [to, subject, html, text] = sendEmailSpy.mock.calls[0];
+        expect(to).toBe(testOrder.deliveryInfo.email);
+        expect(subject).toBe(`[AIMS] Payment Successful - Order #${testOrder.orderId}`);
+
+        const appPublicUrl = configService.get<string>('APP_PUBLIC_URL', 'http://localhost:4200');
+        expect(html).toContain(`${appPublicUrl}/orders/view/${testOrder.orderViewToken}`);
+        expect(html).toContain(`${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`);
+        expect(text).toContain(`${appPublicUrl}/orders/view/${testOrder.orderViewToken}`);
+        expect(text).toContain(`${appPublicUrl}/orders/cancel/${testOrder.cancelToken}`);
 
         sendEmailSpy.mockRestore();
       });
@@ -254,18 +275,26 @@ describe('VietQR Flow Characterization (e2e)', () => {
           .send(payload)
           .expect(200);
 
-        // Transaction sync itself should succeed
-        expect(response.body).toHaveProperty('error', false);
+        // Email failure does not change transaction-sync success response shape
+        expect(response.body).toEqual({
+          error: false,
+          errorReason: null,
+          toastMessage: 'Transaction processed successfully',
+          object: {
+            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+          },
+        });
 
-        // Order status should still be updated
+        // Email failure does not roll back order status PENDING_PROCESSING
         const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
 
-        // Transaction record should be persisted with the error
+        // Email failure does not roll back PaymentTransaction persistence, and saves receiptEmailError
         const txn = await paymentTransactionRepo.findOne({
           where: { order: { orderId: testOrder.orderId } },
         });
         expect(txn).toBeDefined();
+        expect(txn?.status).toBe('SUCCESS');
         expect(txn?.receiptEmailSentAt).toBeNull();
         expect(txn?.receiptEmailError).toBe('SMTP failure');
 
@@ -273,7 +302,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
       });
 
       it('should succeed transaction sync when order has no delivery email', async () => {
-        // Update order to have no delivery email (empty string)
+        // Update order to have no delivery email (empty string/null)
         testOrder.deliveryInfo.email = '';
         await deliveryInfoRepo.save(testOrder.deliveryInfo);
 
@@ -296,7 +325,14 @@ describe('VietQR Flow Characterization (e2e)', () => {
           .send(payload)
           .expect(200);
 
-        expect(response.body).toHaveProperty('error', false);
+        expect(response.body).toEqual({
+          error: false,
+          errorReason: null,
+          toastMessage: 'Transaction processed successfully',
+          object: {
+            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+          },
+        });
 
         const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
         expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
@@ -306,13 +342,71 @@ describe('VietQR Flow Characterization (e2e)', () => {
         });
         expect(txn).toBeDefined();
         // Since no email address was provided, sendEmail should not be called,
-        // and receiptEmailSentAt should be populated (since notification service resolved successfully), and error is null.
+        // but receiptEmailSentAt is set and receiptEmailError is null (same as successful notification flow)
         expect(sendEmailSpy).not.toHaveBeenCalled();
         expect(txn?.receiptEmailSentAt).toBeDefined();
         expect(txn?.receiptEmailSentAt).not.toBeNull();
         expect(txn?.receiptEmailError).toBeNull();
 
         sendEmailSpy.mockRestore();
+      });
+
+      it('should simulate sending email when EMAIL_ENABLED=false', async () => {
+        // Mock ConfigService.get to return 'false' for EMAIL_ENABLED
+        const originalGet = configService.get.bind(configService);
+        const configGetSpy = jest.spyOn(configService, 'get').mockImplementation((key: string, ...args: any[]) => {
+          if (key === 'EMAIL_ENABLED') {
+            return 'false';
+          }
+          return originalGet(key, ...args);
+        });
+
+        // Verify that nodemailer transporter.sendMail is not called
+        const transporterSendMailSpy = jest.spyOn((emailService as any).transporter, 'sendMail');
+
+        const shortOrderId = testOrder.orderId.replace(/-/g, '').substring(0, 13);
+        const payload = {
+          transactionid: 'TXN-' + randomUUID().substring(0, 8),
+          transactiontime: Date.now(),
+          referencenumber: 'REF-' + randomUUID().substring(0, 8),
+          amount: 132000,
+          content: `AIMS ${shortOrderId}`,
+          bankaccount: '999990977777',
+          orderId: shortOrderId,
+        };
+
+        const response = await request(app.getHttpServer())
+          .post('/vqr/bank/api/transaction-sync')
+          .set('Authorization', `Bearer ${token}`)
+          .send(payload)
+          .expect(200);
+
+        expect(response.body).toEqual({
+          error: false,
+          errorReason: null,
+          toastMessage: 'Transaction processed successfully',
+          object: {
+            reftransactionid: expect.stringMatching(/^AIMS_TXN_\d+_[a-f0-9]{8}$/),
+          },
+        });
+
+        const updatedOrder = await orderRepo.findOne({ where: { orderId: testOrder.orderId } });
+        expect(updatedOrder?.status).toBe('PENDING_PROCESSING');
+
+        const txn = await paymentTransactionRepo.findOne({
+          where: { order: { orderId: testOrder.orderId } },
+        });
+        expect(txn).toBeDefined();
+        // Since EMAIL_ENABLED=false, the sendEmail call simulates and resolves successfully
+        expect(txn?.receiptEmailSentAt).toBeDefined();
+        expect(txn?.receiptEmailSentAt).not.toBeNull();
+        expect(txn?.receiptEmailError).toBeNull();
+
+        // nodemailer sendMail should NOT be called
+        expect(transporterSendMailSpy).not.toHaveBeenCalled();
+
+        transporterSendMailSpy.mockRestore();
+        configGetSpy.mockRestore();
       });
 
       it('should fail transaction sync with invalid/missing token', async () => {

@@ -446,7 +446,7 @@ Do not:
 
 ### Phase 4: Backend Payment Success Email Notification Refactor
 
-#### [ ] PVQR-4.1: Characterize Current Payment Success Email Behavior
+#### [x] PVQR-4.1: Characterize Current Payment Success Email Behavior
 
 Goal: Capture current payment success email behavior before moving notification, email transport, template, or transaction-sync orchestration code.
 
@@ -461,16 +461,16 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] Characterization covers successful payment success email after transaction persistence.
-- [ ] Success sets `PaymentTransaction.receiptEmailSentAt` and clears `PaymentTransaction.receiptEmailError`.
-- [ ] Email failure saves `PaymentTransaction.receiptEmailError`.
-- [ ] Email failure does not roll back saved `PaymentTransaction`.
-- [ ] Email failure does not roll back order status update to `PENDING_PROCESSING`.
-- [ ] Email failure does not change VietQR transaction-sync success response shape.
-- [ ] Missing delivery email behavior is covered exactly as today.
-- [ ] Missing delivery email does not throw and preserves the current `receiptEmailSentAt`/`receiptEmailError` outcome.
-- [ ] `EMAIL_ENABLED=false` simulated-send behavior is covered if practical.
-- [ ] Current payment success email subject, text/html essentials, recipient source, and `APP_PUBLIC_URL` link behavior are recorded without exposing secrets.
+- [x] Characterization covers successful payment success email after transaction persistence.
+- [x] Success sets `PaymentTransaction.receiptEmailSentAt` and clears `PaymentTransaction.receiptEmailError`.
+- [x] Email failure saves `PaymentTransaction.receiptEmailError`.
+- [x] Email failure does not roll back saved `PaymentTransaction`.
+- [x] Email failure does not roll back order status update to `PENDING_PROCESSING`.
+- [x] Email failure does not change VietQR transaction-sync success response shape.
+- [x] Missing delivery email behavior is covered exactly as today.
+- [x] Missing delivery email does not throw and preserves the current `receiptEmailSentAt`/`receiptEmailError` outcome.
+- [x] `EMAIL_ENABLED=false` simulated-send behavior is covered if practical.
+- [x] Current payment success email subject, text/html essentials, recipient source, and `APP_PUBLIC_URL` link behavior are recorded without exposing secrets.
 
 Do not:
 
