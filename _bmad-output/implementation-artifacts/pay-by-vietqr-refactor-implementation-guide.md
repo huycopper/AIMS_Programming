@@ -480,7 +480,7 @@ Do not:
 - Do not change database schema.
 - Do not expose `.env` secrets.
 
-#### [ ] PVQR-4.2: Extract Email Transport And Nodemailer Into Boundary
+#### [x] PVQR-4.2: Extract Email Transport And Nodemailer Into Boundary
 
 Goal: Move generic email transport and nodemailer-specific behavior behind a Pay Order notification Boundary while preserving existing SMTP and simulated-send behavior.
 
@@ -494,13 +494,13 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `EmailBoundary` exposes an OOP boundary interface for sending an `EmailMessage`.
-- [ ] `NodemailerEmailBoundary` owns `nodemailer.createTransport` and `transporter.sendMail`.
-- [ ] Existing env variable names and defaults remain unchanged.
-- [ ] `EMAIL_ENABLED=false` still logs/simulates without SMTP.
-- [ ] SMTP `from`, `to`, `subject`, `text`, and `html` behavior remains unchanged.
-- [ ] Existing order cancellation email can still send through the old public API or compatibility wrapper.
-- [ ] No payment success email business orchestration is added to the Boundary.
+- [x] `EmailBoundary` exposes an OOP boundary interface for sending an `EmailMessage`.
+- [x] `NodemailerEmailBoundary` owns `nodemailer.createTransport` and `transporter.sendMail`.
+- [x] Existing env variable names and defaults remain unchanged.
+- [x] `EMAIL_ENABLED=false` still logs/simulates without SMTP.
+- [x] SMTP `from`, `to`, `subject`, `text`, and `html` behavior remains unchanged.
+- [x] Existing order cancellation email can still send through the old public API or compatibility wrapper.
+- [x] No payment success email business orchestration is added to the Boundary.
 
 Do not:
 
@@ -509,7 +509,7 @@ Do not:
 - Do not put payment success template logic in the Boundary.
 - Do not remove the old `EmailService` public API until cancellation compatibility is proven.
 
-#### [ ] PVQR-4.3: Extract Payment Success Email Message, Model, And Template Control
+#### [x] PVQR-4.3: Extract Payment Success Email Message, Model, And Template Control
 
 Goal: Move payment success email content into BCE-aligned models and a template control without changing rendered email behavior.
 
@@ -523,17 +523,17 @@ Expected file scope:
 
 Acceptance checklist:
 
-- [ ] `EmailMessage` represents recipient, subject, text, and html.
-- [ ] `PaymentSuccessEmail` represents input/content state derived from `Order`, `PaymentTransaction`, and `APP_PUBLIC_URL`.
-- [ ] `PaymentSuccessEmailTemplateControl` builds subject, text, and html.
-- [ ] Subject remains `[AIMS] Payment Successful - Order #<orderId>`.
-- [ ] Recipient remains `order.deliveryInfo?.email`.
-- [ ] Customer name fallback remains `Customer`.
-- [ ] View order link remains `${APP_PUBLIC_URL}/orders/view/${order.orderViewToken}`.
-- [ ] Cancel order link remains `${APP_PUBLIC_URL}/orders/cancel/${order.cancelToken}`.
-- [ ] Currency formatting remains Vietnamese VND formatting.
-- [ ] Transaction reference and payment method content remain present.
-- [ ] Existing builder can remain as a compatibility wrapper during migration.
+- [x] `EmailMessage` represents recipient, subject, text, and html.
+- [x] `PaymentSuccessEmail` represents input/content state derived from `Order`, `PaymentTransaction`, and `APP_PUBLIC_URL`.
+- [x] `PaymentSuccessEmailTemplateControl` builds subject, text, and html.
+- [x] Subject remains `[AIMS] Payment Successful - Order #<orderId>`.
+- [x] Recipient remains `order.deliveryInfo?.email`.
+- [x] Customer name fallback remains `Customer`.
+- [x] View order link remains `${APP_PUBLIC_URL}/orders/view/${order.orderViewToken}`.
+- [x] Cancel order link remains `${APP_PUBLIC_URL}/orders/cancel/${order.cancelToken}`.
+- [x] Currency formatting remains Vietnamese VND formatting.
+- [x] Transaction reference and payment method content remain present.
+- [x] Existing builder can remain as a compatibility wrapper during migration.
 
 Do not:
 
