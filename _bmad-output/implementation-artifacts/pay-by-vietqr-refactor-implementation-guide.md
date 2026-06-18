@@ -4,6 +4,14 @@ Generated: 2026-06-18T17:30:32+07:00
 
 Source backlog: `_bmad-output/implementation-artifacts/refactor-pay-by-vietqr-backlog.md`
 
+## Phase 4C Regression Fixes (Completed 2026-06-18)
+
+We fixed the regressions identified in the Phase 4C code review report:
+- **Confirm Payment Endpoint robustness**: Added automatic fetch of `accessToken` in `confirmPayment` within `PayThroughVietQRController` when called first in isolated tests.
+- **E2E Email Spying/Mocking update**: Refactored `vietqr-characterization.e2e-spec.ts` to spy and mock on the new `EmailBoundary` (using `moduleFixture.get(EmailBoundary)`) instead of the legacy `EmailService`, because the refactored transaction-sync flow bypasses the legacy `EmailService`.
+- **E2E Test Listening Port**: Bound Nest E2E test application to port `8080` (via `app.listen(8080)`) to ensure the external sandbox callbacks via ngrok hit the current test instance database correctly.
+- **Provider Registration Duplication**: Refactored provider wiring by exporting `EmailBoundary` from `PayOrderNotificationModule` and removing the duplicate provider definition from `NotificationModule`, letting it reuse the exported provider.
+
 This guide consolidates the full Pay by VietQR refactor into one implementation document. Treat `PVQR-1.1` through `PVQR-6.2` as ordered checklist tasks, not separate story files.
 
 ## Objective

@@ -11,6 +11,7 @@ import { PaymentTransaction } from '../src/payment/entities/payment-transaction.
 import { EmailService } from '../src/notification/email/email.service.js';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { EmailBoundary } from '../src/pay-order/notification/boundary/email/email.boundary.js';
 
 describe('VietQR Flow Characterization (e2e)', () => {
   let app: INestApplication<App>;
@@ -18,6 +19,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
   let deliveryInfoRepo: Repository<DeliveryInfo>;
   let paymentTransactionRepo: Repository<PaymentTransaction>;
   let emailService: EmailService;
+  let emailBoundary: EmailBoundary;
   let configService: ConfigService;
 
   beforeAll(async () => {
@@ -26,7 +28,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await app.listen(8080);
 
     orderRepo = moduleFixture.get<Repository<Order>>(getRepositoryToken(Order));
     deliveryInfoRepo = moduleFixture.get<Repository<DeliveryInfo>>(
@@ -36,6 +38,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
       getRepositoryToken(PaymentTransaction),
     );
     emailService = moduleFixture.get<EmailService>(EmailService);
+    emailBoundary = moduleFixture.get<EmailBoundary>(EmailBoundary);
     configService = moduleFixture.get<ConfigService>(ConfigService);
   });
 
@@ -213,7 +216,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
 
       it('should successfully sync transaction, update order, and send email successfully', async () => {
         // Spy on email send
-        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
+        const sendEmailSpy = jest.spyOn(emailBoundary, 'sendEmail');
 
         const shortOrderId = testOrder.orderId
           .replace(/-/g, '')
@@ -266,7 +269,8 @@ describe('VietQR Flow Characterization (e2e)', () => {
 
         // Verify email builder and APP_PUBLIC_URL link behavior without exposing env secrets
         expect(sendEmailSpy).toHaveBeenCalledTimes(1);
-        const [to, subject, html, text] = sendEmailSpy.mock.calls[0];
+        const [message] = sendEmailSpy.mock.calls[0];
+        const { to, subject, html, text } = message;
         expect(to).toBe(testOrder.deliveryInfo.email);
         expect(subject).toBe(
           `[AIMS] Payment Successful - Order #${testOrder.orderId}`,
@@ -295,7 +299,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
       it('should handle email delivery failure but still succeed transaction sync', async () => {
         // Mock sendEmail to throw an error
         const sendEmailSpy = jest
-          .spyOn(emailService, 'sendEmail')
+          .spyOn(emailBoundary, 'sendEmail')
           .mockRejectedValue(new Error('SMTP failure'));
 
         const shortOrderId = testOrder.orderId
@@ -352,7 +356,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
         testOrder.deliveryInfo.email = '';
         await deliveryInfoRepo.save(testOrder.deliveryInfo);
 
-        const sendEmailSpy = jest.spyOn(emailService, 'sendEmail');
+        const sendEmailSpy = jest.spyOn(emailBoundary, 'sendEmail');
 
         const shortOrderId = testOrder.orderId
           .replace(/-/g, '')
@@ -417,7 +421,7 @@ describe('VietQR Flow Characterization (e2e)', () => {
 
         // Verify that nodemailer transporter.sendMail is not called
         const transporterSendMailSpy = jest.spyOn(
-          (emailService as any).transporter,
+          (emailBoundary as any).transporter,
           'sendMail',
         );
 

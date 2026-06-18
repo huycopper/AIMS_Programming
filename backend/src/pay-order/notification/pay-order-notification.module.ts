@@ -15,6 +15,6 @@ import { NodemailerEmailBoundary } from './boundary/email/nodemailer-email.bound
       useClass: NodemailerEmailBoundary,
     },
   ],
-  exports: [PaymentSuccessNotificationControl],
+  exports: [PaymentSuccessNotificationControl, EmailBoundary],
 })
 export class PayOrderNotificationModule {}

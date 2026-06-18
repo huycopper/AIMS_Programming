@@ -39,6 +39,10 @@ export class PayThroughVietQRController {
   async confirmPayment(order: Order): Promise<PaymentConfirmationResponse> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
+    if (!this.accessToken) {
+      this.accessToken = await this.vietQRBoundary.getAccessToken();
+    }
+
     const callbackResult = await this.vietQRBoundary.handleAPICallback(
       order,
       this.accessToken,
