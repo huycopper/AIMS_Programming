@@ -10,8 +10,9 @@ import { JwtService } from '@nestjs/jwt';
 export class VietQrCallbackValidatorControl {
   private readonly logger = new Logger(VietQrCallbackValidatorControl.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) { }
 
+  //
   validateCallbackToken(token: string): boolean {
     if (!process.env.JWT_SECRET) {
       this.logger.error('JWT_SECRET is not configured');
@@ -31,10 +32,7 @@ export class VietQrCallbackValidatorControl {
   generateJWTToken(username: string, password: string) {
     this.logger.log(`Generating JWT token for client username: ${username}`);
 
-    if (
-      username === process.env.CLIENT_USERNAME &&
-      password === process.env.CLIENT_PASSWORD
-    ) {
+    if (username === process.env.CLIENT_USERNAME && password === process.env.CLIENT_PASSWORD) {
       if (!process.env.JWT_SECRET) {
         this.logger.error('JWT_SECRET is not configured');
         throw new InternalServerErrorException({
@@ -60,9 +58,7 @@ export class VietQrCallbackValidatorControl {
         expires_in: 300,
       };
     } else {
-      this.logger.warn(
-        `Invalid credentials provided for username: ${username}`,
-      );
+      this.logger.warn(`Invalid credentials provided for username: ${username}`);
       throw new UnauthorizedException({
         status: 'FAILED',
         message: 'INVALID_CREDENTIALS',

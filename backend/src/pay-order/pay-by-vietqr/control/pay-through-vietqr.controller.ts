@@ -20,18 +20,13 @@ export class PayThroughVietQRController {
     private readonly paymentTransactionRepo: Repository<PaymentTransaction>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-  ) {}
+  ) { }
 
-  async generateQRCode(
-    order: Order,
-  ): Promise<{ qrDataURL: string; amount: number; content: string }> {
+  async generateQRCode(order: Order): Promise<{ qrDataURL: string; amount: number; content: string }> {
     this.logger.log(`Generating QR Code for invoice ${order.orderId}`);
 
     this.accessToken = await this.vietQRBoundary.getAccessToken();
-    const qrResult = await this.vietQRBoundary.generateQRCode(
-      order,
-      this.accessToken,
-    );
+    const qrResult = await this.vietQRBoundary.generateQRCode(order, this.accessToken);
 
     return qrResult;
   }
@@ -39,20 +34,11 @@ export class PayThroughVietQRController {
   async confirmPayment(order: Order): Promise<PaymentConfirmationResponse> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
-    if (!this.accessToken) {
-      this.accessToken = await this.vietQRBoundary.getAccessToken();
-    }
+    const callbackResult = await this.vietQRBoundary.handleAPICallback(order, this.accessToken);
 
-    const callbackResult = await this.vietQRBoundary.handleAPICallback(
-      order,
-      this.accessToken,
-    );
+    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`);
 
-    this.logger.log(
-      `API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`,
-    );
-
-    if (callbackResult.status !== 'SUCCESS') {
+    if (callbackResult.status !== 'SUCCESS') { // if call API callback fail, return error message from API callback
       return this.buildPaymentConfirmationResponse(
         order,
         null,
@@ -61,10 +47,7 @@ export class PayThroughVietQRController {
       );
     }
 
-    const confirmation = await this.waitForSuccessfulPayment(
-      order.orderId,
-      callbackResult.message,
-    );
+    const confirmation = await this.waitForSuccessfulPayment(order.orderId, callbackResult.message);
     if (confirmation.transaction) {
       return confirmation;
     }
@@ -72,8 +55,7 @@ export class PayThroughVietQRController {
     return {
       ...confirmation,
       status: 'PENDING_CONFIRMATION',
-      message:
-        'VietQR accepted the payment callback request. Waiting for transaction sync.',
+      message: 'VietQR accepted the payment callback request. Waiting for transaction sync.',
     };
   }
 

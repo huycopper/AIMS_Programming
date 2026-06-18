@@ -16,12 +16,16 @@ export class VietQrTransactionSyncBoundary {
   constructor(
     private readonly callbackValidator: VietQrCallbackValidatorControl,
     private readonly transactionSyncControl: VietQrTransactionSyncControl,
-  ) {}
+  ) { }
 
   @Post('vqr/bank/api/transaction-sync')
   async transactionSync(
+    // parse JSON trong phần Body của HTTP POST request và map (gán) nó vào biến transactionSyncBody. 
+    // body của VietQR POST đến có dạng TransactionCallbackDto
     @Body() transactionSyncBody: TransactionCallbackDto,
+    //Trích xuất giá trị của một HTTP Header có tên authorization và gán vào biến authHeader
     @Headers('authorization') authHeader: string,
+    //inject object HTTP Response (Res lấy từ thư viện nestJS) để có thể trả về response với status code và JSON body tùy chỉnh
     @Res() res: Response,
   ) {
     this.logger.log('=== VietQR Transaction Sync Received ===');
@@ -59,9 +63,9 @@ export class VietQrTransactionSyncBoundary {
     }
 
     try {
-      const { refTransactionId } =
-        await this.transactionSyncControl.syncTransaction(transactionSyncBody);
+      const { refTransactionId } = await this.transactionSyncControl.syncTransaction(transactionSyncBody);
 
+      //
       this.logger.log('=== Transaction Sync processed successfully ===');
       return res
         .status(200)
