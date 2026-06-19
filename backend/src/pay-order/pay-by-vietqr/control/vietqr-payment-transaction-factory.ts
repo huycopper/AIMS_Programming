@@ -10,7 +10,7 @@ export class VietQrPaymentTransactionFactory {
   constructor(
     @InjectRepository(PaymentTransaction)
     private readonly paymentTransactionRepo: Repository<PaymentTransaction>,
-  ) {}
+  ) { }
 
   createPaymentTransaction(
     order: Order,

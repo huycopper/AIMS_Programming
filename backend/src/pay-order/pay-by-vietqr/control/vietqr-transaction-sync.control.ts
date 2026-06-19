@@ -33,26 +33,26 @@ export class VietQrTransactionSyncControl {
     }
     this.logger.log(`Found matching order: ${order.orderId} (status: ${order.status})`);
 
-    // Bước 3: Sinh mã tham chiếu
+    // Bước 2: Sinh mã tham chiếu
     const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`;
-    const transactionRef = transactionSyncBody.referencenumber;
+    const transactionRefNum = transactionSyncBody.referencenumber;
 
-    // Bước 4: Tạo bản ghi PaymentTransaction và lưu vào database
+    // Bước 3: Tạo bản ghi PaymentTransaction và lưu vào database
     const paymentTransaction = this.transactionFactory.createPaymentTransaction(
       order,
       transactionSyncBody,
-      transactionRef,
+      transactionRefNum,
       refTransactionId,
     );
     await this.paymentTransactionRepo.save(paymentTransaction);
     this.logger.log(`PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`);
 
-    // Bước 5: Cập nhật trạng thái đơn hàng → PENDING_PROCESSING (chờ xử lý tiếp theo)
+    // Bước 4: Cập nhật trạng thái đơn hàng → PENDING_PROCESSING (chờ xử lý tiếp theo)
     order.status = 'PENDING_PROCESSING';
     await this.orderRepo.save(order);
     this.logger.log(`Order ${order.orderId} status updated to PENDING_PROCESSING`);
 
-    // Bước 6: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
+    // Bước 5: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
     if (!paymentTransaction.receiptEmailSentAt) {
       const result = await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(
         order,
