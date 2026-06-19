@@ -14,7 +14,7 @@ export const routes: Routes = [
   { path: 'invoice', component: InvoiceScreen },
   { path: 'vietqr-payment/:orderId', component: VietQRPaymentScreen },
   { path: 'vietqr-payment', component: VietQRPaymentScreen },
-  { path: 'orders/view/:viewToken', component: CustomerOrderDetailsScreen },
+  { path: 'orders/view/:viewToken', component: CustomerOrderDetailsScreen }, // Khi người dùng mở đường link này trên FE thì component này sẽ được thực thi
   { path: 'orders/cancel/:cancelToken', component: CancelOrderScreen },
   { path: '**', redirectTo: '' },
 ];

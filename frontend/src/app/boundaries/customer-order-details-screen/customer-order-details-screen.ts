@@ -25,7 +25,7 @@ export class CustomerOrderDetailsScreen implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    const viewToken = this.route.snapshot.paramMap.get('viewToken');
+    const viewToken = this.route.snapshot.paramMap.get('viewToken'); //Component đọc viewToken từ URL 
     if (!viewToken) {
       this.error = 'Invalid view token';
       this.loading = false;

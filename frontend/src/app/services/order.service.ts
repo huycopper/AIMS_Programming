@@ -56,30 +56,68 @@ export class OrderService {
     });
   }
 
+  /**
+   * Fetches the invoice/order snapshot by internal order id.
+   * Used by checkout/payment screens after an order has been placed.
+   */
   getOrder(orderId: string): Observable<InvoiceData> {
     return this.http.get<InvoiceData>(`${this.apiUrl}/${orderId}`);
   }
 
+  /**
+   * Starts the VietQR payment flow for an existing order.
+   * Delegates to the VietQR API boundary to keep payment-specific HTTP details isolated.
+   */
   requestVietQrPayment(orderId: string): Observable<VietQrPaymentRequest> {
     return this.vietQrPaymentBoundary.requestVietQrPayment(orderId);
   }
 
+  /**
+   * Requests backend confirmation for a VietQR payment.
+   * The backend checks whether the payment transaction has been matched successfully.
+   */
   confirmVietQrPayment(orderId: string): Observable<PaymentConfirmationResponse> {
     return this.vietQrPaymentBoundary.confirmVietQrPayment(orderId);
   }
 
+  /**
+   * Retrieves the latest payment confirmation state for the order.
+   * Used when the UI needs to refresh payment result information without starting a new payment.
+   */
   getPaymentConfirmation(orderId: string): Observable<PaymentConfirmationResponse> {
     return this.vietQrPaymentBoundary.getPaymentConfirmation(orderId);
   }
 
+  /**
+   * Loads public customer order details from the email "View Order Details" link.
+   * Uses orderViewToken, not cancelToken.
+   */
   getCustomerOrderByToken(viewToken: string): Observable<any> {
     return this.http.get<any>(`http://localhost:8080/api/customer/orders/view/${viewToken}`);
   }
 
+  /**
+   * Chạy khi người dùng bấm nút confirm cancelation trên trang hủy đơn.
+   * Nó dùng POST, nghĩa là có thay đổi dữ liệu trên backend.
+   * Flow:
+   * 1. Customer bấm nút “Confirm cancellation”.
+   * 2. Component gọi cancelCustomerOrder(cancelToken).
+   * 3. Backend kiểm tra token và trạng thái đơn hàng.
+   * 4. Nếu hợp lệ, backend đổi trạng thái đơn sang CANCELLED, 
+   */
   cancelCustomerOrder(cancelToken: string): Observable<any> {
     return this.http.post<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`, {});
   }
 
+  /**
+   * Chạy khi người dùng mở trang hủy đơn
+   * Nó dùng GET, nghĩa là chỉ lấy dữ liệu, chưa hủy đơn.
+   * Flow:
+   * 1. Customer bấm link hủy trong email: http://frontend/cancel-order/:cancelToken
+   * 2. Component lấy cancelToken từ URL.
+   * 3. Gọi getCustomerOrderByCancelToken(cancelToken).
+   * 4 Backend trả về thông tin tóm tắt đơn hàng để hiển thị trước khi xác nhận hủy.
+   */
   getCustomerOrderByCancelToken(cancelToken: string): Observable<any> {
     return this.http.get<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`);
   }
