@@ -54,17 +54,14 @@ export class VietQrTransactionSyncControl {
 
     // Bước 5: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
     if (!paymentTransaction.receiptEmailSentAt) {
-      const result = await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(
-        order,
-        paymentTransaction,
-      );
+      const result = await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(order, paymentTransaction);
       if (result.success) {
         paymentTransaction.receiptEmailSentAt = result.sentAt || new Date();
         paymentTransaction.receiptEmailError = null;
       } else {
         paymentTransaction.receiptEmailError = result.error || 'Unknown error';
       }
-      await this.paymentTransactionRepo.save(paymentTransaction);
+      await this.paymentTransactionRepo.save(paymentTransaction); //lưu thời gian gửi mail
     }
 
     return { refTransactionId };

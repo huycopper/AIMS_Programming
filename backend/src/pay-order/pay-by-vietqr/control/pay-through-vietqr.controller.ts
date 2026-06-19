@@ -31,6 +31,10 @@ export class PayThroughVietQRController {
     return qrResult;
   }
 
+  /**
+   * Gửi yêu cầu callback thanh toán đến VietQR và chờ ngắn hạn để tiến trình
+   * đồng bộ webhook lưu giao dịch thành công.
+   */
   async confirmPayment(order: Order): Promise<PaymentConfirmationResponse> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
@@ -38,7 +42,7 @@ export class PayThroughVietQRController {
 
     this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`);
 
-    if (callbackResult.status !== 'SUCCESS') { // if call API callback fail, return error message from API callback
+    if (callbackResult.status !== 'SUCCESS') {
       return this.buildPaymentConfirmationResponse(
         order,
         null,
@@ -59,6 +63,10 @@ export class PayThroughVietQRController {
     };
   }
 
+  /**
+   * Đọc trạng thái thanh toán mới nhất của đơn hàng và chuyển đơn sang trạng
+   * thái chờ xử lý khi đã có giao dịch thanh toán thành công.
+   */
   async getPaymentConfirmation(
     orderId: string,
   ): Promise<PaymentConfirmationResponse> {
@@ -90,6 +98,10 @@ export class PayThroughVietQRController {
     );
   }
 
+  /**
+   * Kiểm tra lặp trong thời gian ngắn vì VietQR có thể chấp nhận callback trước
+   * khi webhook kịp đồng bộ giao dịch vào hệ thống.
+   */
   private async waitForSuccessfulPayment(
     orderId: string,
     message: string,
@@ -115,6 +127,10 @@ export class PayThroughVietQRController {
     };
   }
 
+  /**
+   * Trả về giao dịch thành công mới nhất của đơn hàng nếu webhook đã đồng bộ
+   * giao dịch đó vào hệ thống.
+   */
   private async findLatestSuccessfulTransaction(
     orderId: string,
   ): Promise<PaymentTransaction | null> {
@@ -129,6 +145,10 @@ export class PayThroughVietQRController {
     return transaction ?? null;
   }
 
+  /**
+   * Tạo cấu trúc phản hồi dùng chung cho xác nhận thanh toán và các
+   * lần kiểm tra trạng thái sau đó.
+   */
   private buildPaymentConfirmationResponse(
     order: Order,
     transaction: PaymentTransaction | null,
@@ -155,6 +175,10 @@ export class PayThroughVietQRController {
     };
   }
 
+  /**
+   * Trích xuất các trường giao dịch cần trả về cho client, đồng thời giữ các
+   * mã định danh dự phòng từ cả dữ liệu VietQR và dữ liệu giao dịch nội bộ.
+   */
   private buildTransactionSummary(transaction: PaymentTransaction) {
     const details = transaction.paymentDetails || {};
 
@@ -174,6 +198,10 @@ export class PayThroughVietQRController {
     };
   }
 
+  /**
+   * Chuẩn hóa thời gian giao dịch VietQR từ epoch giây, epoch mili giây, chuỗi
+   * ngày giờ hoặc thời gian tạo giao dịch nội bộ khi thiếu dữ liệu VietQR.
+   */
   private resolveTransactionDatetime(transaction: PaymentTransaction): string {
     const rawDatetime = transaction.paymentDetails?.transactiontime;
 
@@ -200,6 +228,7 @@ export class PayThroughVietQRController {
     return new Date(transaction.createdAt).toISOString();
   }
 
+  /** Tạm dừng giữa các lần kiểm tra xác nhận thanh toán. */
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }

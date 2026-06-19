@@ -17,11 +17,9 @@ export class PaymentSuccessNotificationControl {
     private readonly templateControl: PaymentSuccessEmailTemplateControl,
   ) { }
 
-  async sendPaymentSuccessNotification(
-    order: Order,
-    transaction: PaymentTransaction,
-  ): Promise<PaymentSuccessNotificationResult> {
+  async sendPaymentSuccessNotification(order: Order, transaction: PaymentTransaction): Promise<PaymentSuccessNotificationResult> {
     const to = order.deliveryInfo?.email;
+    // Nếu không tồn tại email
     if (!to) {
       this.logger.warn(`Cannot send payment success email for order ${order.orderId}: No email address provided.`,);
       // Returns success/skipped result to match non-throwing behavior that sets receiptEmailSentAt.
@@ -29,10 +27,7 @@ export class PaymentSuccessNotificationControl {
     }
 
     try {
-      const appPublicUrl = this.configService.get<string>(
-        'APP_PUBLIC_URL',
-        'http://localhost:4200',
-      );
+      const appPublicUrl = this.configService.get<string>('APP_PUBLIC_URL')!;
 
       const emailData = new PaymentSuccessEmail(order, transaction, appPublicUrl);
       const emailMessage = this.templateControl.buildMessage(emailData);
@@ -41,10 +36,7 @@ export class PaymentSuccessNotificationControl {
 
       return PaymentSuccessNotificationResult.success(new Date());
     } catch (error: any) {
-      this.logger.error(
-        `Failed to send receipt email for order ${order.orderId}: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to send receipt email for order ${order.orderId}: ${error.message}`, error.stack);
       return PaymentSuccessNotificationResult.failure(error.message);
     }
   }

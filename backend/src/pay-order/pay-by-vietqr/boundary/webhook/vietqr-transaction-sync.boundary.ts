@@ -41,14 +41,22 @@ export class VietQrTransactionSyncBoundary {
         'INVALID_AUTH_HEADER',
         'Authorization header is missing or invalid',
         null
-      ));
+      )
+      );
     }
 
     // 2. Valid token
     const token = authHeader.substring('Bearer '.length).trim();
     if (!this.callbackValidator.validateCallbackToken(token)) {
       this.logger.error('Invalid or expired Bearer token');
-      return res.status(401).json(new ErrorResponse(true, 'INVALID_TOKEN', 'Invalid or expired token', null));
+      return res.status(401).json(
+        new ErrorResponse(
+          true,
+          'INVALID_TOKEN',
+          'Invalid or expired token',
+          null
+        )
+      );
     }
 
     try {
@@ -68,7 +76,14 @@ export class VietQrTransactionSyncBoundary {
       const message = error instanceof Error ? error.message : 'Unknown transaction sync error';
       const stack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Transaction Sync processing error: ${message}`, stack);
-      return res.status(400).json(new ErrorResponse(true, 'TRANSACTION_FAILED', message, null));
+      return res.status(400).json(
+        new ErrorResponse(
+          true,
+          'TRANSACTION_FAILED',
+          message,
+          null
+        )
+      );
     }
   }
 }
