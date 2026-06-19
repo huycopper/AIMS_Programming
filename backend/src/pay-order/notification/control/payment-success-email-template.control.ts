@@ -14,7 +14,6 @@ Thank you for your purchase! Your payment of ${emailData.totalAmountFormatted} w
 We are now processing your order.
 
 Order ID: ${emailData.orderId}
-Transaction Ref: ${emailData.transactionRef}
 Payment Method: ${emailData.paymentMethod}
 
 To view your order details or track the status, visit:
@@ -35,7 +34,6 @@ AIMS Store Team
     <h3>Order Summary</h3>
     <ul>
       <li><strong>Order ID:</strong> ${emailData.orderId}</li>
-      <li><strong>Transaction Ref:</strong> ${emailData.transactionRef}</li>
       <li><strong>Payment Method:</strong> ${emailData.paymentMethod}</li>
     </ul>
 

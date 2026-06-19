@@ -25,7 +25,7 @@ export class CustomerOrderService {
     private readonly refundService: RefundService,
     private readonly notificationService: NotificationService,
     private readonly orderService: OrderService,
-  ) {}
+  ) { }
 
   async getOrderByViewToken(viewToken: string) {
     const order = await this.orderRepo.findOne({
@@ -81,13 +81,14 @@ export class CustomerOrderService {
       },
       paymentTransaction: transaction
         ? {
-            paymentTransactionId: transaction.paymentTransactionId,
-            transactionReference: transaction.transactionRef,
-            transactionDatetime: transaction.createdAt.toISOString(),
-            amount: Number(transaction.amount),
-            paymentMethod: transaction.paymentMethod,
-            status: transaction.status,
-          }
+          transactionId: transaction.paymentDetails.transactionid,
+          paymentTransactionId: transaction.paymentTransactionId,
+          transactionReference: transaction.transactionRef,
+          transactionDatetime: transaction.createdAt.toISOString(),
+          amount: Number(transaction.amount),
+          paymentMethod: transaction.paymentMethod,
+          status: transaction.status,
+        }
         : null,
     };
   }
