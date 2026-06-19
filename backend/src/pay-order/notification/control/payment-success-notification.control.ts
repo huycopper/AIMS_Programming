@@ -15,7 +15,7 @@ export class PaymentSuccessNotificationControl {
     private readonly configService: ConfigService,
     private readonly emailBoundary: EmailBoundary,
     private readonly templateControl: PaymentSuccessEmailTemplateControl,
-  ) {}
+  ) { }
 
   async sendPaymentSuccessNotification(
     order: Order,
@@ -23,9 +23,7 @@ export class PaymentSuccessNotificationControl {
   ): Promise<PaymentSuccessNotificationResult> {
     const to = order.deliveryInfo?.email;
     if (!to) {
-      this.logger.warn(
-        `Cannot send payment success email for order ${order.orderId}: No email address provided.`,
-      );
+      this.logger.warn(`Cannot send payment success email for order ${order.orderId}: No email address provided.`,);
       // Returns success/skipped result to match non-throwing behavior that sets receiptEmailSentAt.
       return PaymentSuccessNotificationResult.success(new Date());
     }

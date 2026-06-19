@@ -16,8 +16,6 @@ export class VietQrOrderMatcherControl {
 
   //
   async matchOrder(transactionSyncBody: TransactionCallbackDto): Promise<Order | null> {
-    this.logger.log(`Callback data 2: ${JSON.stringify(transactionSyncBody)}`);
-
     const allOrders = await this.orderRepo.find();
     return this.findMatchingOrder(transactionSyncBody, allOrders);
   }
@@ -28,14 +26,8 @@ export class VietQrOrderMatcherControl {
 
       // kiểm tra xem payment code có khớp với callback không
       const isMatch = paymentCode.matchesCallback(
-        transactionSyncBody.orderId, //order ID từ callback (là order ID vừa thanh toán)
         transactionSyncBody.content,
-        order.orderId, // order ID trong database (order ID được tạo khi PlaceOrder)
       );
-
-      if (isMatch) {
-        this.logger.log(`Matched Order! Callback orderId: ${transactionSyncBody.orderId || '[Empty]'}, Database orderId: ${order.orderId}`);
-      }
 
       return isMatch;
     });

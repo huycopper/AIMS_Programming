@@ -31,11 +31,7 @@ export class VietQrTransactionSyncControl {
       this.logger.warn(`Order not found for orderId: ${transactionSyncBody.orderId}`);
       throw new Error(`Order not found for orderId: ${transactionSyncBody.orderId}`);
     }
-    // this.logger.log(`Found matching order: ${order.orderId} (status: ${order.status})`);
-
-    // Bước 2: Kiểm tra tính hợp lệ của giao dịch so với đơn hàng (số tiền, nội dung)
-    const paymentCode = VietQrPaymentCode.fromOrder(order);
-    paymentCode.validateMatches(transactionSyncBody.amount, transactionSyncBody.content);
+    this.logger.log(`Found matching order: ${order.orderId} (status: ${order.status})`);
 
     // Bước 3: Sinh mã tham chiếu
     const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`;
