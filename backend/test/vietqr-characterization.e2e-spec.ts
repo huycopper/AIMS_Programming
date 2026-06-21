@@ -8,7 +8,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order, DeliveryInfo } from '../src/order/entities/order.entity.js';
 import { PaymentTransaction } from '../src/payment/entities/payment-transaction.entity.js';
-import { EmailService } from '../src/notification/email/email.service.js';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { EmailBoundary } from '../src/pay-order/notification/boundary/email/email.boundary.js';
@@ -18,7 +17,6 @@ describe('VietQR Flow Characterization (e2e)', () => {
   let orderRepo: Repository<Order>;
   let deliveryInfoRepo: Repository<DeliveryInfo>;
   let paymentTransactionRepo: Repository<PaymentTransaction>;
-  let emailService: EmailService;
   let emailBoundary: EmailBoundary;
   let configService: ConfigService;
 
@@ -37,7 +35,6 @@ describe('VietQR Flow Characterization (e2e)', () => {
     paymentTransactionRepo = moduleFixture.get<Repository<PaymentTransaction>>(
       getRepositoryToken(PaymentTransaction),
     );
-    emailService = moduleFixture.get<EmailService>(EmailService);
     emailBoundary = moduleFixture.get<EmailBoundary>(EmailBoundary);
     configService = moduleFixture.get<ConfigService>(ConfigService);
   });

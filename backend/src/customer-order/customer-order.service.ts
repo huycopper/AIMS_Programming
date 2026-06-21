@@ -10,8 +10,8 @@ import { Repository } from 'typeorm';
 import { Order } from '../order/entities/order.entity.js';
 import { PaymentTransaction } from '../payment/entities/payment-transaction.entity.js';
 import { RefundService } from '../refund/refund.service.js';
-import { NotificationService } from '../notification/notification.service.js';
 import { OrderService } from '../order/order.service.js';
+import { OrderCancelledNotificationControl } from './notification/control/order-cancelled-notification.control.js';
 
 @Injectable()
 export class CustomerOrderService {
@@ -23,7 +23,7 @@ export class CustomerOrderService {
     @InjectRepository(PaymentTransaction)
     private readonly paymentTransactionRepo: Repository<PaymentTransaction>,
     private readonly refundService: RefundService,
-    private readonly notificationService: NotificationService,
+    private readonly orderCancelledNotificationControl: OrderCancelledNotificationControl,
     private readonly orderService: OrderService,
   ) { }
 
@@ -135,7 +135,7 @@ export class CustomerOrderService {
         };
 
         // Fire and forget notification
-        this.notificationService.sendOrderCancelledNotification(order, refund).catch((err) => {
+        this.orderCancelledNotificationControl.sendOrderCancelledNotification(order, refund).catch((err) => {
           this.logger.error(`Failed to send cancellation notification for order ${order.orderId}`, err.stack);
         });
       } else {

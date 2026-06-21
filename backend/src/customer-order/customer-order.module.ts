@@ -5,14 +5,14 @@ import { PaymentTransaction } from '../payment/entities/payment-transaction.enti
 import { CustomerOrderService } from './customer-order.service.js';
 import { CustomerOrderController } from './customer-order.controller.js';
 import { RefundModule } from '../refund/refund.module.js';
-import { NotificationModule } from '../notification/notification.module.js';
 import { OrderModule } from '../order/order.module.js';
+import { CustomerOrderNotificationModule } from './notification/customer-order-notification.module.js';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order, PaymentTransaction]),
     RefundModule,
-    NotificationModule,
+    CustomerOrderNotificationModule,
     OrderModule,
   ],
   controllers: [CustomerOrderController],
