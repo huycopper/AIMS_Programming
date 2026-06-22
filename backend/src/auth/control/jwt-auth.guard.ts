@@ -41,7 +41,24 @@ export class JwtAuthGuard implements CanActivate {
       });
     }
 
-    if (!payload || !payload.sub) {
+    if (!payload || !payload.sub || typeof payload.sub !== 'string') {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        code: 'AUTHENTICATION_REQUIRED',
+        message: 'Authentication required.',
+      });
+    }
+
+    // simple UUID format check
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payload.sub)) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        code: 'AUTHENTICATION_REQUIRED',
+        message: 'Authentication required.',
+      });
+    }
+
+    if (payload.roles && !Array.isArray(payload.roles)) {
       throw new UnauthorizedException({
         statusCode: 401,
         code: 'AUTHENTICATION_REQUIRED',

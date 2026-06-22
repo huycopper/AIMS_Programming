@@ -40,7 +40,15 @@ export function passwordPolicyValidator(control: AbstractControl): ValidationErr
 export function passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
   const newPassword = group.get('newPassword')?.value;
   const confirm = group.get('confirmationPassword')?.value;
-  return newPassword === confirm ? null : { mismatch: true };
+  const current = group.get('currentPassword')?.value;
+  const errors: ValidationErrors = {};
+  if (newPassword && confirm && newPassword !== confirm) {
+    errors['mismatch'] = true;
+  }
+  if (newPassword && current && newPassword === current) {
+    errors['samePassword'] = true;
+  }
+  return Object.keys(errors).length > 0 ? errors : null;
 }
 
 @Component({
@@ -50,15 +58,24 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
   template: `
     <div class="change-password-container">
       <h2>Change Password</h2>
+      <button type="button" (click)="logout()">Logout</button>
       <form [formGroup]="form" (ngSubmit)="submit()">
-        <input formControlName="currentPassword" type="password" placeholder="Current Password" autocomplete="current-password">
-        <input formControlName="newPassword" type="password" placeholder="New Password" autocomplete="new-password">
-        <input formControlName="confirmationPassword" type="password" placeholder="Confirm New Password" autocomplete="new-password">
+        <input formControlName="currentPassword" type="password" placeholder="Current Password" autocomplete="current-password" aria-describedby="error-summary">
+        <input formControlName="newPassword" type="password" placeholder="New Password" autocomplete="new-password" aria-describedby="error-summary">
+        <input formControlName="confirmationPassword" type="password" placeholder="Confirm New Password" autocomplete="new-password" aria-describedby="error-summary">
         <button type="submit" [disabled]="isSubmitting() || form.invalid">Change Password</button>
       </form>
-      @if (errorMessage()) {
-        <div class="error">{{ errorMessage() }}</div>
-      }
+      <div id="error-summary" role="alert">
+        @if (form.errors?.['samePassword']) {
+          <div class="error">New password must be different from current password.</div>
+        }
+        @if (form.errors?.['mismatch']) {
+          <div class="error">Passwords do not match.</div>
+        }
+        @if (errorMessage()) {
+          <div class="error">{{ errorMessage() }}</div>
+        }
+      </div>
     </div>
   `
 })
@@ -76,6 +93,10 @@ export class ChangePasswordScreen {
     private readonly authService: AuthService,
     private readonly router: Router,
   ) {}
+
+  logout() {
+    this.authService.logout();
+  }
 
   async submit() {
     if (this.form.invalid || this.isSubmitting()) {

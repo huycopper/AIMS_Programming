@@ -40,8 +40,9 @@ async function bootstrap() {
         'ℹ️ Bỏ qua seeding dữ liệu nhân viên (thiếu cấu hình môi trường/credentials).',
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Lỗi khi seeding nhân viên:', error.message);
+    process.exitCode = 1;
   } finally {
     await app.close();
   }

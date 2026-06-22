@@ -1,4 +1,4 @@
-import { assertDedicatedTestDatabase } from './test-database.guard';
+import { assertDedicatedTestDatabase } from '../../../test/support/test-database.guard.js';
 
 describe('ATDD database fail-closed guard', () => {
   it.each([

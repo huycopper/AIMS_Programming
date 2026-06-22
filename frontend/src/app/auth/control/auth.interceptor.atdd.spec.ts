@@ -3,25 +3,31 @@
 import '@angular/compiler';
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import { Router } from '@angular/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth.service';
 import { authInterceptor } from './auth.interceptor';
 
 describe('authInterceptor (Story 5.3 ATDD)', () => {
+  try {
+    getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
+  } catch {}
+
   let http: HttpClient;
   let controller: HttpTestingController;
   const auth = {
     accessToken: vi.fn(() => 'signed-token'),
-    logout: vi.fn(),
+    clearSession: vi.fn(),
   };
   const router = { navigate: vi.fn(), url: '/admin/products' };
 
   beforeEach(() => {
     auth.accessToken.mockReturnValue('signed-token');
-    auth.logout.mockReset();
+    auth.clearSession.mockReset();
     router.navigate.mockReset();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(withInterceptors([authInterceptor])),
@@ -63,7 +69,7 @@ describe('authInterceptor (Story 5.3 ATDD)', () => {
     controller
       .expectOne('http://localhost:8080/api/products/admin')
       .flush({}, { status: 401, statusText: 'Unauthorized' });
-    expect(auth.logout).toHaveBeenCalledTimes(1);
+    expect(auth.clearSession).toHaveBeenCalledTimes(1);
     expect(router.navigate).toHaveBeenCalledWith(['/staff/login'], {
       queryParams: { returnUrl: '/admin/products' },
     });
@@ -75,7 +81,7 @@ describe('authInterceptor (Story 5.3 ATDD)', () => {
     controller
       .expectOne('http://localhost:8080/api/auth/login')
       .flush({}, { status: 401, statusText: 'Unauthorized' });
-    expect(auth.logout).not.toHaveBeenCalled();
+    expect(auth.clearSession).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
@@ -84,7 +90,7 @@ describe('authInterceptor (Story 5.3 ATDD)', () => {
     controller
       .expectOne('http://localhost:8080/api/products/admin')
       .flush({}, { status: 403, statusText: 'Forbidden' });
-    expect(auth.logout).not.toHaveBeenCalled();
+    expect(auth.clearSession).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();
   });
 });

@@ -49,7 +49,18 @@ export class LoginScreen {
     try {
       await firstValueFrom(this.authService.login(identifier, password));
       const params = new URLSearchParams(window.location.search);
-      const returnUrl = params.get('returnUrl') || '/admin/products';
+      let returnUrl = sanitizeReturnUrl(params.get('returnUrl'));
+      
+      if (!returnUrl) {
+        if (this.authService.hasRole('PRODUCT_MANAGER')) {
+          returnUrl = '/admin/products';
+        } else if (this.authService.hasRole('ADMIN')) {
+          returnUrl = '/staff/change-password';
+        } else {
+          returnUrl = '/';
+        }
+      }
+      
       await this.router.navigateByUrl(returnUrl);
     } catch (err: any) {
       this.errorMessage.set('Invalid credentials.');

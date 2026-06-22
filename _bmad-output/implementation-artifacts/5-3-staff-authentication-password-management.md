@@ -4,7 +4,7 @@ baseline_commit: 3fa1d0336ef6a3981b269f6b622e963ad2ab9ea8
 
 # Story 5.3: Staff Authentication & Password Management
 
-Status: review
+Status: in-progress
 
 ## Story
 
@@ -145,6 +145,28 @@ so that I can securely access only the administration capabilities granted by al
   - [x] Test auth guard and role guard redirects, safe return URL, ADMIN-only, PRODUCT_MANAGER-only, dual-role, and unassigned-role paths.
   - [x] Test login and change-password form validation, loading, generic/specific safe errors, success navigation, and session clearing.
   - [x] Update product management tests to prove bearer auth is used and the legacy manager-ID input/header/storage is absent.
+
+### Review Findings
+
+- [x] [Review][Patch][Blocker] Wire Angular authentication into the real application: register `authInterceptor`, add `/staff/login`, guarded `/staff/change-password`, `/forbidden`, and guarded `PRODUCT_MANAGER` `/admin/products` routes. [frontend/src/app/app.config.ts:11; frontend/src/app/app.routes.ts:20]
+- [x] [Review][Patch][High] Restore stored sessions before protected route decisions; `restoreSession()` currently has no production caller. [frontend/src/app/auth/control/auth.service.ts:63; frontend/src/main.ts:5]
+- [x] [Review][Patch][High] Sanitize the consumed return URL and select the documented role-aware fallback (`PRODUCT_MANAGER` to products; ADMIN-only to change password). [frontend/src/app/auth/boundary/login-screen/login-screen.ts:51]
+- [x] [Review][Patch][High] Make dummy bcrypt-hash initialization a single awaited/reused startup promise so early/concurrent denials do not add per-request hashing or unhandled rejections. [backend/src/auth/control/auth.service.ts:48]
+- [x] [Review][Patch][High] Validate seed passwords, including policy and the 72 UTF-8-byte boundary, and validate bcrypt rounds as an integer in the allowed 10-14 range before starting the transaction. [backend/src/auth/seed/staff-seed.ts:64; backend/src/auth/seed/staff-seed.ts:192]
+- [x] [Review][Patch][High] Propagate staff seed failures (or set a failing process exit code) instead of logging and exiting successfully after rollback. [backend/src/seed.ts:31]
+- [x] [Review][Patch][High] Replace hard-coded localhost auth URLs/origin with one configured API base and compare parsed URL origins exactly. [frontend/src/app/auth/control/auth.service.ts:47; frontend/src/app/auth/control/auth.interceptor.ts:12]
+- [x] [Review][Patch][Medium] Reject ambiguous identifiers that match one user's username and another user's email instead of authenticating an arbitrary `OR ... getOne()` result. [backend/src/auth/control/auth.service.ts:94]
+- [x] [Review][Patch][Medium] Reject over-72-byte current passwords before bcrypt comparison and compare the proposed new password against the current hash when enforcing unchanged-password policy. [backend/src/auth/control/auth.service.ts:231]
+- [x] [Review][Patch][Medium] Keep `/api/auth/me` role output consistent with the guard's signed-token/database intersection so newly assigned roles require a new token. [backend/src/auth/control/auth.service.ts:180; backend/src/auth/control/jwt-auth.guard.ts:68]
+- [x] [Review][Patch][Medium] Distinguish a concurrent status transition from a password-hash race after CAS: non-active must return `401`, while a competing password update may use a safe conflict response. [backend/src/auth/control/auth.service.ts:261]
+- [x] [Review][Patch][Medium] Validate JWT subject/role claim shapes and UUID subject before querying; malformed signed claims must return generic `401`, not a database `500`. [backend/src/auth/control/jwt-auth.guard.ts:33]
+- [x] [Review][Patch][Medium] Validate `JWT_EXPIRES_IN` once, permit the `1h` default only in local/test, and derive both signing options and response seconds from the same validated value. [backend/src/auth/auth.module.ts:20; backend/src/auth/control/auth.service.ts:152]
+- [x] [Review][Patch][Medium] Make interceptor `401` handling AIMS-origin-only and one-shot; avoid `logout()` plus a second competing navigation, preserve a sanitized return URL once, and keep `403` session-preserving. [frontend/src/app/auth/control/auth.interceptor.ts:26]
+- [x] [Review][Patch][Medium] Complete the frontend boundary: validate new password differs from current, add accessible error summaries, and expose reachable change-password and logout actions. [frontend/src/app/auth/boundary/change-password-screen/change-password-screen.ts:40; frontend/src/app/auth/boundary/login-screen/login-screen.ts:19]
+- [x] [Review][Patch][Medium] Add the completed-but-missing AuthService and JwtAuthGuard unit suites for configuration, timing/dummy hash, lookup ambiguity, bcrypt boundaries, token claim validation, status and role intersection; also move/configure `test-database.guard.spec.ts` so a repository test command actually discovers it. [backend/src/auth/guards/roles.guard.atdd.spec.ts:1; backend/test/support/test-database.guard.spec.ts:1]
+- [x] [Review][Patch][Medium] Preserve the documented PostgreSQL enum identity with `enumName: 'user_status_enum'` under `synchronize: true`. [backend/src/user/entities/user.entity.ts:20]
+- [x] [Review][Patch][Medium] Reconcile the Story File List with every Story 5.3 file actually changed; exclude the bundled customer-order, notification, VietQR, and refund changes as unrelated scope. [_bmad-output/implementation-artifacts/5-3-staff-authentication-password-management.md:333]
+- [x] [Review][Patch][Low] Configure auth DTO validation errors explicitly to omit rejected values and DTO targets. [backend/src/auth/boundary/auth.controller.ts:18]
 
 ## Dev Notes
 
@@ -319,4 +341,4 @@ Gemini 3.5 Flash (High)
 
 ## Story Completion Status
 
-Story is complete and status is `review`.
+Adversarial review found unresolved blocker/high/medium issues. Status returned to `in-progress`.

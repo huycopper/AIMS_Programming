@@ -13,10 +13,11 @@ import { Role } from '../../user/entities/role.entity.js';
 import { LoginDto } from '../boundary/dto/login.dto.js';
 import { ChangePasswordDto } from '../boundary/dto/change-password.dto.js';
 import { AuthPrincipal } from '../entity/auth-principal.js';
+import { getJwtConfig } from '../auth.module.js';
 
 @Injectable()
 export class AuthService {
-  private dummyHash: string;
+  private dummyHashPromise: Promise<string>;
   private saltRounds: number;
 
   constructor(
@@ -45,22 +46,14 @@ export class AuthService {
     }
 
     // 3. Create startup dummy hash
-    hash(
+    this.dummyHashPromise = hash(
       'dummy_password_for_denied_login_attempts_at_configured_cost',
       this.saltRounds,
-    ).then((h) => {
-      this.dummyHash = h;
-    });
+    );
   }
 
   private async getDummyHash(): Promise<string> {
-    if (!this.dummyHash) {
-      this.dummyHash = await hash(
-        'dummy_password_for_denied_login_attempts_at_configured_cost',
-        this.saltRounds,
-      );
-    }
-    return this.dummyHash;
+    return await this.dummyHashPromise;
   }
 
   validatePasswordPolicy(password: string): boolean {
@@ -91,7 +84,7 @@ export class AuthService {
 
     const cleanIdentifier = (identifier || '').trim();
 
-    const user = await this.dataSource
+    const users = await this.dataSource
       .getRepository(User)
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.roles', 'role')
@@ -99,9 +92,9 @@ export class AuthService {
       .where('user.username = :identifier OR user.email = :identifier', {
         identifier: cleanIdentifier,
       })
-      .getOne();
+      .getMany();
 
-    if (!user) {
+    if (users.length !== 1) {
       const dummy = await this.getDummyHash();
       await compare('dummy_password_for_timing', dummy);
       throw new UnauthorizedException({
@@ -110,6 +103,8 @@ export class AuthService {
         message: 'Invalid credentials.',
       });
     }
+
+    const user = users[0];
 
     const matches = await compare(password || '', user.passwordHash);
     if (!matches) {
@@ -149,20 +144,8 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload);
 
-    let expiresSeconds = 3600;
-    const expiresConfig =
-      this.configService.get<string>('JWT_EXPIRES_IN') || '1h';
-    if (expiresConfig.endsWith('h')) {
-      expiresSeconds = parseInt(expiresConfig, 10) * 3600;
-    } else if (expiresConfig.endsWith('m')) {
-      expiresSeconds = parseInt(expiresConfig, 10) * 60;
-    } else if (expiresConfig.endsWith('s')) {
-      expiresSeconds = parseInt(expiresConfig, 10);
-    } else if (expiresConfig.endsWith('d')) {
-      expiresSeconds = parseInt(expiresConfig, 10) * 86400;
-    } else {
-      expiresSeconds = parseInt(expiresConfig, 10) || 3600;
-    }
+    const jwtConfig = getJwtConfig(this.configService);
+    const expiresSeconds = jwtConfig.expiresSeconds;
 
     return {
       accessToken,
@@ -193,11 +176,13 @@ export class AuthService {
       });
     }
 
-    const supportedRoles = user.roles
-      .map((r) => r.roleName)
-      .filter((name) => name === 'ADMIN' || name === 'PRODUCT_MANAGER');
+    const dbRoleNames = user.roles.map((r) => r.roleName);
+    const supportedRoles = dbRoleNames.filter(
+      (name) => name === 'ADMIN' || name === 'PRODUCT_MANAGER',
+    );
+    const effectiveRoles = principal.roles.filter((r) => supportedRoles.includes(r));
 
-    const uniqueRoles = Array.from(new Set(supportedRoles));
+    const uniqueRoles = Array.from(new Set(effectiveRoles));
 
     return {
       userId: user.userId,
@@ -228,6 +213,14 @@ export class AuthService {
       });
     }
 
+    if (Buffer.byteLength(currentPassword || '', 'utf8') > 72) {
+      throw new BadRequestException({
+        statusCode: 400,
+        code: 'CURRENT_PASSWORD_INVALID',
+        message: 'Current password is incorrect.',
+      });
+    }
+
     const currentMatches = await compare(
       currentPassword || '',
       user.passwordHash,
@@ -240,7 +233,8 @@ export class AuthService {
       });
     }
 
-    if (newPassword === currentPassword) {
+    const isSame = await compare(newPassword, user.passwordHash);
+    if (isSame) {
       throw new BadRequestException({
         statusCode: 400,
         code: 'PASSWORD_POLICY_VIOLATION',
@@ -274,11 +268,18 @@ export class AuthService {
       .execute();
 
     if (updateResult.affected !== 1) {
+      const checkUser = await this.dataSource.getRepository(User).findOneBy({ userId: user.userId });
+      if (!checkUser || checkUser.status !== 'ACTIVE') {
+        throw new UnauthorizedException({
+          statusCode: 401,
+          code: 'AUTHENTICATION_REQUIRED',
+          message: 'Authentication required.',
+        });
+      }
       throw new BadRequestException({
         statusCode: 400,
         code: 'PASSWORD_POLICY_VIOLATION',
-        message:
-          'Password update failed (concurrency mismatch or account inactive).',
+        message: 'Password update failed (concurrency mismatch or account inactive).',
       });
     }
   }

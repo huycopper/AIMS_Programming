@@ -10,6 +10,30 @@ import { UserRole } from '../user/entities/user-role.entity.js';
 import { JwtAuthGuard } from './control/jwt-auth.guard.js';
 import { RolesGuard } from './control/roles.guard.js';
 
+export function getJwtConfig(configService: ConfigService) {
+  let expiresInString = configService.get<string>('JWT_EXPIRES_IN');
+  const nodeEnv = configService.get<string>('NODE_ENV');
+  if (!expiresInString) {
+     if (nodeEnv !== 'development' && nodeEnv !== 'test' && nodeEnv !== 'local') {
+       throw new Error('JWT_EXPIRES_IN must be explicitly configured in non-test environments.');
+     }
+     expiresInString = '1h';
+  }
+  let expiresSeconds = 3600;
+  if (expiresInString.endsWith('h')) {
+    expiresSeconds = parseInt(expiresInString, 10) * 3600;
+  } else if (expiresInString.endsWith('m')) {
+    expiresSeconds = parseInt(expiresInString, 10) * 60;
+  } else if (expiresInString.endsWith('s')) {
+    expiresSeconds = parseInt(expiresInString, 10);
+  } else if (expiresInString.endsWith('d')) {
+    expiresSeconds = parseInt(expiresInString, 10) * 86400;
+  } else {
+    expiresSeconds = parseInt(expiresInString, 10) || 3600;
+  }
+  return { expiresInString, expiresSeconds };
+}
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Role, UserRole]),
@@ -18,12 +42,12 @@ import { RolesGuard } from './control/roles.guard.js';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
-        const expiresIn = configService.get<string>('JWT_EXPIRES_IN') || '1h';
+        const jwtConfig = getJwtConfig(configService);
         return {
           secret,
           signOptions: {
             algorithm: 'HS256',
-            expiresIn: expiresIn as any,
+            expiresIn: jwtConfig.expiresInString as any,
           },
           verifyOptions: {
             algorithms: ['HS256'],

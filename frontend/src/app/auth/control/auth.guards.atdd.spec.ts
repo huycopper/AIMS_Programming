@@ -1,13 +1,18 @@
 // @vitest-environment jsdom
 
 import '@angular/compiler';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserDynamicTestingModule, platformBrowserDynamicTesting } from '@angular/platform-browser-dynamic/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthService } from './auth.service';
 import { authGuard, roleGuard, sanitizeReturnUrl } from './auth.guards';
 
 describe('authentication and role guards (Story 5.3 ATDD)', () => {
+  try {
+    getTestBed().initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
+  } catch {}
+
   const auth = {
     isAuthenticated: vi.fn(),
     hasAnyRole: vi.fn(),
@@ -20,6 +25,7 @@ describe('authentication and role guards (Story 5.3 ATDD)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: auth },

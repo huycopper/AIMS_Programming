@@ -5,6 +5,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
 import { UserProjection, LoginResponse } from '../entity/auth.models.js';
 
+export const AIMS_API_BASE = 'http://localhost:8080';
+
 export const AUTH_SESSION_STORAGE_KEY = 'aims_staff_session';
 
 @Injectable({
@@ -44,7 +46,7 @@ export class AuthService {
 
   login(identifier: string, password: string): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>('http://localhost:8080/api/auth/login', {
+      .post<LoginResponse>(`${AIMS_API_BASE}/api/auth/login`, {
         identifier,
         password,
       })
@@ -72,10 +74,23 @@ export class AuthService {
         this.clearSession();
         return of(undefined);
       }
-      return this.http.get<UserProjection>('http://localhost:8080/api/auth/me').pipe(
+      return this.http.get<UserProjection>(`${AIMS_API_BASE}/api/auth/me`).pipe(
         tap((user) => {
           this.currentUser.set(user);
-          this.roles.set(user.roles || []);
+          // Intersect with signed roles to be consistent with guard
+          let signedRoles = user.roles || [];
+          try {
+            const token = data.accessToken;
+            const parts = token.split('.');
+            if (parts.length === 3) {
+              const payload = JSON.parse(atob(parts[1]));
+              if (Array.isArray(payload.roles)) {
+                signedRoles = payload.roles;
+              }
+            }
+          } catch {}
+          const effectiveRoles = (user.roles || []).filter((r: string) => signedRoles.includes(r));
+          this.roles.set(effectiveRoles);
         }),
         catchError((err) => {
           this.clearSession();
@@ -90,7 +105,7 @@ export class AuthService {
 
   changePassword(currentPassword: string, newPassword: string): Observable<any> {
     return this.http
-      .post('http://localhost:8080/api/auth/change-password', {
+      .post(`${AIMS_API_BASE}/api/auth/change-password`, {
         currentPassword,
         newPassword,
       })
@@ -106,7 +121,7 @@ export class AuthService {
     this.router.navigateByUrl('/staff/login');
   }
 
-  private clearSession(): void {
+  clearSession(): void {
     sessionStorage.removeItem(AUTH_SESSION_STORAGE_KEY);
     this.currentUser.set(null);
     this.roles.set([]);

@@ -65,6 +65,28 @@ export function readStaffSeedConfig(
     ? parseInt(env.BCRYPT_SALT_ROUNDS, 10)
     : 12;
 
+  if (isNaN(rounds) || rounds < 10 || rounds > 14) {
+    throw new Error('BCRYPT_SALT_ROUNDS must be between 10 and 14.');
+  }
+
+  const validatePassword = (pw: string) => {
+    if (!pw) return false;
+    const len = Array.from(pw).length;
+    if (len < 8) return false;
+    if (Buffer.byteLength(pw, 'utf8') > 72) return false;
+    if (!/[A-Z]/.test(pw) || !/[a-z]/.test(pw) || !/[0-9]/.test(pw)) return false;
+    if (/^\s/.test(pw) || /\s$/.test(pw)) return false;
+    return true;
+  };
+
+  if (!validatePassword(adminPassword!)) {
+    throw new Error('Admin password does not meet policy requirements.');
+  }
+
+  if (!validatePassword(pmPassword!)) {
+    throw new Error('Product Manager password does not meet policy requirements.');
+  }
+
   return {
     admin: {
       username: adminUsername!,

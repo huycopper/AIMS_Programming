@@ -15,7 +15,7 @@ import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { JwtAuthGuard } from '../control/jwt-auth.guard.js';
 
 @Controller('api/auth')
-@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true, validationError: { target: false, value: false } }))
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
