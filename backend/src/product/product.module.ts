@@ -7,9 +7,12 @@ import { Book } from './entities/book.entity.js';
 import { Cd } from './entities/cd.entity.js';
 import { Dvd } from './entities/dvd.entity.js';
 import { Newspaper } from './entities/newspaper.entity.js';
+import { ProductHistory } from './entities/product-history.entity.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, Book, Cd, Dvd, Newspaper])],
+  imports: [
+    TypeOrmModule.forFeature([Product, Book, Cd, Dvd, Newspaper, ProductHistory]),
+  ],
   controllers: [ProductController],
   providers: [ProductService],
   exports: [ProductService],

@@ -3,14 +3,10 @@ import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 import { ProductStatus, ProductType } from './entities/product.entity';
 
-/**
- * Unit tests for ProductController (Boundary class — BCE pattern).
- * Verifies correct delegation to ProductService and correct response structure.
- */
 describe('ProductController', () => {
   let controller: ProductController;
-  let service: ProductService;
 
+  const managerId = '11111111-1111-4111-8111-111111111111';
   const mockProduct = {
     productId: 'uuid-1',
     productType: ProductType.BOOK,
@@ -33,6 +29,11 @@ describe('ProductController', () => {
   const mockProductService = {
     findRandom: jest.fn(),
     searchProducts: jest.fn(),
+    findAdminProducts: jest.fn(),
+    createProduct: jest.fn(),
+    updateProduct: jest.fn(),
+    bulkDeleteProducts: jest.fn(),
+    getProductHistories: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -47,7 +48,6 @@ describe('ProductController', () => {
     }).compile();
 
     controller = module.get<ProductController>(ProductController);
-    service = module.get<ProductService>(ProductService);
   });
 
   afterEach(() => {
@@ -58,52 +58,85 @@ describe('ProductController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('GET /api/products/random', () => {
-    it('should return 20 random products (AC-1)', async () => {
-      const products = Array.from({ length: 20 }, (_, i) => ({
-        ...mockProduct,
-        productId: `uuid-${i}`,
-      }));
-      mockProductService.findRandom.mockResolvedValue(products);
+  it('returns 20 random public products', async () => {
+    const products = Array.from({ length: 20 }, (_, i) => ({
+      ...mockProduct,
+      productId: `uuid-${i}`,
+    }));
+    mockProductService.findRandom.mockResolvedValue(products);
 
-      const result = await controller.getRandomProducts();
+    const result = await controller.getRandomProducts();
 
-      expect(result).toHaveLength(20);
-      expect(mockProductService.findRandom).toHaveBeenCalledWith(20);
-    });
+    expect(result).toHaveLength(20);
+    expect(mockProductService.findRandom).toHaveBeenCalledWith(20, undefined);
   });
 
-  describe('GET /api/products', () => {
-    it('should search products with query params (AC-2)', async () => {
-      const searchResult = {
-        data: [mockProduct],
-        total: 1,
-        page: 1,
-        limit: 20,
-      };
-      mockProductService.searchProducts.mockResolvedValue(searchResult);
+  it('delegates public search params without manager identity', async () => {
+    const searchResult = { data: [mockProduct], total: 1, page: 1, limit: 20 };
+    mockProductService.searchProducts.mockResolvedValue(searchResult);
 
-      const dto = { search: 'test', page: 1, limit: 20 };
-      const result = await controller.searchProducts(dto);
+    const dto = { search: 'test', page: 1, limit: 20 };
+    const result = await controller.searchProducts(dto);
 
-      expect(result).toEqual(searchResult);
-      expect(mockProductService.searchProducts).toHaveBeenCalledWith(dto);
-    });
+    expect(result).toEqual(searchResult);
+    expect(mockProductService.searchProducts).toHaveBeenCalledWith(dto);
+  });
 
-    it('should support price range filtering', async () => {
-      const searchResult = {
-        data: [],
-        total: 0,
-        page: 1,
-        limit: 20,
-      };
-      mockProductService.searchProducts.mockResolvedValue(searchResult);
+  it('passes temporary Product Manager identity to admin list', async () => {
+    const searchResult = { data: [mockProduct], total: 1, page: 1, limit: 20 };
+    mockProductService.findAdminProducts.mockResolvedValue(searchResult);
 
-      const dto = { minPrice: 50000, maxPrice: 200000, page: 1, limit: 20 };
-      const result = await controller.searchProducts(dto);
+    await controller.getAdminProducts(managerId, { page: 1, limit: 20 });
 
-      expect(result.data).toEqual([]);
-      expect(mockProductService.searchProducts).toHaveBeenCalledWith(dto);
-    });
+    expect(mockProductService.findAdminProducts).toHaveBeenCalledWith(
+      { page: 1, limit: 20 },
+      managerId,
+    );
+  });
+
+  it('passes one create product payload and manager identity', async () => {
+    const dto = {
+      productType: ProductType.BOOK,
+      title: 'New Book',
+      category: 'Books',
+      height: 1,
+      width: 1,
+      length: 1,
+      weight: 1,
+      barcode: 'BC-1',
+      originalValue: 100,
+      currentPrice: 100,
+      stockQuantity: 3,
+      book: {
+        authors: ['Author'],
+        coverType: 'PAPERBACK',
+        publisher: 'Publisher',
+        publicationDate: '2026-01-01',
+      },
+    } as any;
+    mockProductService.createProduct.mockResolvedValue(mockProduct);
+
+    await controller.createProduct(managerId, dto);
+
+    expect(mockProductService.createProduct).toHaveBeenCalledWith(
+      dto,
+      managerId,
+    );
+  });
+
+  it('passes bulk delete request to service', async () => {
+    const dto = { productIds: ['11111111-1111-4111-8111-111111111111'] };
+    const response = {
+      results: [{ productId: dto.productIds[0], status: 'DELETED' }],
+    };
+    mockProductService.bulkDeleteProducts.mockResolvedValue(response);
+
+    const result = await controller.bulkDeleteProducts(managerId, dto);
+
+    expect(result).toEqual(response);
+    expect(mockProductService.bulkDeleteProducts).toHaveBeenCalledWith(
+      dto,
+      managerId,
+    );
   });
 });

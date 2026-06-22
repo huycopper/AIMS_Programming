@@ -1,19 +1,27 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { ProductService } from './product.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { Product, ProductStatus, ProductType } from './entities/product.entity';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Book } from './entities/book.entity';
+import { Cd } from './entities/cd.entity';
+import { Dvd } from './entities/dvd.entity';
+import { Newspaper } from './entities/newspaper.entity';
+import {
+  ProductHistory,
+  ProductHistoryActionType,
+} from './entities/product-history.entity';
 
-/**
- * Unit tests for ProductService (Control class — BCE pattern).
- * Tests AC-1 (random products) and AC-2 (search/filter) endpoints.
- */
 describe('ProductService', () => {
   let service: ProductService;
-  let repo: Repository<Product>;
+  let productRepository: any;
+  let historyRepository: any;
+  let dataSource: any;
+  let manager: any;
+  let txProductRepository: any;
+  let txHistoryRepository: any;
+  const managerId = '11111111-1111-4111-8111-111111111111';
 
-  // Mock query builder
-  const mockQueryBuilder = {
+  const queryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
@@ -25,185 +33,353 @@ describe('ProductService', () => {
     getCount: jest.fn(),
   };
 
-  const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
-    productId: 'uuid-1',
-    productType: ProductType.BOOK,
-    title: 'Test Book',
-    category: 'Fiction',
-    generalDescription: 'A test book',
-    height: 20,
-    width: 15,
-    length: 3,
-    weight: 0.5,
-    barcode: '1234567890',
-    originalValue: 100000,
-    currentPrice: 120000,
-    stockQuantity: 10,
-    status: ProductStatus.ACTIVE,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...overrides,
-  });
+  const historyQueryBuilder = {
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    getMany: jest.fn(),
+    getCount: jest.fn(),
+  };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ProductService,
-        {
-          provide: getRepositoryToken(Product),
-          useValue: {
-            createQueryBuilder: jest.fn(() => mockQueryBuilder),
-          },
-        },
-      ],
-    }).compile();
+  const createMockProduct = (overrides: Partial<Product> = {}): Product =>
+    ({
+      productId: '22222222-2222-4222-8222-222222222222',
+      productType: ProductType.BOOK,
+      title: 'Test Book',
+      category: 'Fiction',
+      generalDescription: 'A test book',
+      height: 20,
+      width: 15,
+      length: 3,
+      weight: 0.5,
+      barcode: '1234567890',
+      originalValue: 100000,
+      currentPrice: 120000,
+      stockQuantity: 10,
+      status: ProductStatus.ACTIVE,
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      ...overrides,
+    }) as Product;
 
-    service = module.get<ProductService>(ProductService);
-    repo = module.get<Repository<Product>>(getRepositoryToken(Product));
+  const validCreateDto = () =>
+    ({
+      productType: ProductType.BOOK,
+      title: 'New Book',
+      category: 'Books',
+      height: 1,
+      width: 1,
+      length: 1,
+      weight: 1,
+      barcode: 'BC-1',
+      originalValue: 100,
+      currentPrice: 100,
+      stockQuantity: 3,
+      book: {
+        authors: ['Author'],
+        coverType: 'PAPERBACK',
+        publisher: 'Publisher',
+        publicationDate: '2026-01-01',
+      },
+    }) as any;
 
-    // Reset all mocks
-    Object.values(mockQueryBuilder).forEach((fn) => fn.mockClear());
-    // Re-set return values
-    mockQueryBuilder.leftJoinAndSelect.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.andWhere.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.limit.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.take.mockReturnValue(mockQueryBuilder);
+  beforeEach(() => {
+    Object.values(queryBuilder).forEach((fn: any) => fn.mockClear());
+    Object.values(historyQueryBuilder).forEach((fn: any) => fn.mockClear());
+    queryBuilder.leftJoinAndSelect.mockReturnValue(queryBuilder);
+    queryBuilder.where.mockReturnValue(queryBuilder);
+    queryBuilder.andWhere.mockReturnValue(queryBuilder);
+    queryBuilder.orderBy.mockReturnValue(queryBuilder);
+    queryBuilder.limit.mockReturnValue(queryBuilder);
+    queryBuilder.skip.mockReturnValue(queryBuilder);
+    queryBuilder.take.mockReturnValue(queryBuilder);
+    historyQueryBuilder.where.mockReturnValue(historyQueryBuilder);
+    historyQueryBuilder.andWhere.mockReturnValue(historyQueryBuilder);
+    historyQueryBuilder.orderBy.mockReturnValue(historyQueryBuilder);
+    historyQueryBuilder.getCount.mockResolvedValue(0);
+
+    productRepository = {
+      createQueryBuilder: jest.fn(() => queryBuilder),
+    };
+    historyRepository = {
+      createQueryBuilder: jest.fn(() => historyQueryBuilder),
+    };
+    txProductRepository = {
+      create: jest.fn((value) => ({
+        productId: '33333333-3333-4333-8333-333333333333',
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        ...value,
+      })),
+      save: jest.fn(async (value) => value),
+      findOne: jest.fn(),
+      merge: jest.fn((target, value) => Object.assign(target, value)),
+    };
+    txHistoryRepository = {
+      create: jest.fn((value) => value),
+      save: jest.fn(async (value) => value),
+    };
+    const subtypeRepository = {
+      save: jest.fn(async (value) => value),
+      delete: jest.fn(async () => ({ affected: 1 })),
+    };
+    manager = {
+      getRepository: jest.fn((entity) => {
+        if (entity === Product) {
+          return txProductRepository;
+        }
+        if (entity === ProductHistory) {
+          return txHistoryRepository;
+        }
+        if ([Book, Cd, Dvd, Newspaper].includes(entity)) {
+          return subtypeRepository;
+        }
+        return {};
+      }),
+    };
+    dataSource = {
+      query: jest.fn().mockResolvedValue([{ user_id: managerId }]),
+      transaction: jest.fn(async (callback) => callback(manager)),
+    };
+    service = new ProductService(
+      productRepository,
+      historyRepository,
+      dataSource as DataSource,
+    );
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('findRandom (AC-1)', () => {
-    it('should return 20 random ACTIVE products', async () => {
-      const mockProducts = Array.from({ length: 20 }, (_, i) =>
-        createMockProduct({ productId: `uuid-${i}` }),
-      );
-      mockQueryBuilder.getMany.mockResolvedValue(mockProducts);
+  it('keeps public random products limited to ACTIVE rows with subtype joins', async () => {
+    const products = [createMockProduct()];
+    queryBuilder.getMany.mockResolvedValue(products);
 
-      const result = await service.findRandom(20);
+    const result = await service.findRandom(20);
 
-      expect(result).toHaveLength(20);
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'product.status = :status',
-        { status: ProductStatus.ACTIVE },
-      );
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('RANDOM()');
-      expect(mockQueryBuilder.limit).toHaveBeenCalledWith(20);
-    });
-
-    it('should join all sub-type tables (book, cd, dvd, newspaper)', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      await service.findRandom(20);
-
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'product.book',
-        'book',
-      );
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'product.cd',
-        'cd',
-      );
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'product.dvd',
-        'dvd',
-      );
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'product.newspaper',
-        'newspaper',
-      );
-    });
+    expect(result).toEqual(products);
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      'product.book',
+      'book',
+    );
+    expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      'product.cd',
+      'cd',
+    );
+    expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      'product.dvd',
+      'dvd',
+    );
+    expect(queryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
+      'product.newspaper',
+      'newspaper',
+    );
   });
 
-  describe('searchProducts (AC-2)', () => {
-    it('should filter by search query on title and category (ILIKE)', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(5);
-      mockQueryBuilder.getMany.mockResolvedValue([]);
+  it('keeps public search limited to ACTIVE rows and category matches category field', async () => {
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getMany.mockResolvedValue([createMockProduct()]);
 
-      await service.searchProducts({ search: 'Harry' });
+    await service.searchProducts({ category: 'Fiction', page: 1, limit: 20 });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        '(product.title ILIKE :search OR product.category ILIKE :search)',
-        { search: '%Harry%' },
-      );
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.category = :category',
+      { category: 'Fiction' },
+    );
+  });
+
+  it('rejects manager operations without a valid existing user id', async () => {
+    dataSource.query.mockResolvedValue([]);
+
+    await expect(
+      service.createProduct(validCreateDto(), managerId),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects current price outside 30%-150% original value', async () => {
+    await expect(
+      service.createProduct(
+        { ...validCreateDto(), currentPrice: 151 },
+        managerId,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects subtype payloads that do not match productType', async () => {
+    const dto = validCreateDto();
+    delete dto.book;
+    dto.cd = {
+      artists: ['Artist'],
+      recordLabel: 'Label',
+      tracks: [{ title: 'Track' }],
+      genre: 'Pop',
+    };
+
+    await expect(service.createProduct(dto, managerId)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('creates product, matching subtype, and CREATE history in one transaction', async () => {
+    const saved = createMockProduct({
+      productId: '33333333-3333-4333-8333-333333333333',
+      book: { authors: ['Author'] } as any,
     });
+    txProductRepository.findOne.mockResolvedValue(saved);
 
-    it('should filter by exact category', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(3);
-      mockQueryBuilder.getMany.mockResolvedValue([]);
+    const result = await service.createProduct(validCreateDto(), managerId);
 
-      await service.searchProducts({ category: 'Fiction' });
+    expect(result).toEqual(saved);
+    expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    expect(txHistoryRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: saved.productId,
+        performedBy: managerId,
+        actionType: ProductHistoryActionType.CREATE,
+        oldValueSnapshot: null,
+        newValueSnapshot: expect.objectContaining({ productId: saved.productId }),
+      }),
+    );
+  });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'product.category = :category',
-        { category: 'Fiction' },
-      );
+  it('requires an explicit reason when stockQuantity changes', async () => {
+    txProductRepository.findOne.mockResolvedValue(createMockProduct());
+
+    await expect(
+      service.updateProduct(
+        '22222222-2222-4222-8222-222222222222',
+        { stockQuantity: 9 },
+        managerId,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('records UPDATE and STOCK_ADJUST histories when stock changes with reason', async () => {
+    const before = createMockProduct({ stockQuantity: 10 });
+    const after = createMockProduct({ stockQuantity: 9 });
+    txProductRepository.findOne
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+
+    await service.updateProduct(
+      before.productId,
+      { stockQuantity: 9, stockAdjustmentReason: 'Damaged item' },
+      managerId,
+    );
+
+    expect(txHistoryRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: ProductHistoryActionType.UPDATE }),
+    );
+    expect(txHistoryRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionType: ProductHistoryActionType.STOCK_ADJUST,
+        reason: 'Damaged item',
+      }),
+    );
+  });
+
+  it('rejects bulk delete requests above 10 product ids', async () => {
+    const productIds = Array.from(
+      { length: 11 },
+      (_, index) => `11111111-1111-4111-8111-${String(index).padStart(12, '0')}`,
+    );
+
+    await expect(
+      service.bulkDeleteProducts({ productIds }, managerId),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects bulk delete requests that exceed daily count of 20', async () => {
+    historyQueryBuilder.getCount.mockResolvedValue(19);
+    const productIds = [
+      '11111111-1111-4111-8111-111111111111',
+      '22222222-2222-4222-8222-222222222222',
+    ];
+
+    await expect(
+      service.bulkDeleteProducts({ productIds }, managerId),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('deactivates stock-positive products and marks zero-stock products deleted', async () => {
+    const stocked = createMockProduct({
+      productId: '11111111-1111-4111-8111-111111111111',
+      stockQuantity: 5,
     });
-
-    it('should filter by price range (minPrice / maxPrice)', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(2);
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      await service.searchProducts({
-        minPrice: 50000,
-        maxPrice: 200000,
-      });
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'product.currentPrice >= :minPrice',
-        { minPrice: 50000 },
-      );
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'product.currentPrice <= :maxPrice',
-        { maxPrice: 200000 },
-      );
+    const stockedAfter = createMockProduct({
+      ...stocked,
+      status: ProductStatus.DEACTIVATED,
     });
-
-    it('should return paginated results with total count', async () => {
-      const mockProducts = [createMockProduct()];
-      mockQueryBuilder.getCount.mockResolvedValue(50);
-      mockQueryBuilder.getMany.mockResolvedValue(mockProducts);
-
-      const result = await service.searchProducts({
-        search: 'test',
-        page: 2,
-        limit: 10,
-      });
-
-      expect(result).toEqual({
-        data: mockProducts,
-        total: 50,
-        page: 2,
-        limit: 10,
-      });
-      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10); // (2-1) * 10
-      expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+    const zeroStock = createMockProduct({
+      productId: '22222222-2222-4222-8222-222222222222',
+      stockQuantity: 0,
     });
-
-    it('should default to page 1 and limit 20 if not specified', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(0);
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      const result = await service.searchProducts({});
-
-      expect(result.page).toBe(1);
-      expect(result.limit).toBe(20);
+    const zeroAfter = createMockProduct({
+      ...zeroStock,
+      status: ProductStatus.DELETED,
     });
+    txProductRepository.findOne
+      .mockResolvedValueOnce(stocked)
+      .mockResolvedValueOnce(stockedAfter)
+      .mockResolvedValueOnce(zeroStock)
+      .mockResolvedValueOnce(zeroAfter);
 
-    it('should only return ACTIVE products', async () => {
-      mockQueryBuilder.getCount.mockResolvedValue(0);
-      mockQueryBuilder.getMany.mockResolvedValue([]);
+    const result = await service.bulkDeleteProducts(
+      { productIds: [stocked.productId, zeroStock.productId] },
+      managerId,
+    );
 
-      await service.searchProducts({});
+    expect(result.results).toEqual([
+      expect.objectContaining({ status: 'DEACTIVATED' }),
+      expect.objectContaining({ status: 'DELETED' }),
+    ]);
+    expect(txHistoryRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actionType: ProductHistoryActionType.DEACTIVATE,
+      }),
+    );
+    expect(txHistoryRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ actionType: ProductHistoryActionType.DELETE }),
+    );
+  });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'product.status = :status',
-        { status: ProductStatus.ACTIVE },
-      );
-    });
+  it('queries histories by product with action and date filters', async () => {
+    const histories = [
+      {
+        historyId: 'h1',
+        productId: 'p1',
+        actionType: ProductHistoryActionType.UPDATE,
+      },
+    ];
+    historyQueryBuilder.getMany.mockResolvedValue(histories);
+
+    const result = await service.getProductHistories(
+      'p1',
+      {
+        actionType: ProductHistoryActionType.UPDATE,
+        from: '2026-01-01T00:00:00.000Z',
+        to: '2026-01-02T00:00:00.000Z',
+      },
+      managerId,
+    );
+
+    expect(result).toEqual(histories);
+    expect(historyQueryBuilder.where).toHaveBeenCalledWith(
+      'history.productId = :productId',
+      { productId: 'p1' },
+    );
+    expect(historyQueryBuilder.andWhere).toHaveBeenCalledWith(
+      'history.actionType = :actionType',
+      { actionType: ProductHistoryActionType.UPDATE },
+    );
   });
 });

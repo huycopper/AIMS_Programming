@@ -1,0 +1,269 @@
+<div class="admin-shell">
+  <header class="admin-header">
+    <a class="brand-link" href="/">AIMS</a>
+    <nav class="admin-nav">
+      <a href="/">Catalog</a>
+      <a class="active" href="/admin/products">Products</a>
+    </nav>
+  </header>
+
+  <main class="admin-main">
+    <section class="toolbar">
+      <div>
+        <h1>Product Management</h1>
+        <p>{{ products.length }} products loaded</p>
+      </div>
+      <div class="manager-id">
+        <label for="managerUserId">Manager ID</label>
+        <input
+          id="managerUserId"
+          name="managerUserId"
+          [(ngModel)]="managerUserId"
+          placeholder="UUID"
+        />
+      </div>
+    </section>
+
+    @if (errorMessage) {
+      <div class="system-banner error" id="product-manager-error">{{ errorMessage }}</div>
+    }
+    @if (successMessage) {
+      <div class="system-banner success" id="product-manager-success">{{ successMessage }}</div>
+    }
+
+    <section class="workspace">
+      <div class="product-panel">
+        <div class="panel-toolbar">
+          <input
+            name="search"
+            [(ngModel)]="search"
+            (keyup.enter)="loadProducts()"
+            placeholder="Search title, category, barcode"
+          />
+          <button type="button" class="secondary" (click)="loadProducts()" [disabled]="isLoading">
+            Search
+          </button>
+          <button type="button" (click)="startCreate()">New</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="check-col"></th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Stock</th>
+                <th>Status</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of products; track product.productId) {
+                <tr
+                  [class.active-row]="selectedProduct?.productId === product.productId"
+                  (click)="selectProduct(product)"
+                >
+                  <td class="check-col" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      [checked]="isSelected(product.productId)"
+                      (change)="toggleDeleteSelection(product.productId, $any($event.target).checked)"
+                      [disabled]="product.status !== 'ACTIVE'"
+                    />
+                  </td>
+                  <td>{{ product.title }}</td>
+                  <td>{{ product.productType }}</td>
+                  <td>{{ product.stockQuantity }}</td>
+                  <td>
+                    <span class="status-chip" [class.offline]="product.status !== 'ACTIVE'">
+                      {{ product.status }}
+                    </span>
+                  </td>
+                  <td>{{ formatPrice(product.currentPrice) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="delete-bar">
+          <span>{{ selectedProductIds.size }}/10 selected</span>
+          <input
+            name="deleteReason"
+            [(ngModel)]="deleteReason"
+            placeholder="Reason"
+          />
+          <button type="button" class="danger" (click)="submitBulkDelete()" [disabled]="isSaving">
+            Delete
+          </button>
+        </div>
+
+        @if (deleteResults.length > 0) {
+          <div class="result-list">
+            @for (result of deleteResults; track result.productId) {
+              <div>
+                <strong>{{ result.status }}</strong>
+                <span>{{ result.productId }}</span>
+                <span>{{ result.message }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="editor-panel">
+        <form (ngSubmit)="submitProduct()" #productForm="ngForm">
+          <div class="editor-heading">
+            <h2>{{ formMode === 'create' ? 'Create Product' : 'Update Product' }}</h2>
+            <button type="submit" [disabled]="isSaving">
+              {{ formMode === 'create' ? 'Create' : 'Save' }}
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Type
+              <select name="productType" [(ngModel)]="draft.productType">
+                @for (type of productTypes; track type) {
+                  <option [value]="type">{{ type }}</option>
+                }
+              </select>
+            </label>
+            <label>
+              Title
+              <input name="title" [(ngModel)]="draft.title" required />
+            </label>
+            <label>
+              Category
+              <input name="category" [(ngModel)]="draft.category" required />
+            </label>
+            <label>
+              Barcode
+              <input name="barcode" [(ngModel)]="draft.barcode" required />
+            </label>
+            <label>
+              Original value
+              <input type="number" name="originalValue" [(ngModel)]="draft.originalValue" min="0" />
+            </label>
+            <label>
+              Current price
+              <input type="number" name="currentPrice" [(ngModel)]="draft.currentPrice" min="0" />
+            </label>
+            <label>
+              Stock
+              <input type="number" name="stockQuantity" [(ngModel)]="draft.stockQuantity" min="0" />
+            </label>
+            <label>
+              Height
+              <input type="number" name="height" [(ngModel)]="draft.height" min="0" />
+            </label>
+            <label>
+              Width
+              <input type="number" name="width" [(ngModel)]="draft.width" min="0" />
+            </label>
+            <label>
+              Length
+              <input type="number" name="length" [(ngModel)]="draft.length" min="0" />
+            </label>
+            <label>
+              Weight
+              <input type="number" name="weight" [(ngModel)]="draft.weight" min="0" />
+            </label>
+          </div>
+
+          <label class="full">
+            General description
+            <textarea name="generalDescription" [(ngModel)]="draft.generalDescription"></textarea>
+          </label>
+
+          @if (formMode === 'update') {
+            <label class="full">
+              Stock adjustment reason
+              <textarea name="stockAdjustmentReason" [(ngModel)]="draft.stockAdjustmentReason"></textarea>
+            </label>
+          }
+
+          @if (draft.productType === 'BOOK') {
+            <div class="subtype-grid">
+              <label>Authors<input name="authorsText" [(ngModel)]="draft.authorsText" /></label>
+              <label>Cover<select name="coverType" [(ngModel)]="draft.coverType"><option value="PAPERBACK">PAPERBACK</option><option value="HARDCOVER">HARDCOVER</option></select></label>
+              <label>Publisher<input name="bookPublisher" [(ngModel)]="draft.bookPublisher" /></label>
+              <label>Publication date<input type="date" name="bookPublicationDate" [(ngModel)]="draft.bookPublicationDate" /></label>
+              <label>Pages<input type="number" name="numberOfPages" [(ngModel)]="draft.numberOfPages" /></label>
+              <label>Language<input name="bookLanguage" [(ngModel)]="draft.bookLanguage" /></label>
+              <label>Genre<input name="bookGenre" [(ngModel)]="draft.bookGenre" /></label>
+            </div>
+          }
+
+          @if (draft.productType === 'CD') {
+            <div class="subtype-grid">
+              <label>Artists<input name="artistsText" [(ngModel)]="draft.artistsText" /></label>
+              <label>Record label<input name="recordLabel" [(ngModel)]="draft.recordLabel" /></label>
+              <label>Genre<input name="cdGenre" [(ngModel)]="draft.cdGenre" /></label>
+              <label>Release date<input type="date" name="cdReleaseDate" [(ngModel)]="draft.cdReleaseDate" /></label>
+              <label class="wide">Tracks<textarea name="tracksText" [(ngModel)]="draft.tracksText"></textarea></label>
+            </div>
+          }
+
+          @if (draft.productType === 'DVD') {
+            <div class="subtype-grid">
+              <label>Disc<select name="discType" [(ngModel)]="draft.discType"><option value="BLU_RAY">BLU_RAY</option><option value="HD_DVD">HD_DVD</option></select></label>
+              <label>Director<input name="director" [(ngModel)]="draft.director" /></label>
+              <label>Runtime<input type="number" name="runtime" [(ngModel)]="draft.runtime" /></label>
+              <label>Studio<input name="studio" [(ngModel)]="draft.studio" /></label>
+              <label>Language<input name="dvdLanguage" [(ngModel)]="draft.dvdLanguage" /></label>
+              <label>Subtitles<input name="subtitlesText" [(ngModel)]="draft.subtitlesText" /></label>
+              <label>Release date<input type="date" name="dvdReleaseDate" [(ngModel)]="draft.dvdReleaseDate" /></label>
+              <label>Genre<input name="dvdGenre" [(ngModel)]="draft.dvdGenre" /></label>
+            </div>
+          }
+
+          @if (draft.productType === 'NEWSPAPER') {
+            <div class="subtype-grid">
+              <label>Editor-in-chief<input name="editorInChief" [(ngModel)]="draft.editorInChief" /></label>
+              <label>Publisher<input name="newspaperPublisher" [(ngModel)]="draft.newspaperPublisher" /></label>
+              <label>Publication date<input type="date" name="newspaperPublicationDate" [(ngModel)]="draft.newspaperPublicationDate" /></label>
+              <label>Issue<input name="issueNumber" [(ngModel)]="draft.issueNumber" /></label>
+              <label>Frequency<input name="publicationFrequency" [(ngModel)]="draft.publicationFrequency" /></label>
+              <label>ISSN<input name="issn" [(ngModel)]="draft.issn" /></label>
+              <label>Language<input name="newspaperLanguage" [(ngModel)]="draft.newspaperLanguage" /></label>
+              <label>Sections<input name="sectionsText" [(ngModel)]="draft.sectionsText" /></label>
+            </div>
+          }
+        </form>
+
+        <section class="history-panel">
+          <div class="history-toolbar">
+            <h2>History</h2>
+            <select name="historyAction" [(ngModel)]="historyAction">
+              @for (action of historyActions; track action) {
+                <option [value]="action">{{ action || 'ALL' }}</option>
+              }
+            </select>
+            <input type="date" name="historyFrom" [(ngModel)]="historyFrom" />
+            <input type="date" name="historyTo" [(ngModel)]="historyTo" />
+            <button type="button" class="secondary" (click)="loadHistories()" [disabled]="!selectedProduct">
+              Query
+            </button>
+          </div>
+          @if (!selectedProduct) {
+            <p class="empty-state">Select a product.</p>
+          } @else if (histories.length === 0) {
+            <p class="empty-state">No history rows.</p>
+          } @else {
+            <div class="history-list">
+              @for (history of histories; track history.historyId) {
+                <article>
+                  <strong>{{ history.actionType }}</strong>
+                  <span>{{ history.actionTime | date:'medium' }}</span>
+                  <span>{{ history.reason || 'No reason' }}</span>
+                </article>
+              }
+            </div>
+          }
+        </section>
+      </div>
+    </section>
+  </main>
+</div>
