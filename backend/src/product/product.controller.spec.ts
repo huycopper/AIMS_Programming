@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProductController } from './product.controller';
-import { ProductService } from './product.service';
-import { ProductStatus, ProductType } from './entities/product.entity';
+import { ProductController } from './product.controller.js';
+import { ProductService } from './product.service.js';
+import { ProductStatus, ProductType } from './entities/product.entity.js';
+import { JwtService } from '@nestjs/jwt';
+import { DataSource } from 'typeorm';
 
 describe('ProductController', () => {
   let controller: ProductController;
@@ -43,6 +45,14 @@ describe('ProductController', () => {
         {
           provide: ProductService,
           useValue: mockProductService,
+        },
+        {
+          provide: JwtService,
+          useValue: { verifyAsync: jest.fn() },
+        },
+        {
+          provide: DataSource,
+          useValue: { getRepository: jest.fn() },
         },
       ],
     }).compile();
@@ -86,7 +96,10 @@ describe('ProductController', () => {
     const searchResult = { data: [mockProduct], total: 1, page: 1, limit: 20 };
     mockProductService.findAdminProducts.mockResolvedValue(searchResult);
 
-    await controller.getAdminProducts(managerId, { page: 1, limit: 20 });
+    await controller.getAdminProducts(
+      { user: { userId: managerId } },
+      { page: 1, limit: 20 },
+    );
 
     expect(mockProductService.findAdminProducts).toHaveBeenCalledWith(
       { page: 1, limit: 20 },
@@ -116,7 +129,7 @@ describe('ProductController', () => {
     } as any;
     mockProductService.createProduct.mockResolvedValue(mockProduct);
 
-    await controller.createProduct(managerId, dto);
+    await controller.createProduct({ user: { userId: managerId } }, dto);
 
     expect(mockProductService.createProduct).toHaveBeenCalledWith(
       dto,
@@ -131,7 +144,10 @@ describe('ProductController', () => {
     };
     mockProductService.bulkDeleteProducts.mockResolvedValue(response);
 
-    const result = await controller.bulkDeleteProducts(managerId, dto);
+    const result = await controller.bulkDeleteProducts(
+      { user: { userId: managerId } },
+      dto,
+    );
 
     expect(result).toEqual(response);
     expect(mockProductService.bulkDeleteProducts).toHaveBeenCalledWith(

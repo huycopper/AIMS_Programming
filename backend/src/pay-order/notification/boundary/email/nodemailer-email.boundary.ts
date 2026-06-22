@@ -26,12 +26,17 @@ export class NodemailerEmailBoundary implements EmailBoundary {
     const isEnabled = isEnabledStr === 'true'; // Default to false if not explicitly true
 
     if (!isEnabled) {
-      this.logger.log(`[EMAIL_ENABLED=false] Simulated email to ${message.to}: ${message.subject}`);
+      this.logger.log(
+        `[EMAIL_ENABLED=false] Simulated email to ${message.to}: ${message.subject}`,
+      );
       return;
     }
 
     try {
-      const from = this.configService.get<string>('SMTP_FROM', '"AIMS Store" <no-reply@aims.com>');
+      const from = this.configService.get<string>(
+        'SMTP_FROM',
+        '"AIMS Store" <no-reply@aims.com>',
+      );
       const info = await this.transporter.sendMail({
         from,
         to: message.to,
@@ -39,9 +44,14 @@ export class NodemailerEmailBoundary implements EmailBoundary {
         text: message.text,
         html: message.html,
       });
-      this.logger.log(`Email sent successfully to ${message.to}. Message ID: ${info.messageId}`);
+      this.logger.log(
+        `Email sent successfully to ${message.to}. Message ID: ${info.messageId}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to send email to ${message.to}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send email to ${message.to}: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

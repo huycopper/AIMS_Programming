@@ -14,7 +14,11 @@ import {
 import { UpdateProductDto } from './dto/update-product.dto.js';
 import { BulkDeleteProductsDto } from './dto/bulk-delete-products.dto.js';
 import { QueryProductHistoriesDto } from './dto/query-product-histories.dto.js';
-import { Product, ProductStatus, ProductType } from './entities/product.entity.js';
+import {
+  Product,
+  ProductStatus,
+  ProductType,
+} from './entities/product.entity.js';
 import { Book } from './entities/book.entity.js';
 import { Cd } from './entities/cd.entity.js';
 import { Dvd } from './entities/dvd.entity.js';
@@ -121,7 +125,6 @@ export class ProductService {
     dto: SearchProductsDto,
     performedBy: string,
   ): Promise<{ data: Product[]; total: number; page: number; limit: number }> {
-    await this.assertProductManagerIdentity(performedBy);
     const { search, category, minPrice, maxPrice, page = 1, limit = 20 } = dto;
 
     const qb = this.productRepository
@@ -162,7 +165,6 @@ export class ProductService {
     dto: CreateProductDto,
     performedBy: string,
   ): Promise<Product> {
-    await this.assertProductManagerIdentity(performedBy);
     this.validatePriceRange(dto.originalValue, dto.currentPrice);
     this.validateSubtypePayload(dto.productType, dto, true);
 
@@ -208,20 +210,25 @@ export class ProductService {
     dto: UpdateProductDto,
     performedBy: string,
   ): Promise<Product> {
-    await this.assertProductManagerIdentity(performedBy);
-
     return this.dataSource.transaction(async (manager) => {
       const existing = await this.findProductOrFail(manager, productId);
       const oldSnapshot = this.snapshot(existing);
       const nextProductType = dto.productType ?? existing.productType;
-      const nextOriginalValue = dto.originalValue ?? Number(existing.originalValue);
-      const nextCurrentPrice = dto.currentPrice ?? Number(existing.currentPrice);
+      const nextOriginalValue =
+        dto.originalValue ?? Number(existing.originalValue);
+      const nextCurrentPrice =
+        dto.currentPrice ?? Number(existing.currentPrice);
       const stockChanged =
         dto.stockQuantity !== undefined &&
         dto.stockQuantity !== Number(existing.stockQuantity);
 
       this.validatePriceRange(nextOriginalValue, nextCurrentPrice);
-      this.validateSubtypePayload(nextProductType, dto, false, existing.productType);
+      this.validateSubtypePayload(
+        nextProductType,
+        dto,
+        false,
+        existing.productType,
+      );
 
       if (stockChanged && !dto.stockAdjustmentReason?.trim()) {
         throw new BadRequestException(
@@ -290,14 +297,15 @@ export class ProductService {
     dto: BulkDeleteProductsDto,
     performedBy: string,
   ): Promise<{ results: BulkDeleteResult[] }> {
-    await this.assertProductManagerIdentity(performedBy);
     const uniqueIds = [...new Set(dto.productIds)];
 
     if (uniqueIds.length !== dto.productIds.length) {
       throw new BadRequestException('Duplicate product ids are not allowed.');
     }
     if (uniqueIds.length > 10) {
-      throw new BadRequestException('Cannot delete more than 10 products at once.');
+      throw new BadRequestException(
+        'Cannot delete more than 10 products at once.',
+      );
     }
 
     const dailyCount = await this.countTodayDeleteActions(performedBy);
@@ -375,8 +383,6 @@ export class ProductService {
     dto: QueryProductHistoriesDto,
     performedBy: string,
   ): Promise<ProductHistory[]> {
-    await this.assertProductManagerIdentity(performedBy);
-
     const qb = this.productHistoryRepository
       .createQueryBuilder('history')
       .where('history.productId = :productId', { productId });
@@ -400,33 +406,14 @@ export class ProductService {
     return qb.orderBy('history.actionTime', 'DESC').getMany();
   }
 
-  private async assertProductManagerIdentity(performedBy: string): Promise<void> {
-    if (!performedBy || !this.isUuid(performedBy)) {
-      throw new UnauthorizedException(
-        'Product Manager identity header X-AIMS-User-Id is required.',
-      );
-    }
-
-    const rows = await this.dataSource.query(
-      'SELECT user_id FROM users WHERE user_id = $1 LIMIT 1',
-      [performedBy],
-    );
-
-    if (!Array.isArray(rows) || rows.length === 0) {
-      throw new UnauthorizedException(
-        'Product Manager identity does not match an existing user.',
-      );
-    }
-  }
-
-  private isUuid(value: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    );
-  }
-
-  private validatePriceRange(originalValue: number, currentPrice: number): void {
-    if (currentPrice < originalValue * 0.3 || currentPrice > originalValue * 1.5) {
+  private validatePriceRange(
+    originalValue: number,
+    currentPrice: number,
+  ): void {
+    if (
+      currentPrice < originalValue * 0.3 ||
+      currentPrice > originalValue * 1.5
+    ) {
       throw new BadRequestException(
         'Current price must be between 30% and 150% of original value.',
       );
@@ -472,7 +459,8 @@ export class ProductService {
   private countSubtypePayloads(
     payload: Partial<CreateProductDto & UpdateProductDto>,
   ): number {
-    return this.subtypeKeys().filter((key) => payload[key] !== undefined).length;
+    return this.subtypeKeys().filter((key) => payload[key] !== undefined)
+      .length;
   }
 
   private hasSubtypePayload(

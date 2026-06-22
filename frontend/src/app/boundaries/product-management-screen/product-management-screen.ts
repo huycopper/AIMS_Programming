@@ -65,7 +65,6 @@ type ProductDraft = {
   styleUrl: './product-management-screen.css',
 })
 export class ProductManagementScreen implements OnInit {
-  managerUserId = localStorage.getItem('aims_product_manager_user_id') ?? '';
   products: Product[] = [];
   histories: ProductHistory[] = [];
   deleteResults: BulkDeleteProductResult[] = [];
@@ -100,11 +99,10 @@ export class ProductManagementScreen implements OnInit {
   }
 
   loadProducts(): void {
-    this.persistManagerId();
     this.isLoading = true;
     this.errorMessage = '';
     this.productService
-      .getAdminProducts(this.managerUserId, {
+      .getAdminProducts({
         search: this.search || undefined,
         page: 1,
         limit: 100,
@@ -141,23 +139,19 @@ export class ProductManagementScreen implements OnInit {
   }
 
   submitProduct(): void {
-    this.persistManagerId();
     this.clearMessages();
     const validationError = this.validateDraft();
     if (validationError) {
       this.errorMessage = validationError;
       return;
     }
-
     this.isSaving = true;
     const request =
       this.formMode === 'create'
         ? this.productService.createProduct(
-            this.managerUserId,
             this.buildCreatePayload(),
           )
         : this.productService.updateProduct(
-            this.managerUserId,
             this.selectedProduct!.productId,
             this.buildUpdatePayload(),
           );
@@ -197,7 +191,6 @@ export class ProductManagementScreen implements OnInit {
   }
 
   submitBulkDelete(): void {
-    this.persistManagerId();
     this.clearMessages();
     const productIds = [...this.selectedProductIds];
     if (productIds.length === 0) {
@@ -211,7 +204,7 @@ export class ProductManagementScreen implements OnInit {
 
     this.isSaving = true;
     this.productService
-      .bulkDeleteProducts(this.managerUserId, {
+      .bulkDeleteProducts({
         productIds,
         reason: this.deleteReason || undefined,
       })
@@ -234,9 +227,8 @@ export class ProductManagementScreen implements OnInit {
     if (!this.selectedProduct) {
       return;
     }
-    this.persistManagerId();
     this.productService
-      .getProductHistories(this.managerUserId, this.selectedProduct.productId, {
+      .getProductHistories(this.selectedProduct.productId, {
         actionType: this.historyAction || undefined,
         from: this.historyFrom || undefined,
         to: this.historyTo || undefined,
@@ -256,9 +248,6 @@ export class ProductManagementScreen implements OnInit {
   }
 
   private validateDraft(): string {
-    if (!this.managerUserId.trim()) {
-      return 'Product Manager identity is required.';
-    }
     if (!this.draft.title.trim() || !this.draft.category.trim() || !this.draft.barcode.trim()) {
       return 'Title, category, and barcode are required.';
     }
@@ -531,9 +520,6 @@ export class ProductManagementScreen implements OnInit {
     };
   }
 
-  private persistManagerId(): void {
-    localStorage.setItem('aims_product_manager_user_id', this.managerUserId);
-  }
 
   private clearMessages(): void {
     this.errorMessage = '';

@@ -22,16 +22,24 @@ export class VietQrTransactionSyncControl {
     private readonly orderMatcher: VietQrOrderMatcherControl,
     private readonly transactionFactory: VietQrPaymentTransactionFactory,
     private readonly paymentSuccessNotificationControl: PaymentSuccessNotificationControl,
-  ) { }
+  ) {}
 
-  async syncTransaction(transactionSyncBody: TransactionCallbackDto): Promise<{ refTransactionId: string }> {
+  async syncTransaction(
+    transactionSyncBody: TransactionCallbackDto,
+  ): Promise<{ refTransactionId: string }> {
     // Bước 1: Tải toàn bộ danh sách đơn hàng và tìm đơn hàng khớp với callback
     const order = await this.orderMatcher.matchOrder(transactionSyncBody);
     if (!order) {
-      this.logger.warn(`Order not found for orderId: ${transactionSyncBody.orderId}`);
-      throw new Error(`Order not found for orderId: ${transactionSyncBody.orderId}`);
+      this.logger.warn(
+        `Order not found for orderId: ${transactionSyncBody.orderId}`,
+      );
+      throw new Error(
+        `Order not found for orderId: ${transactionSyncBody.orderId}`,
+      );
     }
-    this.logger.log(`Found matching order: ${order.orderId} (status: ${order.status})`);
+    this.logger.log(
+      `Found matching order: ${order.orderId} (status: ${order.status})`,
+    );
 
     // Bước 2: Sinh mã tham chiếu
     const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`;
@@ -45,16 +53,24 @@ export class VietQrTransactionSyncControl {
       refTransactionId,
     );
     await this.paymentTransactionRepo.save(paymentTransaction);
-    this.logger.log(`PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`);
+    this.logger.log(
+      `PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`,
+    );
 
     // Bước 4: Cập nhật trạng thái đơn hàng → PENDING_PROCESSING (chờ xử lý tiếp theo)
     order.status = 'PENDING_PROCESSING';
     await this.orderRepo.save(order);
-    this.logger.log(`Order ${order.orderId} status updated to PENDING_PROCESSING`);
+    this.logger.log(
+      `Order ${order.orderId} status updated to PENDING_PROCESSING`,
+    );
 
     // Bước 5: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
     if (!paymentTransaction.receiptEmailSentAt) {
-      const result = await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(order, paymentTransaction);
+      const result =
+        await this.paymentSuccessNotificationControl.sendPaymentSuccessNotification(
+          order,
+          paymentTransaction,
+        );
       if (result.success) {
         paymentTransaction.receiptEmailSentAt = result.sentAt || new Date();
         paymentTransaction.receiptEmailError = null;

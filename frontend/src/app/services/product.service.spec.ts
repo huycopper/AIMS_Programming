@@ -8,7 +8,6 @@ import { ProductService } from './product.service';
 describe('ProductService manager APIs', () => {
   let httpClient: any;
   let service: ProductService;
-  const managerId = '11111111-1111-4111-8111-111111111111';
 
   beforeEach(() => {
     httpClient = {
@@ -19,13 +18,13 @@ describe('ProductService manager APIs', () => {
     service = new ProductService(httpClient);
   });
 
-  it('sends manager identity header for admin product listing', () => {
-    service.getAdminProducts(managerId, { search: 'book', limit: 100 }).subscribe();
+  it('calls admin product listing with correct params', () => {
+    service.getAdminProducts({ search: 'book', limit: 100 }).subscribe();
 
     expect(httpClient.get).toHaveBeenCalledWith(
       'http://localhost:8080/api/products/admin',
       expect.objectContaining({
-        headers: { 'X-AIMS-User-Id': managerId },
+        params: expect.anything(),
       }),
     );
   });
@@ -54,12 +53,11 @@ describe('ProductService manager APIs', () => {
       },
     };
 
-    service.createProduct(managerId, payload).subscribe();
+    service.createProduct(payload).subscribe();
 
     expect(httpClient.post).toHaveBeenCalledWith(
       'http://localhost:8080/api/products',
-      payload,
-      { headers: { 'X-AIMS-User-Id': managerId } },
+      payload
     );
   });
 
@@ -69,18 +67,17 @@ describe('ProductService manager APIs', () => {
       reason: 'Discontinued',
     };
 
-    service.bulkDeleteProducts(managerId, payload).subscribe();
+    service.bulkDeleteProducts(payload).subscribe();
 
     expect(httpClient.post).toHaveBeenCalledWith(
       'http://localhost:8080/api/products/bulk-delete',
-      payload,
-      { headers: { 'X-AIMS-User-Id': managerId } },
+      payload
     );
   });
 
   it('queries product history by action/date filters', () => {
     service
-      .getProductHistories(managerId, 'product-1', {
+      .getProductHistories('product-1', {
         actionType: 'UPDATE',
         from: '2026-01-01',
         to: '2026-01-02',
@@ -90,7 +87,7 @@ describe('ProductService manager APIs', () => {
     expect(httpClient.get).toHaveBeenCalledWith(
       'http://localhost:8080/api/products/product-1/histories',
       expect.objectContaining({
-        headers: { 'X-AIMS-User-Id': managerId },
+        params: expect.anything(),
       }),
     );
   });

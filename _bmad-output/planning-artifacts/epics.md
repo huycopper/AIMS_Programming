@@ -37,6 +37,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **FR12:** Enable Administrators to manage user accounts (create, view, deactivate, block, unblock) and assign roles.
 - **FR13:** Support audit logging: history logs for product additions/edits/deletions, sensitive admin actions, and payment transactions.
 - **FR14:** Support automated email notifications for successful payment, order approval/rejection, and sensitive admin actions.
+- **FR15:** Enable Administrators and Product Managers to log in using either username or email and to change their own password.
 
 ### NonFunctional Requirements
 
@@ -46,6 +47,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **NFR4:** Securely hash passwords (bcrypt).
 - **NFR5:** Role-Based Access Control (RBAC) on the backend.
 - **NFR6:** Transaction integrity maintained on payment failure.
+- **NFR7:** Use signed JWT access tokens for authenticated staff sessions.
 
 ### Additional Requirements
 
@@ -68,7 +70,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **Epic 2:** FR5, FR6, FR7, UX-DR3, AR3
 - **Epic 3:** FR8, FR9, UX-DR4, UX-DR5, UX-DR6, NFR6, AR3
 - **Epic 4:** FR10, FR13, AR1, AR2, AR3
-- **Epic 5:** FR11, FR12, FR13, FR14, NFR4, NFR5, AR1, AR3
+- **Epic 5:** FR11, FR12, FR13, FR14, FR15, NFR4, NFR5, NFR7, AR1, AR3
 
 ---
 
@@ -207,7 +209,7 @@ So that the online store catalog stays current and accurate.
 
 ## Epic 5: Order Processing & User Management
 
-This epic covers backend administration of orders, refund handling, user account management, and role-based access control.
+This epic covers staff authentication, password management, backend administration of orders, refund handling, user account management, and role-based access control.
 
 ### Story 5.1: Order Fulfillment
 As a Product Manager,
@@ -245,3 +247,39 @@ So that I can control access to the administration portal.
 **Given** a user is logged in
 **When** they attempt to access backend endpoints or UI pages
 **Then** the NestJS backend and Angular router enforce RBAC permissions based on the user's roles (NFR5)
+
+---
+
+### Story 5.3: Staff Authentication & Password Management
+As an Administrator or Product Manager,
+I want to authenticate with my staff account and change my own password,
+So that I can securely access only the administration capabilities granted by all of my assigned roles.
+
+**Acceptance Criteria:**
+
+**Given** an active staff account with a bcrypt password hash
+**When** the staff member submits a valid password and either their unique username or unique email
+**Then** the system authenticates the credentials against `users.password_hash` using bcrypt and returns a signed, expiring JWT access token (FR15, NFR4, NFR7)
+**And** the token identifies the user and includes all roles assigned through `user_roles`
+**And** the system never stores, returns, or logs the plaintext password
+
+**Given** invalid credentials or an account whose status is `DEACTIVATED` or `BLOCKED`
+**When** a login is attempted
+**Then** the system denies authentication and does not issue a JWT
+**And** the response does not reveal whether the username/email, password, or account status caused the failure
+
+**Given** an authenticated staff member with one or more assigned roles
+**When** they access a protected backend endpoint or administration UI route
+**Then** both the NestJS backend and Angular router enforce RBAC using all roles in the JWT (NFR5)
+**And** `ADMIN` grants user-account management, account-status management, and role-assignment capabilities defined in Story 5.2
+**And** `PRODUCT_MANAGER` grants product administration and history capabilities defined in Story 4.1 and order-review, approval, and rejection capabilities defined in Story 5.1
+**And** a staff member with both roles receives the union of those permissions, while an unassigned permission is denied according to the principle of least privilege
+
+**Given** an authenticated Administrator or Product Manager
+**When** they submit their correct current password and a valid new password that meets the configured password policy
+**Then** the system replaces `users.password_hash` with a bcrypt hash of the new password (FR15, NFR4)
+**And** the old password can no longer be used for subsequent authentication
+
+**Given** an incorrect current password or an invalid new password
+**When** the staff member requests a password change
+**Then** the system rejects the request without changing `users.password_hash`

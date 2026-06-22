@@ -11,7 +11,7 @@ export class RefundService {
   constructor(
     @InjectRepository(RefundTransaction)
     private readonly refundTransactionRepo: Repository<RefundTransaction>,
-  ) { }
+  ) {}
 
   async createManualRefundForVietQR(
     paymentTransaction: PaymentTransaction,
@@ -35,7 +35,11 @@ export class RefundService {
     return this.refundTransactionRepo.save(refund);
   }
 
-  async getRefundByPaymentTransaction(paymentTransactionId: string): Promise<RefundTransaction | null> {
-    return this.refundTransactionRepo.findOne({ where: { paymentTransaction: { paymentTransactionId } }, });
+  async getRefundByPaymentTransaction(
+    paymentTransactionId: string,
+  ): Promise<RefundTransaction | null> {
+    return this.refundTransactionRepo.findOne({
+      where: { paymentTransaction: { paymentTransactionId } },
+    });
   }
 }

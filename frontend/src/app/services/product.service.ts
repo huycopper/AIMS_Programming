@@ -69,47 +69,36 @@ export class ProductService {
   }
 
   getAdminProducts(
-    managerUserId: string,
     params: SearchProductsParams = {},
   ): Observable<PaginatedProducts> {
     return this.http.get<PaginatedProducts>(`${this.apiUrl}/admin`, {
       params: this.toProductParams(params),
-      headers: this.managerHeaders(managerUserId),
     });
   }
 
   createProduct(
-    managerUserId: string,
     payload: CreateProductRequest,
   ): Observable<Product> {
-    return this.http.post<Product>(this.apiUrl, payload, {
-      headers: this.managerHeaders(managerUserId),
-    });
+    return this.http.post<Product>(this.apiUrl, payload);
   }
 
   updateProduct(
-    managerUserId: string,
     productId: string,
     payload: UpdateProductRequest,
   ): Observable<Product> {
-    return this.http.patch<Product>(`${this.apiUrl}/${productId}`, payload, {
-      headers: this.managerHeaders(managerUserId),
-    });
+    return this.http.patch<Product>(`${this.apiUrl}/${productId}`, payload);
   }
 
   bulkDeleteProducts(
-    managerUserId: string,
     payload: BulkDeleteProductsRequest,
   ): Observable<BulkDeleteProductsResponse> {
     return this.http.post<BulkDeleteProductsResponse>(
       `${this.apiUrl}/bulk-delete`,
       payload,
-      { headers: this.managerHeaders(managerUserId) },
     );
   }
 
   getProductHistories(
-    managerUserId: string,
     productId: string,
     query: ProductHistoryQuery = {},
   ): Observable<ProductHistory[]> {
@@ -128,13 +117,8 @@ export class ProductService {
       `${this.apiUrl}/${productId}/histories`,
       {
         params: httpParams,
-        headers: this.managerHeaders(managerUserId),
       },
     );
-  }
-
-  private managerHeaders(managerUserId: string): { [header: string]: string } {
-    return { 'X-AIMS-User-Id': managerUserId };
   }
 
   private toProductParams(params: SearchProductsParams): HttpParams {

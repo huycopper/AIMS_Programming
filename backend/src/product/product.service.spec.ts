@@ -41,26 +41,25 @@ describe('ProductService', () => {
     getCount: jest.fn(),
   };
 
-  const createMockProduct = (overrides: Partial<Product> = {}): Product =>
-    ({
-      productId: '22222222-2222-4222-8222-222222222222',
-      productType: ProductType.BOOK,
-      title: 'Test Book',
-      category: 'Fiction',
-      generalDescription: 'A test book',
-      height: 20,
-      width: 15,
-      length: 3,
-      weight: 0.5,
-      barcode: '1234567890',
-      originalValue: 100000,
-      currentPrice: 120000,
-      stockQuantity: 10,
-      status: ProductStatus.ACTIVE,
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-      ...overrides,
-    }) as Product;
+  const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
+    productId: '22222222-2222-4222-8222-222222222222',
+    productType: ProductType.BOOK,
+    title: 'Test Book',
+    category: 'Fiction',
+    generalDescription: 'A test book',
+    height: 20,
+    width: 15,
+    length: 3,
+    weight: 0.5,
+    barcode: '1234567890',
+    originalValue: 100000,
+    currentPrice: 120000,
+    stockQuantity: 10,
+    status: ProductStatus.ACTIVE,
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    ...overrides,
+  });
 
   const validCreateDto = () =>
     ({
@@ -197,14 +196,6 @@ describe('ProductService', () => {
     );
   });
 
-  it('rejects manager operations without a valid existing user id', async () => {
-    dataSource.query.mockResolvedValue([]);
-
-    await expect(
-      service.createProduct(validCreateDto(), managerId),
-    ).rejects.toBeInstanceOf(UnauthorizedException);
-  });
-
   it('rejects current price outside 30%-150% original value', async () => {
     await expect(
       service.createProduct(
@@ -246,7 +237,9 @@ describe('ProductService', () => {
         performedBy: managerId,
         actionType: ProductHistoryActionType.CREATE,
         oldValueSnapshot: null,
-        newValueSnapshot: expect.objectContaining({ productId: saved.productId }),
+        newValueSnapshot: expect.objectContaining({
+          productId: saved.productId,
+        }),
       }),
     );
   });
@@ -290,7 +283,8 @@ describe('ProductService', () => {
   it('rejects bulk delete requests above 10 product ids', async () => {
     const productIds = Array.from(
       { length: 11 },
-      (_, index) => `11111111-1111-4111-8111-${String(index).padStart(12, '0')}`,
+      (_, index) =>
+        `11111111-1111-4111-8111-${String(index).padStart(12, '0')}`,
     );
 
     await expect(

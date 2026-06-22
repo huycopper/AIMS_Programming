@@ -16,13 +16,13 @@ export class VietQrTransactionSyncBoundary {
   constructor(
     private readonly callbackValidator: VietQrCallbackValidatorControl,
     private readonly transactionSyncControl: VietQrTransactionSyncControl,
-  ) { }
+  ) {}
 
   // API để xử lý transaction-sync do VIETQR POST tới
   // Nên code dựa theo tài liệu VietQR (2. API Transaction Sync)
   @Post('vqr/bank/api/transaction-sync')
   async transactionSync(
-    // parse JSON trong phần Body của HTTP POST request và map (gán) nó vào biến transactionSyncBody. 
+    // parse JSON trong phần Body của HTTP POST request và map (gán) nó vào biến transactionSyncBody.
     // body của VietQR POST đến có dạng TransactionCallbackDto
     @Body() transactionSyncBody: TransactionCallbackDto,
     //Trích xuất giá trị của một HTTP Header có tên authorization và gán vào biến authHeader
@@ -36,54 +36,60 @@ export class VietQrTransactionSyncBoundary {
     // 1. Valid header
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       this.logger.error('Invalid or missing Authorization header');
-      return res.status(401).json(new ErrorResponse(
-        true,
-        'INVALID_AUTH_HEADER',
-        'Authorization header is missing or invalid',
-        null
-      )
-      );
+      return res
+        .status(401)
+        .json(
+          new ErrorResponse(
+            true,
+            'INVALID_AUTH_HEADER',
+            'Authorization header is missing or invalid',
+            null,
+          ),
+        );
     }
 
     // 2. Valid token
     const token = authHeader.substring('Bearer '.length).trim();
     if (!this.callbackValidator.validateCallbackToken(token)) {
       this.logger.error('Invalid or expired Bearer token');
-      return res.status(401).json(
-        new ErrorResponse(
-          true,
-          'INVALID_TOKEN',
-          'Invalid or expired token',
-          null
-        )
-      );
+      return res
+        .status(401)
+        .json(
+          new ErrorResponse(
+            true,
+            'INVALID_TOKEN',
+            'Invalid or expired token',
+            null,
+          ),
+        );
     }
 
     try {
       // Gọi control để xử lý transaction
-      const { refTransactionId } = await this.transactionSyncControl.syncTransaction(transactionSyncBody);
+      const { refTransactionId } =
+        await this.transactionSyncControl.syncTransaction(transactionSyncBody);
 
       this.logger.log('=== Transaction Sync processed successfully ===');
-      return res.status(200).json(
-        new SuccessResponse(
-          false,
-          null,
-          'Transaction processed successfully',
-          new TransactionResponseObject(refTransactionId),
-        ),
-      );
+      return res
+        .status(200)
+        .json(
+          new SuccessResponse(
+            false,
+            null,
+            'Transaction processed successfully',
+            new TransactionResponseObject(refTransactionId),
+          ),
+        );
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown transaction sync error';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unknown transaction sync error';
       const stack = error instanceof Error ? error.stack : undefined;
       this.logger.error(`Transaction Sync processing error: ${message}`, stack);
-      return res.status(400).json(
-        new ErrorResponse(
-          true,
-          'TRANSACTION_FAILED',
-          message,
-          null
-        )
-      );
+      return res
+        .status(400)
+        .json(new ErrorResponse(true, 'TRANSACTION_FAILED', message, null));
     }
   }
 }

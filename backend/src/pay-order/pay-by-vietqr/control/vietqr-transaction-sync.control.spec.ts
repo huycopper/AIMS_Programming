@@ -55,7 +55,10 @@ describe('VietQR Split Webhook Components', () => {
         VietQrPaymentTransactionFactory,
         VietQrTransactionSyncControl,
         { provide: JwtService, useValue: jwtServiceMock },
-        { provide: PaymentSuccessNotificationControl, useValue: paymentSuccessNotificationControlMock },
+        {
+          provide: PaymentSuccessNotificationControl,
+          useValue: paymentSuccessNotificationControlMock,
+        },
         {
           provide: getRepositoryToken(PaymentTransaction),
           useValue: paymentTransactionRepoMock,
@@ -258,7 +261,9 @@ describe('VietQR Split Webhook Components', () => {
       paymentSuccessNotificationControlMock.sendPaymentSuccessNotification.mockImplementation(
         async () => {
           callSequence.push('send_email');
-          return PaymentSuccessNotificationResult.success(new Date('2026-06-18T20:00:00Z'));
+          return PaymentSuccessNotificationResult.success(
+            new Date('2026-06-18T20:00:00Z'),
+          );
         },
       );
 

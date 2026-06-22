@@ -12,22 +12,26 @@ export class VietQrOrderMatcherControl {
   constructor(
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-  ) { }
+  ) {}
 
   //
-  async matchOrder(transactionSyncBody: TransactionCallbackDto): Promise<Order | null> {
+  async matchOrder(
+    transactionSyncBody: TransactionCallbackDto,
+  ): Promise<Order | null> {
     const allOrders = await this.orderRepo.find();
     return this.findMatchingOrder(transactionSyncBody, allOrders);
   }
 
-  private findMatchingOrder(transactionSyncBody: TransactionCallbackDto, orders: Order[]): Order | null {
-    const matchedOrder = orders.find((order) => { //Dùng biến order để duyệt từng phần tử trong mảng orders
+  private findMatchingOrder(
+    transactionSyncBody: TransactionCallbackDto,
+    orders: Order[],
+  ): Order | null {
+    const matchedOrder = orders.find((order) => {
+      //Dùng biến order để duyệt từng phần tử trong mảng orders
       const paymentCode = VietQrPaymentCode.fromOrder(order); //tạo payment code từ order
 
       // kiểm tra xem payment code có khớp với callback không
-      const isMatch = paymentCode.matchesCallback(
-        transactionSyncBody.content,
-      );
+      const isMatch = paymentCode.matchesCallback(transactionSyncBody.content);
 
       return isMatch;
     });

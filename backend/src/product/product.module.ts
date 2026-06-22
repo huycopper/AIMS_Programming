@@ -8,10 +8,19 @@ import { Cd } from './entities/cd.entity.js';
 import { Dvd } from './entities/dvd.entity.js';
 import { Newspaper } from './entities/newspaper.entity.js';
 import { ProductHistory } from './entities/product-history.entity.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Book, Cd, Dvd, Newspaper, ProductHistory]),
+    TypeOrmModule.forFeature([
+      Product,
+      Book,
+      Cd,
+      Dvd,
+      Newspaper,
+      ProductHistory,
+    ]),
+    AuthModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

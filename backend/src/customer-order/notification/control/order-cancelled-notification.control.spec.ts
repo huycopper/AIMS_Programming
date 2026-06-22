@@ -18,7 +18,7 @@ describe('OrderCancelledNotificationControl', () => {
 
     emailBoundaryMock = {
       sendEmail: jest.fn(),
-    } as any;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

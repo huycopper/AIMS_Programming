@@ -57,7 +57,6 @@ describe('ProductManagementScreen', () => {
       getProductHistories: vi.fn().mockReturnValue(of([])),
     };
     component = new ProductManagementScreen(productService);
-    component.managerUserId = managerId;
   });
 
   it('rejects currentPrice below 30% of original value before calling API', () => {
@@ -105,7 +104,7 @@ describe('ProductManagementScreen', () => {
 
     component.submitBulkDelete();
 
-    expect(productService.bulkDeleteProducts).toHaveBeenCalledWith(managerId, {
+    expect(productService.bulkDeleteProducts).toHaveBeenCalledWith({
       productIds: [product.productId],
       reason: 'Discontinued',
     });

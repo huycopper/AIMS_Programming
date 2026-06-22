@@ -9,6 +9,7 @@ import { join } from 'path';
 import { PaymentModule } from './payment/payment.module.js';
 import { CustomerOrderModule } from './customer-order/customer-order.module.js';
 import { RefundModule } from './refund/refund.module.js';
+import { AuthModule } from './auth/auth.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { RefundModule } from './refund/refund.module.js';
     PaymentModule,
     CustomerOrderModule,
     RefundModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

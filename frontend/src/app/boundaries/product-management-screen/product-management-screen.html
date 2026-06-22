@@ -13,15 +13,6 @@
         <h1>Product Management</h1>
         <p>{{ products.length }} products loaded</p>
       </div>
-      <div class="manager-id">
-        <label for="managerUserId">Manager ID</label>
-        <input
-          id="managerUserId"
-          name="managerUserId"
-          [(ngModel)]="managerUserId"
-          placeholder="UUID"
-        />
-      </div>
     </section>
 
     @if (errorMessage) {

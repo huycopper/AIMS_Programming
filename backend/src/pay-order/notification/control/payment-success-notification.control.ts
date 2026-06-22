@@ -15,13 +15,18 @@ export class PaymentSuccessNotificationControl {
     private readonly configService: ConfigService,
     private readonly emailBoundary: EmailBoundary,
     private readonly templateControl: PaymentSuccessEmailTemplateControl,
-  ) { }
+  ) {}
 
-  async sendPaymentSuccessNotification(order: Order, transaction: PaymentTransaction): Promise<PaymentSuccessNotificationResult> {
+  async sendPaymentSuccessNotification(
+    order: Order,
+    transaction: PaymentTransaction,
+  ): Promise<PaymentSuccessNotificationResult> {
     const to = order.deliveryInfo?.email;
     // Nếu không tồn tại email
     if (!to) {
-      this.logger.warn(`Cannot send payment success email for order ${order.orderId}: No email address provided.`,);
+      this.logger.warn(
+        `Cannot send payment success email for order ${order.orderId}: No email address provided.`,
+      );
       // Returns success/skipped result to match non-throwing behavior that sets receiptEmailSentAt.
       return PaymentSuccessNotificationResult.success(new Date());
     }
@@ -29,14 +34,21 @@ export class PaymentSuccessNotificationControl {
     try {
       const appPublicUrl = this.configService.get<string>('APP_PUBLIC_URL')!;
 
-      const emailData = new PaymentSuccessEmail(order, transaction, appPublicUrl);
+      const emailData = new PaymentSuccessEmail(
+        order,
+        transaction,
+        appPublicUrl,
+      );
       const emailMessage = this.templateControl.buildMessage(emailData);
 
       await this.emailBoundary.sendEmail(emailMessage);
 
       return PaymentSuccessNotificationResult.success(new Date());
     } catch (error: any) {
-      this.logger.error(`Failed to send receipt email for order ${order.orderId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send receipt email for order ${order.orderId}: ${error.message}`,
+        error.stack,
+      );
       return PaymentSuccessNotificationResult.failure(error.message);
     }
   }
