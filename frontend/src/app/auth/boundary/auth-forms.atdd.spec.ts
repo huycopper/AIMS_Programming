@@ -12,10 +12,14 @@ describe('staff authentication forms (Story 5.3 ATDD)', () => {
   const auth = {
     login: vi.fn(),
     changePassword: vi.fn(),
+    hasRole: vi.fn(),
   };
   const router = { navigateByUrl: vi.fn() };
 
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.history.pushState({}, '', '/staff/login');
+  });
 
   it('[P1] login shows one generic denial and never exposes backend account details', async () => {
     auth.login.mockReturnValue(
@@ -39,6 +43,41 @@ describe('staff authentication forms (Story 5.3 ATDD)', () => {
     void screen.submit();
     expect(screen.isSubmitting()).toBe(true);
     expect(auth.login).toHaveBeenCalledTimes(1);
+  });
+
+  it('[P1] login sends product managers to product administration by default', async () => {
+    auth.login.mockReturnValue(of(undefined));
+    auth.hasRole.mockImplementation((role: string) => role === 'PRODUCT_MANAGER');
+    const screen = new LoginScreen(auth as unknown as AuthService, router as unknown as Router);
+    screen.form.setValue({ identifier: 'pm', password: 'ValidPassword1' });
+
+    await screen.submit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/admin/products');
+  });
+
+  it('[P1] login does not force admin-only staff to change password by default', async () => {
+    auth.login.mockReturnValue(of(undefined));
+    auth.hasRole.mockImplementation((role: string) => role === 'ADMIN');
+    const screen = new LoginScreen(auth as unknown as AuthService, router as unknown as Router);
+    screen.form.setValue({ identifier: 'admin', password: 'ValidPassword1' });
+
+    await screen.submit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(router.navigateByUrl).not.toHaveBeenCalledWith('/staff/change-password');
+  });
+
+  it('[P1] login still honors a sanitized return URL before role fallback', async () => {
+    window.history.pushState({}, '', '/staff/login?returnUrl=/staff/change-password');
+    auth.login.mockReturnValue(of(undefined));
+    auth.hasRole.mockReturnValue(false);
+    const screen = new LoginScreen(auth as unknown as AuthService, router as unknown as Router);
+    screen.form.setValue({ identifier: 'staff', password: 'ValidPassword1' });
+
+    await screen.submit();
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/staff/change-password');
   });
 
   it.each([

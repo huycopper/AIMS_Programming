@@ -125,7 +125,7 @@ so that I can securely access only the administration capabilities granted by al
   - [x] Protect `/admin/products` with `PRODUCT_MANAGER`, remove its manual manager-ID field/storage behavior, and send its requests through the interceptor.
   - [x] Reserve guard metadata patterns for Story 5.1 `PRODUCT_MANAGER` and Story 5.2 `ADMIN` routes; do not create those stories' screens or business APIs here.
   - [x] Expose a reachable change-password action for authenticated staff and a logout action; successful password change must clear the session.
-  - [x] After login, use a valid saved return URL; otherwise send principals with `PRODUCT_MANAGER` to `/admin/products` and ADMIN-only principals to `/staff/change-password` until Story 5.2 supplies its landing page.
+  - [x] After login, use a valid saved return URL; otherwise send principals with `PRODUCT_MANAGER` to `/admin/products` and other principals to `/` until Story 5.2 supplies its landing page. Keep `/staff/change-password` available as a user-initiated self-service action.
 
 - [x] Task 6: Add security-focused backend tests (AC: 1-10)
   - [x] Unit-test exact identifier lookup (including case variants), all-role loading/deduplication, bcrypt success/failure, over-72-byte and dummy-hash paths, account statuses, no-role accounts, token claims/expiry/configuration failure, and sanitized responses.
@@ -288,7 +288,7 @@ Authorization decision table:
   - `frontend/src/app/auth/control/auth.interceptor.ts`, `auth.guard.ts`, `roles.guard.ts`
 - Login fields: `identifier`, `password`; password-change fields: `currentPassword`, `newPassword`, `confirmNewPassword`. Use autocomplete values `username`, `current-password`, and `new-password` appropriately.
 - Screen specifications do not define staff-auth screens. Match established AIMS desktop styling and form/error/loading conventions without inventing Story 5.1/5.2 navigation.
-- Use `sessionStorage`, not the existing product screen's ad hoc `localStorage` manager identity. A return URL must survive URL parsing as a same-origin application path; merely beginning with `/` is insufficient because `//host`, encoded separators, and backslashes can form open redirects. Otherwise use the explicit fallback destinations in Task 5.
+- Use `sessionStorage`, not the existing product screen's ad hoc `localStorage` manager identity. A return URL must survive URL parsing as a same-origin application path; merely beginning with `/` is insufficient because `//host`, encoded separators, and backslashes can form open redirects. Otherwise use the explicit fallback destinations in Task 5, without forcing password change after sign-in.
 
 ### Current Files to Update and Behaviors to Preserve
 
