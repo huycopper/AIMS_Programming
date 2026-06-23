@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   BulkDeleteProductResult,
@@ -7,6 +7,7 @@ import {
   Product,
   ProductHistory,
   ProductHistoryActionType,
+  ProductStatus,
   ProductType,
   UpdateProductRequest,
 } from '../../models/product.model';
@@ -57,6 +58,9 @@ type ProductDraft = {
   sectionsText: string;
 };
 
+type DrawerTab = 'overview' | 'edit' | 'stock' | 'history';
+type StockFilter = '' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+
 @Component({
   selector: 'app-product-management-screen',
   standalone: true,
@@ -65,12 +69,20 @@ type ProductDraft = {
   styleUrl: './product-management-screen.css',
 })
 export class ProductManagementScreen implements OnInit {
+  loadedProducts: Product[] = [];
   products: Product[] = [];
   histories: ProductHistory[] = [];
   deleteResults: BulkDeleteProductResult[] = [];
   selectedProduct: Product | null = null;
   selectedProductIds = new Set<string>();
   productTypes: ProductType[] = ['BOOK', 'CD', 'DVD', 'NEWSPAPER'];
+  productStatuses: Array<ProductStatus | ''> = ['', 'ACTIVE', 'DEACTIVATED', 'DELETED'];
+  stockFilters: Array<{ value: StockFilter; label: string }> = [
+    { value: '', label: 'Any stock' },
+    { value: 'IN_STOCK', label: 'In stock' },
+    { value: 'LOW_STOCK', label: 'Low stock' },
+    { value: 'OUT_OF_STOCK', label: 'Out of stock' },
+  ];
   historyActions: Array<ProductHistoryActionType | ''> = [
     '',
     'CREATE',
@@ -80,7 +92,13 @@ export class ProductManagementScreen implements OnInit {
     'STOCK_ADJUST',
   ];
   formMode: 'create' | 'update' = 'create';
+  activeDrawerTab: DrawerTab = 'edit';
+  isDrawerOpen = false;
+  isDeleteDialogOpen = false;
   search = '';
+  typeFilter: ProductType | '' = '';
+  statusFilter: ProductStatus | '' = '';
+  stockFilter: StockFilter = '';
   historyAction: ProductHistoryActionType | '' = '';
   historyFrom = '';
   historyTo = '';
@@ -90,9 +108,13 @@ export class ProductManagementScreen implements OnInit {
   isLoading = false;
   isSaving = false;
   originalStockQuantity: number | null = null;
+  fieldErrors: Record<string, string> = {};
   draft: ProductDraft = this.createEmptyDraft();
 
-  constructor(private readonly productService: ProductService) {}
+  constructor(
+    private readonly productService: ProductService,
+    private readonly cdr: ChangeDetectorRef,
+  ) {}
 
   ngOnInit(): void {
     this.loadProducts();
@@ -109,33 +131,68 @@ export class ProductManagementScreen implements OnInit {
       })
       .subscribe({
         next: (result) => {
-          this.products = result.data;
+          this.loadedProducts = result.data;
+          this.applyLocalFilters();
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
       });
   }
 
   startCreate(): void {
     this.formMode = 'create';
+    this.activeDrawerTab = 'edit';
+    this.isDrawerOpen = true;
     this.selectedProduct = null;
     this.originalStockQuantity = null;
     this.histories = [];
+    this.deleteResults = [];
     this.draft = this.createEmptyDraft();
     this.clearMessages();
   }
 
   selectProduct(product: Product): void {
     this.formMode = 'update';
+    this.activeDrawerTab = 'overview';
+    this.isDrawerOpen = true;
     this.selectedProduct = product;
     this.originalStockQuantity = Number(product.stockQuantity);
     this.draft = this.toDraft(product);
     this.deleteResults = [];
     this.clearMessages();
     this.loadHistories();
+  }
+
+  closeDrawer(): void {
+    this.isDrawerOpen = false;
+    this.clearMessages();
+  }
+
+  setDrawerTab(tab: DrawerTab): void {
+    if (!this.selectedProduct && tab !== 'edit') {
+      return;
+    }
+    this.activeDrawerTab = tab;
+    if (tab === 'history') {
+      this.loadHistories();
+    }
+  }
+
+  applyFilters(): void {
+    this.loadProducts();
+  }
+
+  clearFilters(): void {
+    this.search = '';
+    this.typeFilter = '';
+    this.statusFilter = '';
+    this.stockFilter = '';
+    this.loadProducts();
   }
 
   submitProduct(): void {
@@ -158,17 +215,21 @@ export class ProductManagementScreen implements OnInit {
 
     request.subscribe({
       next: (product) => {
-        this.successMessage =
+        const message =
           this.formMode === 'create'
             ? 'Product created successfully.'
             : 'Product updated successfully.';
         this.isSaving = false;
         this.loadProducts();
         this.selectProduct(product);
+        this.successMessage = message;
+        this.activeDrawerTab = 'overview';
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.errorMessage = this.readError(error);
         this.isSaving = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -184,6 +245,11 @@ export class ProductManagementScreen implements OnInit {
     } else {
       this.selectedProductIds.delete(productId);
     }
+  }
+
+  clearSelection(): void {
+    this.selectedProductIds.clear();
+    this.clearMessages();
   }
 
   isSelected(productId: string): boolean {
@@ -213,14 +279,31 @@ export class ProductManagementScreen implements OnInit {
           this.deleteResults = response.results;
           this.selectedProductIds.clear();
           this.successMessage = 'Delete request processed.';
+          this.isDeleteDialogOpen = false;
+          this.deleteReason = '';
           this.isSaving = false;
           this.loadProducts();
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
           this.isSaving = false;
+          this.cdr.markForCheck();
         },
       });
+  }
+
+  openDeleteDialog(): void {
+    this.clearMessages();
+    if (this.selectedProductIds.size === 0) {
+      this.errorMessage = 'Select at least one product.';
+      return;
+    }
+    this.isDeleteDialogOpen = true;
+  }
+
+  closeDeleteDialog(): void {
+    this.isDeleteDialogOpen = false;
   }
 
   loadHistories(): void {
@@ -236,9 +319,11 @@ export class ProductManagementScreen implements OnInit {
       .subscribe({
         next: (histories) => {
           this.histories = histories;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
+          this.cdr.markForCheck();
         },
       });
   }
@@ -247,14 +332,100 @@ export class ProductManagementScreen implements OnInit {
     return Number(value).toLocaleString('vi-VN') + ' VND';
   }
 
+  formatDate(value: string): string {
+    return new Date(value).toLocaleDateString('vi-VN');
+  }
+
+  get selectedProducts(): Product[] {
+    return this.loadedProducts.filter((product) =>
+      this.selectedProductIds.has(product.productId),
+    );
+  }
+
+  get hasStockChanged(): boolean {
+    return (
+      this.formMode === 'update' &&
+      this.originalStockQuantity !== null &&
+      Number(this.draft.stockQuantity) !== Number(this.originalStockQuantity)
+    );
+  }
+
+  get currentPriceMin(): number {
+    return Math.ceil(Number(this.draft.originalValue || 0) * 0.3);
+  }
+
+  get currentPriceMax(): number {
+    return Math.floor(Number(this.draft.originalValue || 0) * 1.5);
+  }
+
+  get drawerTitle(): string {
+    if (this.formMode === 'create') {
+      return 'Create product';
+    }
+    return this.selectedProduct?.title || 'Product details';
+  }
+
+  get activeProductsCount(): number {
+    return this.loadedProducts.filter((product) => product.status === 'ACTIVE').length;
+  }
+
+  get selectedProductsWithStock(): number {
+    return this.selectedProducts.filter((product) => Number(product.stockQuantity) > 0).length;
+  }
+
+  get selectedProductsWithoutStock(): number {
+    return this.selectedProducts.filter((product) => Number(product.stockQuantity) <= 0).length;
+  }
+
+  get canSubmitProduct(): boolean {
+    return !this.isSaving;
+  }
+
+  deleteResultsByStatus(status: BulkDeleteProductResult['status']): BulkDeleteProductResult[] {
+    return this.deleteResults.filter((result) => result.status === status);
+  }
+
+  stockLabel(product: Product): string {
+    const stock = Number(product.stockQuantity);
+    if (stock <= 0) {
+      return 'Out of stock';
+    }
+    if (stock <= 5) {
+      return 'Low stock';
+    }
+    return 'In stock';
+  }
+
+  statusLabel(status: ProductStatus): string {
+    return status.charAt(0) + status.slice(1).toLowerCase();
+  }
+
+  isTabDisabled(tab: DrawerTab): boolean {
+    return !this.selectedProduct && tab !== 'edit';
+  }
+
   private validateDraft(): string {
+    this.fieldErrors = {};
     if (!this.draft.title.trim() || !this.draft.category.trim() || !this.draft.barcode.trim()) {
+      if (!this.draft.title.trim()) {
+        this.fieldErrors['title'] = 'Title is required.';
+      }
+      if (!this.draft.category.trim()) {
+        this.fieldErrors['category'] = 'Category is required.';
+      }
+      if (!this.draft.barcode.trim()) {
+        this.fieldErrors['barcode'] = 'Barcode is required.';
+      }
       return 'Title, category, and barcode are required.';
     }
     if (this.draft.currentPrice < this.draft.originalValue * 0.3) {
+      this.fieldErrors['currentPrice'] =
+        `Current price must be between ${this.formatPrice(this.currentPriceMin)} and ${this.formatPrice(this.currentPriceMax)}.`;
       return 'Current price must be at least 30% of original value.';
     }
     if (this.draft.currentPrice > this.draft.originalValue * 1.5) {
+      this.fieldErrors['currentPrice'] =
+        `Current price must be between ${this.formatPrice(this.currentPriceMin)} and ${this.formatPrice(this.currentPriceMax)}.`;
       return 'Current price must be at most 150% of original value.';
     }
     if (
@@ -263,6 +434,7 @@ export class ProductManagementScreen implements OnInit {
       this.draft.stockQuantity !== this.originalStockQuantity &&
       !this.draft.stockAdjustmentReason.trim()
     ) {
+      this.fieldErrors['stockAdjustmentReason'] = 'Stock changed. Add a reason before saving.';
       return 'Stock adjustment reason is required.';
     }
 
@@ -276,6 +448,15 @@ export class ProductManagementScreen implements OnInit {
         !this.draft.bookPublisher.trim() ||
         !this.draft.bookPublicationDate
       ) {
+        if (!this.draft.authorsText.trim()) {
+          this.fieldErrors['authorsText'] = 'Authors are required.';
+        }
+        if (!this.draft.bookPublisher.trim()) {
+          this.fieldErrors['bookPublisher'] = 'Publisher is required.';
+        }
+        if (!this.draft.bookPublicationDate) {
+          this.fieldErrors['bookPublicationDate'] = 'Publication date is required.';
+        }
         return 'Book authors, publisher, and publication date are required.';
       }
     }
@@ -286,6 +467,18 @@ export class ProductManagementScreen implements OnInit {
         !this.draft.tracksText.trim() ||
         !this.draft.cdGenre.trim()
       ) {
+        if (!this.draft.artistsText.trim()) {
+          this.fieldErrors['artistsText'] = 'Artists are required.';
+        }
+        if (!this.draft.recordLabel.trim()) {
+          this.fieldErrors['recordLabel'] = 'Record label is required.';
+        }
+        if (!this.draft.tracksText.trim()) {
+          this.fieldErrors['tracksText'] = 'Tracks are required.';
+        }
+        if (!this.draft.cdGenre.trim()) {
+          this.fieldErrors['cdGenre'] = 'Genre is required.';
+        }
         return 'CD artists, record label, tracks, and genre are required.';
       }
     }
@@ -297,6 +490,21 @@ export class ProductManagementScreen implements OnInit {
         !this.draft.subtitlesText.trim() ||
         this.draft.runtime <= 0
       ) {
+        if (!this.draft.director.trim()) {
+          this.fieldErrors['director'] = 'Director is required.';
+        }
+        if (this.draft.runtime <= 0) {
+          this.fieldErrors['runtime'] = 'Runtime must be greater than 0.';
+        }
+        if (!this.draft.studio.trim()) {
+          this.fieldErrors['studio'] = 'Studio is required.';
+        }
+        if (!this.draft.dvdLanguage.trim()) {
+          this.fieldErrors['dvdLanguage'] = 'Language is required.';
+        }
+        if (!this.draft.subtitlesText.trim()) {
+          this.fieldErrors['subtitlesText'] = 'Subtitles are required.';
+        }
         return 'DVD director, runtime, studio, language, and subtitles are required.';
       }
     }
@@ -306,6 +514,15 @@ export class ProductManagementScreen implements OnInit {
         !this.draft.newspaperPublisher.trim() ||
         !this.draft.newspaperPublicationDate
       ) {
+        if (!this.draft.editorInChief.trim()) {
+          this.fieldErrors['editorInChief'] = 'Editor-in-chief is required.';
+        }
+        if (!this.draft.newspaperPublisher.trim()) {
+          this.fieldErrors['newspaperPublisher'] = 'Publisher is required.';
+        }
+        if (!this.draft.newspaperPublicationDate) {
+          this.fieldErrors['newspaperPublicationDate'] = 'Publication date is required.';
+        }
         return 'Newspaper editor-in-chief, publisher, and publication date are required.';
       }
     }
@@ -520,10 +737,35 @@ export class ProductManagementScreen implements OnInit {
     };
   }
 
+  private applyLocalFilters(): void {
+    this.products = this.loadedProducts.filter((product) => {
+      if (this.typeFilter && product.productType !== this.typeFilter) {
+        return false;
+      }
+      if (this.statusFilter && product.status !== this.statusFilter) {
+        return false;
+      }
+      if (this.stockFilter === 'IN_STOCK' && Number(product.stockQuantity) <= 0) {
+        return false;
+      }
+      if (this.stockFilter === 'LOW_STOCK') {
+        const stock = Number(product.stockQuantity);
+        if (stock <= 0 || stock > 5) {
+          return false;
+        }
+      }
+      if (this.stockFilter === 'OUT_OF_STOCK' && Number(product.stockQuantity) > 0) {
+        return false;
+      }
+      return true;
+    });
+  }
+
 
   private clearMessages(): void {
     this.errorMessage = '';
     this.successMessage = '';
+    this.fieldErrors = {};
   }
 
   private readError(error: any): string {

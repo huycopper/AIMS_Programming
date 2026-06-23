@@ -60,7 +60,10 @@ describe('Story 5.3 product authentication boundary (ATDD)', () => {
     const productService = {
       getAdminProducts: vi.fn().mockReturnValue(of({ data: [], total: 0, page: 1, limit: 100 })),
     };
-    const screen = new ProductManagementScreen(productService as never);
+    const screen = new ProductManagementScreen(
+      productService as never,
+      { markForCheck: vi.fn() } as never,
+    );
 
     expect('managerUserId' in screen).toBe(false);
     screen.loadProducts();

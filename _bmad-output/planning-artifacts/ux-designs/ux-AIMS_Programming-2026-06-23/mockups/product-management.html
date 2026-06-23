@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AIMS Product Management Mockup</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f6f7f9;
+      color: #17202a;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    header {
+      height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 0 24px;
+      border-bottom: 1px solid #dfe4ea;
+      background: #fff;
+    }
+    .brand { color: #0f766e; font-weight: 800; font-size: 21px; }
+    nav { display: flex; gap: 4px; }
+    nav a {
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #4b5563;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    nav a.active { background: #e6f4f1; color: #0f766e; }
+    main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 32px; }
+    .page-head, .filters, .bulk-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .page-head { justify-content: space-between; margin-bottom: 16px; }
+    h1 { margin: 0; font-size: 24px; }
+    .muted { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+    button, input, select {
+      min-height: 36px;
+      border-radius: 6px;
+      font: inherit;
+    }
+    input, select {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 7px 9px;
+    }
+    button {
+      border: 0;
+      padding: 0 14px;
+      background: #0f766e;
+      color: #fff;
+      font-weight: 800;
+    }
+    .secondary { background: #334155; }
+    .danger { background: #b91c1c; }
+    .filters {
+      padding: 12px;
+      background: #fff;
+      border: 1px solid #dfe4ea;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .filters input { flex: 1; }
+    .table-panel {
+      background: #fff;
+      border: 1px solid #dfe4ea;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .bulk-bar {
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: #fef3c7;
+      border-bottom: 1px solid #f3d58a;
+      color: #92400e;
+      font-weight: 800;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #edf0f3; }
+    th { background: #f8fafc; color: #475569; position: sticky; top: 0; }
+    tr.selected { background: #eef6f5; }
+    .status {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #dcfce7;
+      color: #166534;
+      font-weight: 800;
+      font-size: 12px;
+    }
+    .status.off { background: #f1f5f9; color: #64748b; }
+    .drawer {
+      position: fixed;
+      top: 60px;
+      right: 0;
+      width: 480px;
+      height: calc(100vh - 60px);
+      background: #fff;
+      border-left: 1px solid #dfe4ea;
+      box-shadow: -16px 0 40px rgba(15, 23, 42, .12);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 14px;
+    }
+    .drawer h2 { margin: 0; font-size: 17px; }
+    .tabs { display: flex; border-bottom: 1px solid #edf0f3; }
+    .tabs button {
+      background: transparent;
+      color: #4b5563;
+      border-radius: 0;
+      border-bottom: 2px solid transparent;
+    }
+    .tabs button.active { color: #0f766e; border-bottom-color: #0f766e; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+    label { display: grid; gap: 5px; color: #4b5563; font-size: 12px; font-weight: 800; }
+    .helper { color: #64748b; font-size: 12px; }
+    .drawer-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">AIMS</div>
+    <nav>
+      <a href="#">Catalog</a>
+      <a class="active" href="#">Products</a>
+      <a href="#">Pending Orders</a>
+    </nav>
+  </header>
+  <main>
+    <section class="page-head">
+      <div>
+        <h1>Products</h1>
+        <p class="muted">124 products loaded</p>
+      </div>
+      <button>New Product</button>
+    </section>
+    <section class="filters">
+      <input value="clean code" aria-label="Search products">
+      <select aria-label="Type"><option>All types</option><option>Book</option></select>
+      <select aria-label="Status"><option>Active</option><option>Deactivated</option></select>
+      <select aria-label="Stock"><option>Any stock</option><option>Low stock</option></select>
+      <button class="secondary">Apply</button>
+    </section>
+    <section class="table-panel">
+      <div class="bulk-bar">
+        <span>3 products selected</span>
+        <span><button class="secondary">Clear</button> <button class="danger">Delete/deactivate</button></span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th></th><th>Product</th><th>Type</th><th>Status</th><th>Stock</th><th>Price</th><th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="selected">
+            <td><input type="checkbox" checked></td>
+            <td>Clean Code</td>
+            <td>Book</td>
+            <td><span class="status">ACTIVE</span></td>
+            <td>8</td>
+            <td>120,000 VND</td>
+            <td>Today</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td>Architecture Patterns</td>
+            <td>Book</td>
+            <td><span class="status">ACTIVE</span></td>
+            <td>0</td>
+            <td>180,000 VND</td>
+            <td>Yesterday</td>
+          </tr>
+          <tr>
+            <td><input type="checkbox"></td>
+            <td>Classic Album</td>
+            <td>CD</td>
+            <td><span class="status off">DEACTIVATED</span></td>
+            <td>4</td>
+            <td>95,000 VND</td>
+            <td>Jun 20</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <aside class="drawer" aria-label="Product details drawer">
+    <div>
+      <h2>Clean Code</h2>
+      <p class="muted">Book · ACTIVE · Barcode 9780132350884</p>
+    </div>
+    <div class="tabs">
+      <button>Overview</button>
+      <button class="active">Edit</button>
+      <button>Stock</button>
+      <button>History</button>
+    </div>
+    <form class="form-grid">
+      <label>Title<input value="Clean Code"></label>
+      <label>Category<input value="Programming"></label>
+      <label>Original value<input value="100000"></label>
+      <label>Current price<input value="120000"><span class="helper">Allowed: 30,000 - 150,000 VND</span></label>
+      <label>Stock<input value="8"></label>
+      <label>Weight<input value="0.6"></label>
+      <label>Authors<input value="Robert C. Martin"></label>
+      <label>Publisher<input value="Prentice Hall"></label>
+    </form>
+    <div class="drawer-actions">
+      <button class="secondary">Cancel</button>
+      <button>Save</button>
+    </div>
+  </aside>
+</body>
+</html>
+

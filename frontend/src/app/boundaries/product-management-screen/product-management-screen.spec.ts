@@ -9,6 +9,7 @@ import { Product } from '../../models/product.model';
 describe('ProductManagementScreen', () => {
   let component: ProductManagementScreen;
   let productService: any;
+  let cdr: any;
   const managerId = '11111111-1111-4111-8111-111111111111';
 
   const product: Product = {
@@ -56,7 +57,10 @@ describe('ProductManagementScreen', () => {
       bulkDeleteProducts: vi.fn().mockReturnValue(of({ results: [] })),
       getProductHistories: vi.fn().mockReturnValue(of([])),
     };
-    component = new ProductManagementScreen(productService);
+    cdr = {
+      markForCheck: vi.fn(),
+    };
+    component = new ProductManagementScreen(productService, cdr);
   });
 
   it('rejects currentPrice below 30% of original value before calling API', () => {
