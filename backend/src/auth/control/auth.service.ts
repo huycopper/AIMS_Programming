@@ -9,11 +9,15 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { compare, hash } from 'bcrypt';
 import { User, UserStatus } from '../../user/entities/user.entity.js';
-import { Role } from '../../user/entities/role.entity.js';
 import { LoginDto } from '../boundary/dto/login.dto.js';
 import { ChangePasswordDto } from '../boundary/dto/change-password.dto.js';
 import { AuthPrincipal } from '../entity/auth-principal.js';
 import { getJwtConfig } from '../auth.module.js';
+
+type SupportedRole = 'ADMIN' | 'PRODUCT_MANAGER';
+
+const isSupportedRole = (role: string): role is SupportedRole =>
+  role === 'ADMIN' || role === 'PRODUCT_MANAGER';
 
 @Injectable()
 export class AuthService {
@@ -123,9 +127,7 @@ export class AuthService {
       });
     }
 
-    const supportedRoles = user.roles
-      .map((r) => r.roleName)
-      .filter((name) => name === 'ADMIN' || name === 'PRODUCT_MANAGER');
+    const supportedRoles = user.roles.map((r) => r.roleName).filter(isSupportedRole);
 
     if (supportedRoles.length === 0) {
       throw new UnauthorizedException({
@@ -177,10 +179,10 @@ export class AuthService {
     }
 
     const dbRoleNames = user.roles.map((r) => r.roleName);
-    const supportedRoles = dbRoleNames.filter(
-      (name) => name === 'ADMIN' || name === 'PRODUCT_MANAGER',
-    );
-    const effectiveRoles = principal.roles.filter((r) => supportedRoles.includes(r));
+    const supportedRoles = dbRoleNames.filter(isSupportedRole);
+    const effectiveRoles = principal.roles
+      .filter(isSupportedRole)
+      .filter((role) => supportedRoles.includes(role));
 
     const uniqueRoles = Array.from(new Set(effectiveRoles));
 
