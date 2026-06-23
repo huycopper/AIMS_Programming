@@ -7,7 +7,9 @@ import {
   OneToOne,
   OneToMany,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
+import { User } from '../../user/entities/user.entity.js';
 
 /**
  * DeliveryInfo entity — stores customer delivery information for an order.
@@ -100,6 +102,19 @@ export class Order {
   @Column({ name: 'cancelled_at', type: 'timestamp', nullable: true })
   cancelledAt: Date | null;
 
+  @Column({ name: 'processed_by', type: 'uuid', nullable: true })
+  processedBy: string | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'processed_by' })
+  processor?: User | null;
+
+  @Column({ name: 'processed_at', type: 'timestamp', nullable: true })
+  processedAt: Date | null;
+
+  @Column({ name: 'rejection_reason', type: 'text', nullable: true })
+  rejectionReason: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
@@ -110,8 +125,6 @@ export class Order {
 /**
  * OrderItem entity — represents a single line item within an order.
  */
-import { ManyToOne } from 'typeorm';
-
 @Entity('order_items')
 export class OrderItem {
   @PrimaryGeneratedColumn('uuid', { name: 'order_item_id' })

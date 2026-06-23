@@ -7,6 +7,7 @@ import { VietQRPaymentScreen } from './pay-order/pay-by-vietqr/boundary/ui/vietq
 import { CustomerOrderDetailsScreen } from './boundaries/customer-order-details-screen/customer-order-details-screen';
 import { CancelOrderScreen } from './boundaries/cancel-order-screen/cancel-order-screen';
 import { ProductManagementScreen } from './boundaries/product-management-screen/product-management-screen';
+import { OrderManagementScreen } from './boundaries/order-management-screen/order-management-screen';
 import { LoginScreen } from './auth/boundary/login-screen/login-screen';
 import { ChangePasswordScreen } from './auth/boundary/change-password-screen/change-password-screen';
 import { authGuard, roleGuard } from './auth/control/auth.guards';
@@ -24,6 +25,17 @@ export const routes: Routes = [
   { path: 'staff/login', component: LoginScreen },
   { path: 'staff/change-password', component: ChangePasswordScreen, canActivate: [authGuard] },
   { path: 'forbidden', component: ForbiddenScreen },
-  { path: 'admin/products', component: ProductManagementScreen, canActivate: [authGuard, roleGuard], data: { roles: ['PRODUCT_MANAGER'] } },
+  {
+    path: 'admin/products',
+    component: ProductManagementScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['PRODUCT_MANAGER'] },
+  },
+  {
+    path: 'admin/orders',
+    component: OrderManagementScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['PRODUCT_MANAGER'] },
+  },
   { path: '**', redirectTo: '' },
 ];
