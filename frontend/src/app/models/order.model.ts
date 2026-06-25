@@ -14,6 +14,7 @@ export interface DeliveryInfo {
 
 export interface CartItemPayload {
   productId: string;
+  productTitle?: string;
   quantity: number;
   weight: number;
   currentPrice: number;
@@ -33,6 +34,15 @@ export interface ShippingFeeResult {
 }
 
 export interface InvoiceData extends ShippingFeeResult {
+  orderId?: string;
   deliveryInfo: DeliveryInfo;
   cartItems: CartItemPayload[];
 }
+
+export type {
+  VietQrPaymentRequest,
+  PaymentConfirmationOrder,
+  PaymentConfirmationTransaction,
+  PaymentConfirmationResponse,
+} from '../pay-order/pay-by-vietqr/entity/vietqr-payment.models';
+

@@ -47,6 +47,9 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
   // Province change subject for debounced API calls
   private provinceChange$ = new Subject<string>();
   private subscriptions: Subscription[] = [];
+  private readonly deliveryDraftKey = 'aims_delivery_draft';
+  private readonly currentInvoiceKey = 'aims_current_invoice';
+  private readonly currentOrderIdKey = 'aims_current_order_id';
 
   // Vietnamese provinces list
   readonly provinces: string[] = [
@@ -72,6 +75,8 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.loadDeliveryDraft();
+
     // Subscribe to cart state
     const cartSub = this.cartService.getCartObservable().subscribe((cart) => {
       this.cart = cart;
@@ -103,6 +108,15 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
     }
   }
 
+  onDeliveryFieldChange(field: string, shouldRecalculate = false): void {
+    this.validationErrors[field] = '';
+    this.saveDeliveryDraft();
+
+    if (shouldRecalculate) {
+      this.onProvinceOrAddressChange();
+    }
+  }
+
   /**
    * Build cart items payload for the backend API.
    */
@@ -110,6 +124,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
     if (!this.cart) return [];
     return this.cart.items.map((item) => ({
       productId: item.product.productId,
+      productTitle: item.product.title,
       quantity: Number(item.quantity),
       weight: Number(item.product.weight) || 0,
       currentPrice: Number(item.product.currentPrice) || 0,
@@ -204,6 +219,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
     this.orderService.placeOrder(deliveryInfo, cartPayload).subscribe({
       next: (invoiceData) => {
         this.isSubmitting = false;
+        this.saveCurrentInvoice(invoiceData);
         // Navigate to invoice screen with invoice data
         this.router.navigate(['/invoice'], {
           state: { invoiceData, cart: this.cart },
@@ -242,5 +258,46 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
   getTotalQuantity(): number {
     if (!this.cart) return 0;
     return this.cart.items.reduce((total, item) => total + Number(item.quantity), 0);
+  }
+
+  private saveDeliveryDraft(): void {
+    if (typeof localStorage === 'undefined') return;
+
+    localStorage.setItem(this.deliveryDraftKey, JSON.stringify({
+      name: this.name,
+      phone: this.phone,
+      email: this.email,
+      province: this.province,
+      address: this.address,
+      note: this.note,
+    }));
+  }
+
+  private loadDeliveryDraft(): void {
+    if (typeof localStorage === 'undefined') return;
+
+    const savedDraft = localStorage.getItem(this.deliveryDraftKey);
+    if (!savedDraft) return;
+
+    try {
+      const draft = JSON.parse(savedDraft);
+      this.name = draft.name || '';
+      this.phone = draft.phone || '';
+      this.email = draft.email || '';
+      this.province = draft.province || '';
+      this.address = draft.address || '';
+      this.note = draft.note || '';
+    } catch {
+      localStorage.removeItem(this.deliveryDraftKey);
+    }
+  }
+
+  private saveCurrentInvoice(invoiceData: any): void {
+    if (typeof localStorage === 'undefined') return;
+
+    localStorage.setItem(this.currentInvoiceKey, JSON.stringify(invoiceData));
+    if (invoiceData?.orderId) {
+      localStorage.setItem(this.currentOrderIdKey, invoiceData.orderId);
+    }
   }
 }

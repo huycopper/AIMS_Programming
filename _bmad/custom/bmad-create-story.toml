@@ -1,0 +1,6 @@
+[workflow]
+
+persistent_facts = [
+  "file:{project-root}/backend/.env",
+  "Security rule: create-story may read backend/.env for project understanding, but must never copy secret values into generated stories. It should document env variable names, purpose, and whether they are required, replacing sensitive values with \"<configured in backend/.env>\".",
+]

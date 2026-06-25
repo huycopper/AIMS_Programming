@@ -1,0 +1,91 @@
+<div class="payment-container">
+  <h2>VietQR Payment</h2>
+
+  <!-- Trạng thái: Đang tạo mã QR -->
+  <div *ngIf="loading" class="spinner-container">
+    <div class="spinner"></div>
+    <p>Generating QR Code...</p>
+  </div>
+
+  <!-- Trạng thái: Lỗi (không có orderId hoặc API thất bại) -->
+  <div *ngIf="errorMessage" class="error-container">
+    <p class="error-text">{{ errorMessage }}</p>
+    <button (click)="goHome()" class="btn-home">Return to Home Page</button>
+  </div>
+
+  <!-- Trạng thái: Hiển thị mã QR -->
+  <div *ngIf="!loading && !paymentSuccess && !errorMessage" class="qr-container">
+    <p>Scan the QR code below with your banking app to pay.</p>
+
+    <div *ngIf="amount" class="amount-display">
+      <h3>
+        Total Amount:
+        <span class="highlight-amount">{{ amount | currency: 'VND' : 'symbol' : '1.0-0' }}</span>
+      </h3>
+      <p *ngIf="paymentContent" class="payment-content">Content: {{ paymentContent }}</p>
+    </div>
+
+    <!-- Hiển thị ảnh QR -->
+    <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
+
+    <div class="sandbox-controls">
+      <div class="button-group">
+        <button (click)="goBack()" class="btn-go-back" [disabled]="confirmingPayment">
+          &larr; Go Back
+        </button>
+        <!-- Nút xác nhận thanh toán (confirmPayment theo SD v2) -->
+        <button 
+          (click)="confirmPayment()" 
+          class="btn-simulate"
+          [disabled]="confirmingPayment">
+          <span *ngIf="!confirmingPayment">I have paid</span>
+          <span *ngIf="confirmingPayment">Confirming payment...</span>
+        </button>
+      </div>
+      <p *ngIf="confirmingPayment" class="confirming-text">
+        Please wait while we verify your payment with VietQR...
+      </p>
+    </div>
+  </div>
+
+  <!-- Trạng thái: Thanh toán thành công (SuccessfulPaidScreen theo SD v2) -->
+  <div *ngIf="paymentSuccess" class="success-container">
+    <div class="success-icon">✓</div>
+    <h3>Payment Successful!</h3>
+    <p>Your order is now processing.</p>
+
+    <div class="success-section" *ngIf="confirmation?.order as order">
+      <h4>Order Information</h4>
+      <div class="detail-grid">
+        <span>Customer Name</span>
+        <strong>{{ order.customerName }}</strong>
+        <span>Phone Number</span>
+        <strong>{{ order.phoneNumber }}</strong>
+        <span>Shipping Address</span>
+        <strong>{{ order.shippingAddress }}</strong>
+        <span>Province</span>
+        <strong>{{ order.province }}</strong>
+        <span>Total Amount</span>
+        <strong>{{ order.totalAmount | number }} VND</strong>
+        <span>Order Status</span>
+        <strong>{{ order.status }}</strong>
+      </div>
+    </div>
+
+    <div class="success-section" *ngIf="confirmation?.transaction as transaction">
+      <h4>Transaction Information</h4>
+      <div class="detail-grid">
+        <span>Transaction ID</span>
+        <strong>{{ transaction.transactionId }}</strong>
+        <span>Transaction Content</span>
+        <strong>{{ transaction.transactionContent }}</strong>
+        <span>Transaction Datetime</span>
+        <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>
+        <span>Payment Method</span>
+        <strong>{{ transaction.paymentMethod }}</strong>
+      </div>
+    </div>
+
+    <button (click)="goHome()" class="btn-home" style="margin-top: 20px;">Return to Home Page</button>
+  </div>
+</div>

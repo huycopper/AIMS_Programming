@@ -13,7 +13,7 @@ export class ProductService {
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
-  ) { }
+  ) {}
 
   /**
    * AC-1: Returns 20 random ACTIVE products (books, newspapers, CDs, DVDs).
@@ -33,7 +33,8 @@ export class ProductService {
       qb.andWhere('product.productType IN (:...categories)', { categories });
     }
 
-    return qb.orderBy('RANDOM()') // Random order
+    return qb
+      .orderBy('RANDOM()') // Random order
       .limit(count) // Limit the number of results
       .getMany(); // Get the results
   }

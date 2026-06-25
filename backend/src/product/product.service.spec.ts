@@ -25,9 +25,7 @@ describe('ProductService', () => {
     getCount: jest.fn(),
   };
 
-  const createMockProduct = (
-    overrides: Partial<Product> = {},
-  ): Product => ({
+  const createMockProduct = (overrides: Partial<Product> = {}): Product => ({
     productId: 'uuid-1',
     productType: ProductType.BOOK,
     title: 'Test Book',
@@ -64,9 +62,7 @@ describe('ProductService', () => {
     repo = module.get<Repository<Product>>(getRepositoryToken(Product));
 
     // Reset all mocks
-    Object.values(mockQueryBuilder).forEach((fn) =>
-      (fn as jest.Mock).mockClear(),
-    );
+    Object.values(mockQueryBuilder).forEach((fn) => fn.mockClear());
     // Re-set return values
     mockQueryBuilder.leftJoinAndSelect.mockReturnValue(mockQueryBuilder);
     mockQueryBuilder.where.mockReturnValue(mockQueryBuilder);

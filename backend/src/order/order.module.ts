@@ -10,4 +10,4 @@ import { Order, OrderItem, DeliveryInfo } from './entities/order.entity.js';
   providers: [OrderService],
   exports: [OrderService],
 })
-export class OrderModule { }
+export class OrderModule {}

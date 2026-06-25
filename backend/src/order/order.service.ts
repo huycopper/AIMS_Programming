@@ -17,10 +17,7 @@ export class OrderService {
    * Provinces classified as "inner city" — Hanoi and HCM.
    * Matching is case-insensitive and trimmed.
    */
-  private readonly INNER_CITY_PROVINCES = [
-    'Hà Nội',
-    'Hồ Chí Minh',
-  ];
+  private readonly INNER_CITY_PROVINCES = ['Hà Nội', 'Hồ Chí Minh'];
 
   /**
    * Determine if the given province is inner-city (Hanoi or HCM).

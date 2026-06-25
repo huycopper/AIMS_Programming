@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryColumn,
-  Column,
-  OneToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, PrimaryColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { Product } from './product.entity.js';
 
 /**
@@ -25,7 +19,12 @@ export class Newspaper {
   @Column({ name: 'publication_date', type: 'date' })
   publicationDate: Date;
 
-  @Column({ name: 'issue_number', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'issue_number',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   issueNumber: string | null;
 
   @Column({
