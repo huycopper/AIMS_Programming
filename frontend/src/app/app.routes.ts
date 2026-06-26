@@ -10,8 +10,10 @@ import { ProductManagementScreen } from './boundaries/product-management-screen/
 import { OrderManagementScreen } from './boundaries/order-management-screen/order-management-screen';
 import { LoginScreen } from './auth/boundary/login-screen/login-screen';
 import { ChangePasswordScreen } from './auth/boundary/change-password-screen/change-password-screen';
+import { ResetPasswordScreen } from './auth/boundary/reset-password-screen/reset-password-screen';
 import { authGuard, roleGuard } from './auth/control/auth.guards';
 import { ForbiddenScreen } from './auth/boundary/forbidden-screen/forbidden-screen';
+import { AdminUsersScreen } from './admin/boundary/admin-users-screen/admin-users-screen';
 
 export const routes: Routes = [
   { path: '', component: ProductListComponent },
@@ -24,7 +26,14 @@ export const routes: Routes = [
   { path: 'orders/cancel/:cancelToken', component: CancelOrderScreen },
   { path: 'staff/login', component: LoginScreen },
   { path: 'staff/change-password', component: ChangePasswordScreen, canActivate: [authGuard] },
+  { path: 'staff/reset-password', component: ResetPasswordScreen },
   { path: 'forbidden', component: ForbiddenScreen },
+  {
+    path: 'admin/users',
+    component: AdminUsersScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] },
+  },
   {
     path: 'admin/products',
     component: ProductManagementScreen,

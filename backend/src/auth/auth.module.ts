@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import { Role } from '../user/entities/role.entity.js';
 import { UserRole } from '../user/entities/user-role.entity.js';
 import { JwtAuthGuard } from './control/jwt-auth.guard.js';
 import { RolesGuard } from './control/roles.guard.js';
+import { AdminModule } from '../admin/admin.module.js';
 
 export function getJwtConfig(configService: ConfigService) {
   let expiresInString = configService.get<string>('JWT_EXPIRES_IN');
@@ -37,6 +38,7 @@ export function getJwtConfig(configService: ConfigService) {
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Role, UserRole]),
+    forwardRef(() => AdminModule),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

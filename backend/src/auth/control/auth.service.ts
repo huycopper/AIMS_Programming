@@ -11,8 +11,10 @@ import { compare, hash } from 'bcrypt';
 import { User, UserStatus } from '../../user/entities/user.entity.js';
 import { LoginDto } from '../boundary/dto/login.dto.js';
 import { ChangePasswordDto } from '../boundary/dto/change-password.dto.js';
+import { CompletePasswordResetDto } from '../boundary/dto/complete-password-reset.dto.js';
 import { AuthPrincipal } from '../entity/auth-principal.js';
 import { getJwtConfig } from '../auth.module.js';
+import { PasswordResetTokenControl } from '../../admin/control/password-reset-token.control.js';
 
 type SupportedRole = 'ADMIN' | 'PRODUCT_MANAGER';
 
@@ -28,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly passwordResetTokenControl: PasswordResetTokenControl,
   ) {
     // 1. Validate JWT_SECRET
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
@@ -284,5 +287,40 @@ export class AuthService {
         message: 'Password update failed (concurrency mismatch or account inactive).',
       });
     }
+  }
+
+  async completePasswordReset(dto: CompletePasswordResetDto): Promise<void> {
+    const tokenEntity = await this.passwordResetTokenControl.verifyAndConsumeToken(dto.token);
+
+    const user = tokenEntity.user;
+    if (!user) {
+      throw new BadRequestException({
+        statusCode: 400,
+        code: 'INVALID_RESET_TOKEN',
+        message: 'Invalid or expired password reset token.',
+      });
+    }
+
+    if (user.status !== 'ACTIVE') {
+      throw new BadRequestException({
+        statusCode: 400,
+        code: 'USER_NOT_ACTIVE',
+        message: 'User account is not active.',
+      });
+    }
+
+    if (!this.validatePasswordPolicy(dto.newPassword)) {
+      throw new BadRequestException({
+        statusCode: 400,
+        code: 'PASSWORD_POLICY_VIOLATION',
+        message: 'New password does not meet the policy requirements.',
+      });
+    }
+
+    const newHash = await hash(dto.newPassword, this.saltRounds);
+
+    await this.dataSource.getRepository(User).update(user.userId, {
+      passwordHash: newHash,
+    });
   }
 }

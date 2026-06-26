@@ -1,0 +1,314 @@
+<div class="admin-shell">
+  <header class="admin-header">
+    <a routerLink="/" class="brand-link">AIMS Admin</a>
+    <nav class="admin-nav">
+      <a routerLink="/admin/users" class="active">User Directory</a>
+      <a routerLink="/admin/products" *ngIf="authService.hasRole('PRODUCT_MANAGER')">Products</a>
+      <a routerLink="/admin/orders" *ngIf="authService.hasRole('PRODUCT_MANAGER')">Orders</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 16px;">
+      <span style="font-size: 13px; color: #475569;" *ngIf="authService.currentUser() as user">
+        Logged in as: <strong>{{ user.username }}</strong>
+      </span>
+      <button class="secondary" style="height: 32px; min-height: auto; font-size: 12px; padding: 0 10px;" (click)="logout()">
+        Logout
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="page-head">
+      <div>
+        <h1>User Account Directory</h1>
+        <p>Manage store staff accounts, access privileges, and system roles.</p>
+      </div>
+      <div>
+        <button (click)="openCreateUser()" style="display: inline-flex; align-items: center; gap: 8px;">
+          <span>+ Create User</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Banners -->
+    <div class="system-banner error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+    <div class="system-banner success" *ngIf="successMessage">
+      {{ successMessage }}
+    </div>
+
+    <!-- Overview Counters -->
+    <div class="result-summary" style="margin-bottom: 16px;">
+      <div>
+        <span>Total Staff: <strong>{{ total }}</strong></span>
+      </div>
+    </div>
+
+    <!-- Filter Toolbar -->
+    <section class="filters">
+      <div class="search-field">
+        <label>
+          Search Staff
+          <input type="text" [(ngModel)]="search" placeholder="Search by username or email..." (keyup.enter)="applyFilters()" />
+        </label>
+      </div>
+
+      <div style="min-width: 140px;">
+        <label>
+          Status
+          <select [(ngModel)]="statusFilter" (change)="applyFilters()">
+            <option value="">Any Status</option>
+            <option value="ACTIVE">Active</option>
+            <option value="DEACTIVATED">Deactivated</option>
+            <option value="BLOCKED">Blocked</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="min-width: 160px;">
+        <label>
+          Role
+          <select [(ngModel)]="roleFilter" (change)="applyFilters()">
+            <option value="">Any Role</option>
+            <option value="ADMIN">Administrator</option>
+            <option value="PRODUCT_MANAGER">Product Manager</option>
+          </select>
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="secondary" (click)="applyFilters()">Apply</button>
+        <button class="ghost" (click)="clearFilters()">Clear</button>
+      </div>
+    </section>
+
+    <!-- Table Panel -->
+    <div class="table-panel">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Assigned Roles</th>
+              <th>Account Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let user of users" (click)="selectUser(user)">
+              <td>
+                <strong style="color: #0f766e;">{{ user.username }}</strong>
+              </td>
+              <td>{{ user.email }}</td>
+              <td>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <span class="role-badge" *ngFor="let role of user.roles">
+                    {{ role }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="status-chip" [ngClass]="{
+                  'active': user.status === 'ACTIVE',
+                  'deactivated': user.status === 'DEACTIVATED',
+                  'blocked': user.status === 'BLOCKED'
+                }">
+                  {{ user.status }}
+                </span>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <div style="display: flex; gap: 6px;">
+                  <button class="ghost" style="min-height: 28px; font-size: 11px; padding: 0 8px;" (click)="editRoles(user)">
+                    Edit Roles
+                  </button>
+                  <button class="ghost amber" style="min-height: 28px; font-size: 11px; padding: 0 8px;" (click)="triggerPasswordReset(user)">
+                    Reset Pass
+                  </button>
+                  <button class="danger" style="min-height: 28px; font-size: 11px; padding: 0 8px;" *ngIf="user.status === 'ACTIVE'" (click)="toggleBlockUser(user, true)">
+                    Block
+                  </button>
+                  <button class="secondary" style="min-height: 28px; font-size: 11px; padding: 0 8px;" *ngIf="user.status === 'BLOCKED'" (click)="toggleBlockUser(user, false)">
+                    Unblock
+                  </button>
+                  <button class="danger" style="min-height: 28px; font-size: 11px; padding: 0 8px; background: #6b7280;" *ngIf="user.status === 'ACTIVE'" (click)="toggleDeactivateUser(user, true)">
+                    Deactivate
+                  </button>
+                  <button class="secondary" style="min-height: 28px; font-size: 11px; padding: 0 8px;" *ngIf="user.status === 'DEACTIVATED'" (click)="toggleDeactivateUser(user, false)">
+                    Activate
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="users.length === 0 && !isLoading">
+              <td colspan="5" class="empty-cell" style="text-align: center; padding: 48px;">
+                <strong>No staff accounts found.</strong>
+                <p>Try adjusting filters or create a new user account.</p>
+              </td>
+            </tr>
+            <tr *ngIf="isLoading">
+              <td colspan="5" style="text-align: center; padding: 32px; color: #475569;">
+                Loading user directory...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; border-top: 1px solid #edf0f3; font-size: 13px;">
+        <span style="color: #64748b;">
+          Showing <strong>{{ users.length }}</strong> of <strong>{{ total }}</strong> users
+        </span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="ghost" [disabled]="page === 1" (click)="onPageChange(page - 1)">
+            &lt; Previous
+          </button>
+          <span>Page <strong>{{ page }}</strong> of <strong>{{ totalPages }}</strong></span>
+          <button class="ghost" [disabled]="page >= totalPages" (click)="onPageChange(page + 1)">
+            Next &gt;
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create User Modal -->
+  <div class="modal-backdrop" *ngIf="isCreateModalOpen" (click)="closeCreateUser()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create New Staff Account</h3>
+        <button class="close-btn" (click)="closeCreateUser()">&times;</button>
+      </div>
+      <form (submit)="submitCreateUser($event)" #createForm="ngForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="newUsername">Username <span class="required">*</span></label>
+            <input
+              type="text"
+              id="newUsername"
+              name="username"
+              [(ngModel)]="createModel.username"
+              required
+              minlength="1"
+              maxlength="100"
+              placeholder="e.g. jdoe"
+              #usernameInput="ngModel"
+            />
+            <div class="field-error" *ngIf="usernameInput.invalid && (usernameInput.dirty || usernameInput.touched)">
+              Username is required (1-100 characters).
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 12px;">
+            <label for="newEmail">Email Address <span class="required">*</span></label>
+            <input
+              type="email"
+              id="newEmail"
+              name="email"
+              [(ngModel)]="createModel.email"
+              required
+              email
+              placeholder="e.g. john.doe@aims.com"
+              #emailInput="ngModel"
+            />
+            <div class="field-error" *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)">
+              A valid email address is required.
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 12px;">
+            <label style="flex-direction: row; gap: 8px; align-items: center;">
+              <span>Assigned Roles <span class="required">*</span></span>
+            </label>
+            <div class="checkbox-group" style="margin-top: 6px; display: flex; gap: 16px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
+                <input
+                  type="checkbox"
+                  name="roleAdmin"
+                  [(ngModel)]="createModel.roleAdmin"
+                />
+                <span>Administrator (ADMIN)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
+                <input
+                  type="checkbox"
+                  name="rolePM"
+                  [(ngModel)]="createModel.rolePM"
+                />
+                <span>Product Manager (PRODUCT_MANAGER)</span>
+              </label>
+            </div>
+            <div class="field-error" *ngIf="!createModel.roleAdmin && !createModel.rolePM && createForm.submitted">
+              At least one role must be selected.
+            </div>
+          </div>
+          
+          <div class="modal-error" *ngIf="modalErrorMessage" style="margin-top: 12px; color: #dc2626; font-size: 13px; font-weight: 500;">
+            {{ modalErrorMessage }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="secondary" (click)="closeCreateUser()">Cancel</button>
+          <button type="submit" [disabled]="createForm.invalid || isSubmitting || (!createModel.roleAdmin && !createModel.rolePM)" class="primary">
+            {{ isSubmitting ? 'Creating...' : 'Create Account' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Roles Modal -->
+  <div class="modal-backdrop" *ngIf="isEditRolesModalOpen" (click)="closeEditRoles()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Edit Staff Roles</h3>
+        <button class="close-btn" (click)="closeEditRoles()">&times;</button>
+      </div>
+      <form (submit)="submitEditRoles($event)">
+        <div class="modal-body">
+          <p style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: #475569;">
+            Update assigned roles for user: <strong>{{ editRolesModel.user?.username }}</strong>
+          </p>
+
+          <div class="form-group">
+            <label style="flex-direction: row; gap: 8px; align-items: center;">
+              <span>Assigned Roles <span class="required">*</span></span>
+            </label>
+            <div class="checkbox-group" style="margin-top: 6px; display: flex; gap: 16px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
+                <input
+                  type="checkbox"
+                  name="editRoleAdmin"
+                  [(ngModel)]="editRolesModel.roleAdmin"
+                />
+                <span>Administrator (ADMIN)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
+                <input
+                  type="checkbox"
+                  name="editRolePM"
+                  [(ngModel)]="editRolesModel.rolePM"
+                />
+                <span>Product Manager (PRODUCT_MANAGER)</span>
+              </label>
+            </div>
+            <div class="field-error" *ngIf="!editRolesModel.roleAdmin && !editRolesModel.rolePM">
+              At least one role must be selected.
+            </div>
+          </div>
+          
+          <div class="modal-error" *ngIf="modalErrorMessage" style="margin-top: 12px; color: #dc2626; font-size: 13px; font-weight: 500;">
+            {{ modalErrorMessage }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="secondary" (click)="closeEditRoles()">Cancel</button>
+          <button type="submit" [disabled]="isSubmitting || (!editRolesModel.roleAdmin && !editRolesModel.rolePM)" class="primary">
+            {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

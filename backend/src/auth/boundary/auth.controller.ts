@@ -12,6 +12,7 @@ import {
 import { AuthService } from '../control/auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { CompletePasswordResetDto } from './dto/complete-password-reset.dto.js';
 import { JwtAuthGuard } from '../control/jwt-auth.guard.js';
 
 @Controller('api/auth')
@@ -39,5 +40,13 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     await this.authService.changePassword(req.user, changePasswordDto);
+  }
+
+  @Post('password-reset/complete')
+  @HttpCode(204)
+  async completePasswordReset(
+    @Body() completePasswordResetDto: CompletePasswordResetDto,
+  ) {
+    await this.authService.completePasswordReset(completePasswordResetDto);
   }
 }

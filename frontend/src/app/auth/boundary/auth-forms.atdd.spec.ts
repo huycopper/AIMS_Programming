@@ -64,7 +64,7 @@ describe('staff authentication forms (Story 5.3 ATDD)', () => {
 
     await screen.submit();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/admin/users');
     expect(router.navigateByUrl).not.toHaveBeenCalledWith('/staff/change-password');
   });
 

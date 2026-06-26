@@ -284,7 +284,9 @@ export class LoginScreen {
       let returnUrl = sanitizeReturnUrl(params.get('returnUrl'));
 
       if (!returnUrl) {
-        if (this.authService.hasRole('PRODUCT_MANAGER')) {
+        if (this.authService.hasRole('ADMIN')) {
+          returnUrl = '/admin/users';
+        } else if (this.authService.hasRole('PRODUCT_MANAGER')) {
           returnUrl = '/admin/products';
         } else {
           returnUrl = '/';

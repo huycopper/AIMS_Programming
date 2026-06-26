@@ -116,6 +116,13 @@ export class AuthService {
       );
   }
 
+  completePasswordReset(token: string, newPassword: string): Observable<any> {
+    return this.http.post(`${AIMS_API_BASE}/api/auth/password-reset/complete`, {
+      token,
+      newPassword,
+    });
+  }
+
   logout(): void {
     this.clearSession();
     this.router.navigateByUrl('/staff/login');
