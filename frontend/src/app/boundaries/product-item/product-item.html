@@ -6,38 +6,32 @@
   (click)="openProductDetail()"
   (keyup.enter)="openProductDetail()"
 >
-  <div class="card-image-area">
-    <span class="type-badge" [class]="getTypeBadgeClass()">
+  <div [class]="'card-image-area bg-' + product.productType.toLowerCase()">
+    <span class="type-badge" [class]="'type-badge ' + getTypeBadgeClass()">
       {{ product.productType }}
     </span>
     <div class="product-icon">
       @switch (product.productType) {
         @case ('BOOK') {
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-            <path d="M8 7h6"/>
-            <path d="M8 11h4"/>
           </svg>
         }
         @case ('CD') {
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/>
             <circle cx="12" cy="12" r="3"/>
           </svg>
         }
         @case ('DVD') {
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2"/>
             <circle cx="12" cy="12" r="4"/>
-            <circle cx="12" cy="12" r="1"/>
           </svg>
         }
         @case ('NEWSPAPER') {
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
-            <path d="M18 14h-8"/>
-            <path d="M15 18h-5"/>
-            <path d="M10 6h8v4h-8V6Z"/>
           </svg>
         }
       }
@@ -45,17 +39,11 @@
   </div>
 
   <div class="card-body">
-    <span class="product-category">{{ product.category }}</span>
-
     <h3 class="product-title" [title]="product.title">
       {{ product.title }}
     </h3>
 
-    <p class="product-author" [title]="getSecondaryLabel()">
-      {{ getSecondaryLabel() }}
-    </p>
-
-    <div class="product-purchase" (click)="stopCardAction($event)" (keyup.enter)="stopCardAction($event)">
+    <div class="product-purchase">
       <div class="price-stock">
         <span class="product-price">
           {{ formatPrice(product.currentPrice) }}
@@ -68,30 +56,6 @@
           }
         </span>
       </div>
-
-      <div class="quantity-row">
-        <label [for]="'qty-' + product.productId">Qty</label>
-        <input
-          [id]="'qty-' + product.productId"
-          class="quantity-input"
-          type="number"
-          min="1"
-          [max]="product.stockQuantity"
-          step="1"
-          [(ngModel)]="quantity"
-        />
-        <button
-          class="add-to-cart-btn"
-          [disabled]="product.stockQuantity === 0"
-          (click)="addToCart($event)"
-        >
-          Add
-        </button>
-      </div>
-
-      @if (addToCartMessage) {
-        <p class="cart-inline-message">{{ addToCartMessage }}</p>
-      }
     </div>
   </div>
 </article>
