@@ -100,7 +100,14 @@ export class ProductService {
     }
 
     if (category) {
-      qb.andWhere('product.category = :category', { category });
+      const categories = this.parseCategoryFilter(category);
+      if (categories.length === 1) {
+        qb.andWhere('product.category = :category', {
+          category: categories[0],
+        });
+      } else if (categories.length > 1) {
+        qb.andWhere('product.category IN (:...categories)', { categories });
+      }
     }
 
     if (minPrice !== undefined) {
@@ -119,6 +126,19 @@ export class ProductService {
       .getMany();
 
     return { data, total, page, limit };
+  }
+
+  async findActiveById(productId: string): Promise<ProductWithSubtypes> {
+    const product = await this.productRepository.findOne({
+      where: { productId, status: ProductStatus.ACTIVE },
+      relations: { book: true, cd: true, dvd: true, newspaper: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found or unavailable.');
+    }
+
+    return product;
   }
 
   async findAdminProducts(
@@ -536,6 +556,13 @@ export class ProductService {
       where: { productId },
       relations: { book: true, cd: true, dvd: true, newspaper: true },
     });
+  }
+
+  private parseCategoryFilter(category: string): string[] {
+    return category
+      .split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
   }
 
   private snapshot(product: ProductWithSubtypes): Record<string, unknown> {

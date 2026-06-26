@@ -1,0 +1,142 @@
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <a class="logo" id="logo-link" routerLink="/">
+      <span class="logo-text">AIMS</span>
+    </a>
+    <nav class="nav-links">
+      <a class="nav-link" routerLink="/">Home</a>
+      <a class="nav-link" routerLink="/cart">Cart</a>
+    </nav>
+  </div>
+</header>
+
+<main class="detail-page">
+  <a class="back-link" routerLink="/">Back to products</a>
+
+  @if (isLoading) {
+    <section class="detail-state">Loading product...</section>
+  } @else if (errorMessage || !product) {
+    <section class="detail-state">
+      <h1>Product unavailable</h1>
+      <p>{{ errorMessage }}</p>
+    </section>
+  } @else {
+    <section class="detail-layout">
+      <div class="product-visual">
+        <span class="type-badge">{{ product.productType }}</span>
+        <span class="visual-title">{{ product.title }}</span>
+      </div>
+
+      <article class="detail-main">
+        <div class="title-row">
+          <div>
+            <span class="category">{{ product.category }}</span>
+            <h1>{{ product.title }}</h1>
+          </div>
+          <div class="price">{{ formatPrice(product.currentPrice) }}</div>
+        </div>
+
+        <p class="description">{{ product.generalDescription || 'No description provided.' }}</p>
+
+        <section class="purchase-panel">
+          <span class="stock" [class.out]="product.stockQuantity === 0">
+            @if (product.stockQuantity > 0) {
+              In stock: {{ product.stockQuantity }}
+            } @else {
+              Out of stock
+            }
+          </span>
+          <label class="quantity-control">
+            <span>Quantity</span>
+            <input type="number" min="1" [max]="product.stockQuantity" step="1" [(ngModel)]="quantity" />
+          </label>
+          <button class="add-button" [disabled]="product.stockQuantity === 0" (click)="addToCart()">
+            Add to Cart
+          </button>
+          @if (addToCartMessage) {
+            <p class="inline-message">{{ addToCartMessage }}</p>
+          }
+        </section>
+
+        <section class="info-section">
+          <h2>General Information</h2>
+          <dl class="info-grid">
+            <div><dt>Title</dt><dd>{{ product.title }}</dd></div>
+            <div><dt>Category</dt><dd>{{ product.category }}</dd></div>
+            <div><dt>Description</dt><dd>{{ product.generalDescription || 'Not provided' }}</dd></div>
+            <div><dt>Dimensions</dt><dd>{{ product.height }} x {{ product.width }} x {{ product.length }}</dd></div>
+            <div><dt>Weight</dt><dd>{{ product.weight }} kg</dd></div>
+            <div><dt>Barcode</dt><dd>{{ product.barcode }}</dd></div>
+            <div><dt>Original Value</dt><dd>{{ formatPrice(product.originalValue) }}</dd></div>
+            <div><dt>Current Price</dt><dd>{{ formatPrice(product.currentPrice) }}</dd></div>
+            <div><dt>Stock Quantity</dt><dd>{{ product.stockQuantity }}</dd></div>
+          </dl>
+        </section>
+
+        @switch (product.productType) {
+          @case ('BOOK') {
+            <section class="info-section">
+              <h2>Book Details</h2>
+              <dl class="info-grid">
+                <div><dt>Authors</dt><dd>{{ formatList(product.book?.authors) }}</dd></div>
+                <div><dt>Cover Type</dt><dd>{{ product.book?.coverType || 'Not provided' }}</dd></div>
+                <div><dt>Publisher</dt><dd>{{ product.book?.publisher || 'Not provided' }}</dd></div>
+                <div><dt>Publication Date</dt><dd>{{ formatDate(product.book?.publicationDate) }}</dd></div>
+                <div><dt>Number of Pages</dt><dd>{{ product.book?.numberOfPages ?? 'Not provided' }}</dd></div>
+                <div><dt>Language</dt><dd>{{ product.book?.language || 'Not provided' }}</dd></div>
+                <div><dt>Genre</dt><dd>{{ product.book?.genre || 'Not provided' }}</dd></div>
+              </dl>
+            </section>
+          }
+          @case ('NEWSPAPER') {
+            <section class="info-section">
+              <h2>Newspaper Details</h2>
+              <dl class="info-grid">
+                <div><dt>Editor-in-Chief</dt><dd>{{ product.newspaper?.editorInChief || 'Not provided' }}</dd></div>
+                <div><dt>Publisher</dt><dd>{{ product.newspaper?.publisher || 'Not provided' }}</dd></div>
+                <div><dt>Publication Date</dt><dd>{{ formatDate(product.newspaper?.publicationDate) }}</dd></div>
+                <div><dt>Issue Number</dt><dd>{{ product.newspaper?.issueNumber || 'Not provided' }}</dd></div>
+                <div><dt>Frequency</dt><dd>{{ product.newspaper?.publicationFrequency || 'Not provided' }}</dd></div>
+                <div><dt>ISSN</dt><dd>{{ product.newspaper?.issn || 'Not provided' }}</dd></div>
+                <div><dt>Language</dt><dd>{{ product.newspaper?.language || 'Not provided' }}</dd></div>
+                <div><dt>Sections</dt><dd>{{ formatList(product.newspaper?.sections) }}</dd></div>
+              </dl>
+            </section>
+          }
+          @case ('CD') {
+            <section class="info-section">
+              <h2>CD Details</h2>
+              <dl class="info-grid">
+                <div><dt>Artists</dt><dd>{{ formatList(product.cd?.artists) }}</dd></div>
+                <div><dt>Record Label</dt><dd>{{ product.cd?.recordLabel || 'Not provided' }}</dd></div>
+                <div><dt>Genre</dt><dd>{{ product.cd?.genre || 'Not provided' }}</dd></div>
+                <div><dt>Release Date</dt><dd>{{ formatDate(product.cd?.releaseDate) }}</dd></div>
+              </dl>
+              <h3>Tracks</h3>
+              <ol class="track-list">
+                @for (track of product.cd?.tracks || []; track track.title) {
+                  <li>{{ track.title }} @if (track.length) { <span>{{ track.length }}</span> }</li>
+                }
+              </ol>
+            </section>
+          }
+          @case ('DVD') {
+            <section class="info-section">
+              <h2>DVD Details</h2>
+              <dl class="info-grid">
+                <div><dt>Disc Type</dt><dd>{{ product.dvd?.discType || 'Not provided' }}</dd></div>
+                <div><dt>Director</dt><dd>{{ product.dvd?.director || 'Not provided' }}</dd></div>
+                <div><dt>Runtime</dt><dd>{{ product.dvd?.runtime || 'Not provided' }} minutes</dd></div>
+                <div><dt>Studio</dt><dd>{{ product.dvd?.studio || 'Not provided' }}</dd></div>
+                <div><dt>Language</dt><dd>{{ product.dvd?.language || 'Not provided' }}</dd></div>
+                <div><dt>Subtitles</dt><dd>{{ formatList(product.dvd?.subtitles) }}</dd></div>
+                <div><dt>Release Date</dt><dd>{{ formatDate(product.dvd?.releaseDate) }}</dd></div>
+                <div><dt>Genre</dt><dd>{{ product.dvd?.genre || 'Not provided' }}</dd></div>
+              </dl>
+            </section>
+          }
+        }
+      </article>
+    </section>
+  }
+</main>

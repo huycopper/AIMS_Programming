@@ -37,6 +37,10 @@ export class ProductService {
     return this.http.get<Product[]>(`${this.apiUrl}/random`, { params: httpParams });
   }
 
+  getProductById(productId: string): Observable<Product> {
+    return this.http.get<Product>(`${this.apiUrl}/${productId}`);
+  }
+
   /**
    * AC-2: Search and filter products by title, category, price range.
    * Calls GET /api/products with query params.

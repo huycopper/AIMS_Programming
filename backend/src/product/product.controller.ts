@@ -44,6 +44,11 @@ export class ProductController {
     return this.productService.findAdminProducts(dto, req.user.userId);
   }
 
+  @Get(':productId')
+  async getProductById(@Param('productId') productId: string) {
+    return this.productService.findActiveById(productId);
+  }
+
   @Get(':productId/histories')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('PRODUCT_MANAGER')

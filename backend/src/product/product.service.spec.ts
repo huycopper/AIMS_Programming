@@ -1,4 +1,4 @@
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { ProductService } from './product.service';
 import { Product, ProductStatus, ProductType } from './entities/product.entity';
@@ -99,6 +99,7 @@ describe('ProductService', () => {
 
     productRepository = {
       createQueryBuilder: jest.fn(() => queryBuilder),
+      findOne: jest.fn(),
     };
     historyRepository = {
       createQueryBuilder: jest.fn(() => historyQueryBuilder),
@@ -193,6 +194,70 @@ describe('ProductService', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'product.category = :category',
       { category: 'Fiction' },
+    );
+  });
+
+  it('searches public products by title/category text and price range', async () => {
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getMany.mockResolvedValue([createMockProduct()]);
+
+    await service.searchProducts({
+      search: 'domain',
+      minPrice: 100000,
+      maxPrice: 200000,
+      page: 2,
+      limit: 20,
+    });
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      '(product.title ILIKE :search OR product.category ILIKE :search)',
+      { search: '%domain%' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.currentPrice >= :minPrice',
+      { minPrice: 100000 },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.currentPrice <= :maxPrice',
+      { maxPrice: 200000 },
+    );
+    expect(queryBuilder.skip).toHaveBeenCalledWith(20);
+  });
+
+  it('supports multi-category filters explicitly with IN semantics', async () => {
+    queryBuilder.getCount.mockResolvedValue(2);
+    queryBuilder.getMany.mockResolvedValue([createMockProduct()]);
+
+    await service.searchProducts({
+      category: 'Fiction,Programming',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.category IN (:...categories)',
+      { categories: ['Fiction', 'Programming'] },
+    );
+  });
+
+  it('returns public active product detail with subtype relations', async () => {
+    const product = createMockProduct({ book: { authors: ['Author'] } as any });
+    productRepository.findOne.mockResolvedValue(product);
+
+    const result = await service.findActiveById(product.productId);
+
+    expect(result).toEqual(product);
+    expect(productRepository.findOne).toHaveBeenCalledWith({
+      where: { productId: product.productId, status: ProductStatus.ACTIVE },
+      relations: { book: true, cd: true, dvd: true, newspaper: true },
+    });
+  });
+
+  it('rejects missing or inactive public product detail lookups', async () => {
+    productRepository.findOne.mockResolvedValue(null);
+
+    await expect(service.findActiveById('missing')).rejects.toBeInstanceOf(
+      NotFoundException,
     );
   });
 

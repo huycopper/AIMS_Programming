@@ -29,6 +29,35 @@ describe('ProductService manager APIs', () => {
     );
   });
 
+  it('calls public search endpoint with catalog filters', () => {
+    service
+      .searchProducts({
+        search: 'clean code',
+        category: 'Programming',
+        minPrice: 100000,
+        maxPrice: 200000,
+        page: 2,
+        limit: 20,
+      })
+      .subscribe();
+
+    const call = httpClient.get.mock.calls[0];
+    expect(call[0]).toBe('http://localhost:8080/api/products');
+    expect(call[1].params.get('search')).toBe('clean code');
+    expect(call[1].params.get('category')).toBe('Programming');
+    expect(call[1].params.get('minPrice')).toBe('100000');
+    expect(call[1].params.get('maxPrice')).toBe('200000');
+    expect(call[1].params.get('page')).toBe('2');
+  });
+
+  it('calls public product detail endpoint', () => {
+    service.getProductById('product-1').subscribe();
+
+    expect(httpClient.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/products/product-1'
+    );
+  });
+
   it('creates exactly one typed product payload', () => {
     const payload = {
       productType: 'BOOK' as const,

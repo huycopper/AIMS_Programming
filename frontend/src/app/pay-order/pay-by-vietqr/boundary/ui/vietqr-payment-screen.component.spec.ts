@@ -13,6 +13,7 @@ describe('VietQRPaymentScreen (unit)', () => {
   let mockSanitizer: any;
   let mockCdr: any;
   let mockLocation: any;
+  let mockCartService: any;
 
   beforeEach(() => {
     mockActivatedRoute = {
@@ -63,6 +64,10 @@ describe('VietQRPaymentScreen (unit)', () => {
       back: vi.fn()
     };
 
+    mockCartService = {
+      getCart: vi.fn().mockReturnValue({ items: [] })
+    };
+
     component = new VietQRPaymentScreen(
       mockActivatedRoute,
       mockRouter,
@@ -70,7 +75,8 @@ describe('VietQRPaymentScreen (unit)', () => {
       mockVietQrPaymentStorageControl,
       mockSanitizer,
       mockCdr,
-      mockLocation
+      mockLocation,
+      mockCartService
     );
   });
 

@@ -111,13 +111,13 @@
                   <span class="meta-label">Weight:</span>
                   <span class="meta-value">{{ item.product.weight | number:'1.1-2' }}kg</span>
                 </div>
-                <div *ngIf="insufficientStockItem[item.product.productId]" class="stock-warning">
+                <div *ngIf="insufficientStockItems[item.product.productId] as shortage" class="stock-warning">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="12" cy="12" r="10"></circle>
                     <line x1="12" y1="8" x2="12" y2="12"></line>
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                   </svg>
-                  <span>Only {{ insufficientStockItem[item.product.productId] }} left in stock</span>
+                  <span>Requested {{ shortage.requested }}, available {{ shortage.available }}, lacking {{ shortage.lacking }}</span>
                 </div>
               </div>
             </div>
@@ -132,14 +132,13 @@
             <div class="item-quantity">
               <span class="mobile-label">Quantity: </span>
               <div class="qty-selector">
-                <button class="qty-btn" (click)="handleQuantityChange(item.product.productId, item.quantity - 1, item.product.stockQuantity)" [disabled]="item.quantity <= 1">−</button>
+                <button class="qty-btn" (click)="handleQuantityChange(item.product.productId, item.quantity - 1)" [disabled]="item.quantity <= 1">-</button>
                 <input type="number" 
                        [ngModel]="item.quantity" 
-                       (ngModelChange)="handleQuantityChange(item.product.productId, $event, item.product.stockQuantity)"
+                       (ngModelChange)="handleQuantityChange(item.product.productId, $event)"
                        min="1" 
-                       [max]="item.product.stockQuantity"
                        class="qty-input">
-                <button class="qty-btn" (click)="handleQuantityChange(item.product.productId, item.quantity + 1, item.product.stockQuantity)" [disabled]="item.quantity >= item.product.stockQuantity">+</button>
+                <button class="qty-btn" (click)="handleQuantityChange(item.product.productId, item.quantity + 1)">+</button>
               </div>
             </div>
 
@@ -202,7 +201,18 @@
             <span class="total-value">{{ formatPrice(totalExclVAT) }}</span>
           </div>
 
-          <button (click)="askToPlaceOrder()" class="btn-checkout">
+          <div *ngIf="hasUnresolvedShortages()" class="shortage-summary">
+            <strong>Stock shortage</strong>
+            <ul>
+              <li *ngFor="let shortage of insufficientStockItems | keyvalue">
+                {{ shortage.value.title }} lacks {{ shortage.value.lacking }}
+              </li>
+            </ul>
+          </div>
+
+          <p *ngIf="checkoutError" class="checkout-error">{{ checkoutError }}</p>
+
+          <button (click)="askToPlaceOrder()" class="btn-checkout" [class.blocked]="hasUnresolvedShortages()">
             <span>Place Order</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"></line>

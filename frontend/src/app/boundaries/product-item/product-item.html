@@ -1,5 +1,11 @@
-<article class="product-card" [id]="'product-' + product.productId">
-  <!-- Product Type Badge -->
+<article
+  class="product-card"
+  [id]="'product-' + product.productId"
+  role="button"
+  tabindex="0"
+  (click)="openProductDetail()"
+  (keyup.enter)="openProductDetail()"
+>
   <div class="card-image-area">
     <span class="type-badge" [class]="getTypeBadgeClass()">
       {{ product.productType }}
@@ -38,7 +44,6 @@
     </div>
   </div>
 
-  <!-- Card Body -->
   <div class="card-body">
     <span class="product-category">{{ product.category }}</span>
 
@@ -50,12 +55,12 @@
       {{ getSecondaryLabel() }}
     </p>
 
-    <div class="card-footer mt-4 flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="product-price font-bold text-lg text-blue-600">
+    <div class="product-purchase" (click)="stopCardAction($event)" (keyup.enter)="stopCardAction($event)">
+      <div class="price-stock">
+        <span class="product-price">
           {{ formatPrice(product.currentPrice) }}
         </span>
-        <span class="stock-info text-xs" [class.text-red-500]="product.stockQuantity === 0" [class.text-green-600]="product.stockQuantity > 0">
+        <span class="stock-info" [class.out-of-stock]="product.stockQuantity === 0">
           @if (product.stockQuantity > 0) {
             In Stock ({{ product.stockQuantity }})
           } @else {
@@ -63,11 +68,30 @@
           }
         </span>
       </div>
-      <button class="add-to-cart-btn bg-blue-600 hover:bg-blue-700 text-white font-semibold py-1 px-3 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              [disabled]="product.stockQuantity === 0"
-              (click)="addToCart($event)">
-        Add to Cart
-      </button>
+
+      <div class="quantity-row">
+        <label [for]="'qty-' + product.productId">Qty</label>
+        <input
+          [id]="'qty-' + product.productId"
+          class="quantity-input"
+          type="number"
+          min="1"
+          [max]="product.stockQuantity"
+          step="1"
+          [(ngModel)]="quantity"
+        />
+        <button
+          class="add-to-cart-btn"
+          [disabled]="product.stockQuantity === 0"
+          (click)="addToCart($event)"
+        >
+          Add
+        </button>
+      </div>
+
+      @if (addToCartMessage) {
+        <p class="cart-inline-message">{{ addToCartMessage }}</p>
+      }
     </div>
   </div>
 </article>

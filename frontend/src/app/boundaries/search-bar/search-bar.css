@@ -56,6 +56,13 @@
   color: #9ca3af;
 }
 
+.standalone-input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .search-button {
   padding: 10px 14px;
   border: none;
@@ -72,14 +79,13 @@
   background: #4f46e5;
 }
 
-/* Category Checkboxes */
-.category-list {
+.price-bucket-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.category-checkbox {
+.price-bucket {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -89,18 +95,18 @@
   transition: background 0.15s ease;
 }
 
-.category-checkbox:hover {
+.price-bucket:hover {
   background: #f3f4f6;
 }
 
-.category-checkbox input[type='checkbox'] {
+.price-bucket input[type='radio'] {
   width: 16px;
   height: 16px;
   accent-color: #6366f1;
   cursor: pointer;
 }
 
-.category-label {
+.price-bucket span {
   font-size: 14px;
   color: #374151;
   font-weight: 500;

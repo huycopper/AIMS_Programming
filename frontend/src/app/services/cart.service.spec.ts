@@ -77,6 +77,23 @@ describe('CartService', () => {
     expect(cartState?.items[0].quantity).toBe(5);
   });
 
+  it('should preserve requested quantity above stock in localStorage', () => {
+    service.addItem({ ...mockProduct, stockQuantity: 3 }, 5);
+
+    const saved = JSON.parse(localStorage.getItem('aims_cart')!);
+    expect(saved[0].quantity).toBe(5);
+  });
+
+  it('should refresh a product snapshot without changing requested quantity', () => {
+    service.addItem(mockProduct, 4);
+    service.updateProductSnapshot({ ...mockProduct, currentPrice: 95, stockQuantity: 2 });
+
+    const item = service.getCart().getItem('p1');
+    expect(item?.quantity).toBe(4);
+    expect(item?.product.currentPrice).toBe(95);
+    expect(item?.product.stockQuantity).toBe(2);
+  });
+
   it('should remove item and save', () => {
     service.addItem(mockProduct, 2);
     service.removeItem('p1');

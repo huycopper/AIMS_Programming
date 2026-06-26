@@ -31,6 +31,7 @@ describe('ProductController', () => {
   const mockProductService = {
     findRandom: jest.fn(),
     searchProducts: jest.fn(),
+    findActiveById: jest.fn(),
     findAdminProducts: jest.fn(),
     createProduct: jest.fn(),
     updateProduct: jest.fn(),
@@ -90,6 +91,15 @@ describe('ProductController', () => {
 
     expect(result).toEqual(searchResult);
     expect(mockProductService.searchProducts).toHaveBeenCalledWith(dto);
+  });
+
+  it('delegates public product detail lookup without manager identity', async () => {
+    mockProductService.findActiveById.mockResolvedValue(mockProduct);
+
+    const result = await controller.getProductById('uuid-1');
+
+    expect(result).toEqual(mockProduct);
+    expect(mockProductService.findActiveById).toHaveBeenCalledWith('uuid-1');
   });
 
   it('passes temporary Product Manager identity to admin list', async () => {

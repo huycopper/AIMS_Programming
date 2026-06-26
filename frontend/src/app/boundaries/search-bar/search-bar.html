@@ -1,5 +1,4 @@
 <aside class="search-sidebar" id="search-sidebar">
-  <!-- Search Input -->
   <div class="filter-section">
     <h3 class="filter-title">Search</h3>
     <div class="search-input-group">
@@ -8,7 +7,7 @@
         id="search-input"
         class="search-input"
         [(ngModel)]="searchQuery"
-        placeholder="Search by title, author, keyword…"
+        placeholder="Search by title or category"
         maxlength="200"
         (keyup.enter)="onSearch()"
       />
@@ -26,28 +25,38 @@
     </div>
   </div>
 
-  <!-- Category Filter -->
   <div class="filter-section">
-    <h3 class="filter-title">Categories</h3>
-    <div class="category-list">
-      @for (cat of categories; track cat.value) {
-        <label class="category-checkbox" [for]="'cat-' + cat.value">
+    <h3 class="filter-title">Category</h3>
+    <input
+      type="text"
+      id="category-input"
+      class="search-input standalone-input"
+      [(ngModel)]="categoryQuery"
+      placeholder="Fiction, Programming, Rock..."
+      maxlength="100"
+      (keyup.enter)="onCategoryChange()"
+      (blur)="onCategoryChange()"
+    />
+  </div>
+
+  <div class="filter-section">
+    <h3 class="filter-title">Price Range (VND)</h3>
+    <div class="price-bucket-list">
+      @for (bucket of priceBuckets; track bucket.value) {
+        <label class="price-bucket" [for]="'price-' + bucket.value">
           <input
-            type="checkbox"
-            [id]="'cat-' + cat.value"
-            [(ngModel)]="cat.checked"
-            (change)="onCategoryToggle()"
+            type="radio"
+            name="priceBucket"
+            [id]="'price-' + bucket.value"
+            [value]="bucket.value"
+            [(ngModel)]="selectedPriceBucket"
+            (change)="onPriceBucketChange()"
           />
-          <span class="checkmark"></span>
-          <span class="category-label">{{ cat.label }}</span>
+          <span>{{ bucket.label }}</span>
         </label>
       }
     </div>
-  </div>
 
-  <!-- Price Range Filter -->
-  <div class="filter-section">
-    <h3 class="filter-title">Price Range (VND)</h3>
     <div class="price-range-group">
       <input
         type="number"
@@ -58,7 +67,7 @@
         min="0"
         maxlength="10"
       />
-      <span class="price-separator">–</span>
+      <span class="price-separator">-</span>
       <input
         type="number"
         id="price-max"
@@ -78,7 +87,6 @@
     </button>
   </div>
 
-  <!-- Clear Filters -->
   <button
     id="clear-filters"
     class="clear-button"

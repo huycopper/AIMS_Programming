@@ -67,13 +67,13 @@ export class ProductListComponent implements OnInit, OnDestroy {
    * AC-1: Load 20 random products on homepage load.
    * "When the homepage loads, the system displays 20 random products"
    */
-  loadRandomProducts(category?: string): void {
+  loadRandomProducts(): void {
     this.isLoading = true;
     this.isSearchMode = false;
     this.errorMessage = '';
-    this.currentSearchParams = category ? { category } : {};
+    this.currentSearchParams = {};
 
-    this.productService.getRandomProducts(category).subscribe({
+    this.productService.getRandomProducts().subscribe({
       next: (products) => {
         this.products = products;
         this.totalProducts = products.length;
@@ -104,19 +104,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
       params.minPrice !== undefined ||
       params.maxPrice !== undefined;
 
-    const onlyCategory =
-      !params.search &&
-      params.category &&
-      params.minPrice === undefined &&
-      params.maxPrice === undefined;
-
     if (!hasFilters) {
       this.loadRandomProducts();
-      return;
-    }
-
-    if (onlyCategory) {
-      this.loadRandomProducts(params.category);
       return;
     }
 
