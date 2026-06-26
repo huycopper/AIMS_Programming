@@ -70,8 +70,8 @@ import { AuthService } from '../../control/auth.service.js';
       :host {
         display: block;
         min-height: 100vh;
-        background: #f6f7f9;
-        color: #17202a;
+        background: #f8fafc;
+        color: #0f172a;
         font-family: Inter, Arial, sans-serif;
       }
 
@@ -89,7 +89,7 @@ import { AuthService } from '../../control/auth.service.js';
         flex-direction: column;
         justify-content: space-between;
         background:
-          linear-gradient(135deg, rgba(15, 118, 110, 0.95), rgba(23, 32, 42, 0.94)), #0f766e;
+          linear-gradient(135deg, rgba(79, 70, 229, 0.95), rgba(15, 23, 42, 0.94)), #4f46e5;
         color: #ffffff;
       }
 
@@ -117,7 +117,7 @@ import { AuthService } from '../../control/auth.service.js';
       }
 
       .eyebrow {
-        color: #0f766e;
+        color: #4f46e5;
         font-size: 12px;
         font-weight: 800;
         letter-spacing: 0;
@@ -125,7 +125,7 @@ import { AuthService } from '../../control/auth.service.js';
       }
 
       .brand-panel .eyebrow {
-        color: #b7fff5;
+        color: #c7d2fe;
       }
 
       .login-panel {
@@ -135,7 +135,7 @@ import { AuthService } from '../../control/auth.service.js';
         flex-direction: column;
         justify-content: center;
         background: #ffffff;
-        border-left: 1px solid #dfe4ea;
+        border-left: 1px solid #e2e8f0;
       }
 
       .panel-heading {
@@ -158,17 +158,17 @@ import { AuthService } from '../../control/auth.service.js';
         gap: 7px;
         font-size: 13px;
         font-weight: 700;
-        color: #4b5563;
+        color: #475569;
       }
 
       input {
         width: 100%;
         min-height: 44px;
         border: 1px solid #cbd5e1;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 10px 12px;
         background: #ffffff;
-        color: #17202a;
+        color: #0f172a;
         font: inherit;
         outline: none;
         transition:
@@ -177,8 +177,8 @@ import { AuthService } from '../../control/auth.service.js';
       }
 
       input:focus {
-        border-color: #0f766e;
-        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
       }
 
       input.invalid {
@@ -190,12 +190,12 @@ import { AuthService } from '../../control/auth.service.js';
         min-height: 44px;
         margin-top: 6px;
         border: 0;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 0 16px;
-        background: #0f766e;
+        background: #2563eb;
         color: #ffffff;
         font: inherit;
-        font-weight: 800;
+        font-weight: 700;
         cursor: pointer;
         transition:
           background 150ms ease,
@@ -203,7 +203,7 @@ import { AuthService } from '../../control/auth.service.js';
       }
 
       button:hover:not(:disabled) {
-        background: #115e59;
+        background: #1d4ed8;
         transform: translateY(-1px);
       }
 
@@ -215,7 +215,7 @@ import { AuthService } from '../../control/auth.service.js';
       .error-banner {
         margin-bottom: 16px;
         border: 1px solid #fecaca;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 10px 12px;
         background: #fee2e2;
         color: #991b1b;

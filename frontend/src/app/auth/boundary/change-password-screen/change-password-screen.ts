@@ -106,8 +106,8 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
       :host {
         display: block;
         min-height: 100vh;
-        background: #f6f7f9;
-        color: #17202a;
+        background: #f8fafc;
+        color: #0f172a;
         font-family: Inter, Arial, sans-serif;
       }
 
@@ -120,11 +120,11 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
 
       .password-panel {
         width: min(100%, 520px);
-        border: 1px solid #dfe4ea;
-        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
         padding: 32px;
         background: #ffffff;
-        box-shadow: 0 18px 45px rgba(23, 32, 42, 0.08);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
       }
 
       .panel-header {
@@ -142,7 +142,7 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
       }
 
       .eyebrow {
-        color: #0f766e;
+        color: #4f46e5;
         font-size: 12px;
         font-weight: 800;
         letter-spacing: 0;
@@ -173,10 +173,10 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
         width: 100%;
         min-height: 44px;
         border: 1px solid #cbd5e1;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 10px 12px;
         background: #ffffff;
-        color: #17202a;
+        color: #0f172a;
         font: inherit;
         outline: none;
         transition:
@@ -186,8 +186,8 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
       }
 
       input:focus {
-        border-color: #0f766e;
-        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.16);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
       }
 
       input::placeholder {
@@ -197,10 +197,10 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
       button {
         min-height: 42px;
         border: 0;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 0 16px;
         font: inherit;
-        font-weight: 800;
+        font-weight: 700;
         cursor: pointer;
         transition:
           background 150ms ease,
@@ -231,12 +231,12 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
 
       .submit-button {
         margin-top: 6px;
-        background: #0f766e;
+        background: #2563eb;
         color: #ffffff;
       }
 
       .submit-button:hover:not(:disabled) {
-        background: #115e59;
+        background: #1d4ed8;
       }
 
       .error-summary {
@@ -247,7 +247,7 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
 
       .error {
         border: 1px solid #fecaca;
-        border-radius: 6px;
+        border-radius: 8px;
         padding: 10px 12px;
         background: #fee2e2;
         color: #991b1b;
