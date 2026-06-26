@@ -38,7 +38,7 @@ export class AdminUsersService {
     private readonly configService: ConfigService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
-  ) {}
+  ) { }
 
   async getUsersList(query: QueryAdminUsersDto): Promise<{
     items: AdminUserResponse[];
@@ -85,7 +85,7 @@ export class AdminUsersService {
 
     // For many-to-many relationship, count must be retrieved correctly
     const total = await qb.getCount();
-    
+
     // pagination
     qb.skip(skip).take(limit);
     const users = await qb.getMany();
@@ -218,7 +218,7 @@ export class AdminUsersService {
     // 3. Post-transaction notification
     const appUrl = this.configService.get<string>('APP_PUBLIC_URL') || 'http://localhost:4200';
     const setupLink = `${appUrl}/staff/reset-password?token=${rawToken}`;
-    
+
     const emailSent = await this.notificationControl.sendAccountCreated(
       dto.email,
       dto.username,
@@ -258,7 +258,7 @@ export class AdminUsersService {
 
     if (isActive && hasAdminRole) {
       const isRemovingAdmin = actionType === 'STATUS' || (actionType === 'ROLE' && newRoles && !newRoles.includes('ADMIN'));
-      
+
       if (isRemovingAdmin) {
         const activeAdminsCount = await this.userRepo
           .createQueryBuilder('user')

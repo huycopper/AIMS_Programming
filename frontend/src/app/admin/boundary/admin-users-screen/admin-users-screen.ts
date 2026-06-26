@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AdminUserService } from '../../control/admin-user.service';
@@ -37,6 +37,7 @@ export class AdminUsersScreen implements OnInit {
     private readonly adminUserService: AdminUserService,
     public readonly authService: AuthService,
     private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -61,10 +62,12 @@ export class AdminUsersScreen implements OnInit {
           this.limit = result.limit;
           this.total = result.total;
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -130,11 +133,13 @@ export class AdminUsersScreen implements OnInit {
           this.successMessage = `Staff account "${response.username}" created successfully. An email has been sent to ${response.email} to set up their password.`;
           this.isCreateModalOpen = false;
           this.isSubmitting = false;
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: (error) => {
           this.modalErrorMessage = this.readError(error);
           this.isSubmitting = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -182,11 +187,13 @@ export class AdminUsersScreen implements OnInit {
           this.successMessage = `Roles for user "${response.username}" updated successfully.`;
           this.isEditRolesModalOpen = false;
           this.isSubmitting = false;
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: (error) => {
           this.modalErrorMessage = this.readError(error);
           this.isSubmitting = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -207,10 +214,12 @@ export class AdminUsersScreen implements OnInit {
         } else {
           this.successMessage = `Password reset token was generated, but the notification email failed to send to ${response.email}.`;
         }
+        this.cdr.markForCheck();
       },
       error: (error) => {
         this.errorMessage = this.readError(error);
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
     });
   }
@@ -230,11 +239,13 @@ export class AdminUsersScreen implements OnInit {
         next: (response) => {
           this.successMessage = `User account "${response.username}" has been ${block ? 'blocked' : 'unblocked'}.`;
           this.isLoading = false;
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
       });
   }
@@ -254,11 +265,13 @@ export class AdminUsersScreen implements OnInit {
         next: (response) => {
           this.successMessage = `User account "${response.username}" has been ${deactivate ? 'deactivated' : 'activated'}.`;
           this.isLoading = false;
+          this.cdr.markForCheck();
           this.loadUsers();
         },
         error: (error) => {
           this.errorMessage = this.readError(error);
           this.isLoading = false;
+          this.cdr.markForCheck();
         },
       });
   }

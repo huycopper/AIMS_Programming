@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -21,13 +21,14 @@ export class CartScreen implements OnInit, OnDestroy {
   insufficientStockItem: { [productId: string]: number } = {};
   private subscription: Subscription | null = null;
 
-  constructor(private cartService: CartService, private router: Router) { }
+  constructor(private cartService: CartService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.subscription = this.cartService.getCartObservable().subscribe(cart => {
       this.cart = cart;
       this.totalExclVAT = cart.calculateSubTotal();
       this.totalWeight = cart.getTotalWeight();
+      this.cdr.markForCheck();
     });
   }
 
