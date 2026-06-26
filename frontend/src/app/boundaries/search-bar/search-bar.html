@@ -26,19 +26,6 @@
   </div>
 
   <div class="filter-section">
-    <h3 class="filter-title">Category</h3>
-    <input
-      type="text"
-      id="category-input"
-      class="search-input standalone-input"
-      [(ngModel)]="categoryQuery"
-      placeholder="Fiction, Programming, Rock..."
-      maxlength="100"
-      (keyup.enter)="onCategoryChange()"
-    />
-  </div>
-
-  <div class="filter-section">
     <h3 class="filter-title">Price Range (VND)</h3>
     <div class="price-bucket-list">
       @for (bucket of priceBuckets; track bucket.value) {
