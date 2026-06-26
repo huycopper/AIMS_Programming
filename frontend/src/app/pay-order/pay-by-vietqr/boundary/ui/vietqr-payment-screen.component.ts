@@ -6,11 +6,12 @@ import { VietQrPaymentControl } from '../../control/vietqr-payment.control';
 import { VietQrPaymentStorageControl } from '../../control/vietqr-payment-storage.control';
 import { PaymentConfirmationResponse } from '../../entity/vietqr-payment.models';
 import { CartService } from '../../../../services/cart.service';
+import { TopBarComponent } from '../../../../shared/top-bar/top-bar';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './vietqr-payment-screen.component.html',
   styleUrls: ['./vietqr-payment-screen.component.css'],
 })

@@ -7,6 +7,7 @@ import { ProductService } from '../../services/product.service';
 import { Cart } from '../../models/cart.model';
 import { Product } from '../../models/product.model';
 import { catchError, forkJoin, map, of, Subscription } from 'rxjs';
+import { TopBarComponent } from '../../shared/top-bar/top-bar';
 
 interface StockShortageWarning {
   productId: string;
@@ -19,7 +20,7 @@ interface StockShortageWarning {
 @Component({
   selector: 'app-cart-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TopBarComponent],
   templateUrl: './cart-screen.html',
   styleUrl: './cart-screen.css'
 })

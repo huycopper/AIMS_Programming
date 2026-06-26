@@ -7,6 +7,7 @@ import { CartService } from '../../services/cart.service';
 import { OrderService } from '../../services/order.service';
 import { Cart } from '../../models/cart.model';
 import { CartItemPayload, ShippingFeeResult } from '../../models/order.model';
+import { TopBarComponent } from '../../shared/top-bar/top-bar';
 
 /**
  * DeliveryInfoScreen — Boundary component (BCE pattern).
@@ -16,7 +17,7 @@ import { CartItemPayload, ShippingFeeResult } from '../../models/order.model';
 @Component({
   selector: 'app-delivery-info-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TopBarComponent],
   templateUrl: './delivery-info-screen.html',
   styleUrl: './delivery-info-screen.css',
 })

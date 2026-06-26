@@ -21,8 +21,9 @@
       <div class="status-badge" [ngClass]="{
         'status-pending': orderData.status === 'PENDING',
         'status-processing': orderData.status === 'PENDING_PROCESSING',
-        'status-cancelled': orderData.status === 'CANCELLED',
-        'status-success': orderData.status === 'SUCCESS'
+        'status-cancelled': orderData.status === 'CANCELLED' || orderData.status === 'REJECTED',
+        'status-success': orderData.status === 'SUCCESS',
+        'status-approved': orderData.status === 'APPROVED'
       }">
         {{ orderData.status.replace('_', ' ') }}
       </div>

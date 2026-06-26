@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { InvoiceData } from '../../models/order.model';
 import { Cart } from '../../models/cart.model';
 import { CartService } from '../../services/cart.service';
+import { TopBarComponent } from '../../shared/top-bar/top-bar';
 
 /**
  * InvoiceScreen — Boundary component (BCE pattern).
@@ -18,7 +19,7 @@ import { CartService } from '../../services/cart.service';
 @Component({
   selector: 'app-invoice-screen',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './invoice-screen.html',
   styleUrl: './invoice-screen.css',
 })

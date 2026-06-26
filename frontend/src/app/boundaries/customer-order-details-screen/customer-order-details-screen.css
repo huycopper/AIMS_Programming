@@ -189,6 +189,7 @@
 .status-pending { background-color: #fef3c7; color: #92400e; }
 .status-processing { background-color: #dbeafe; color: #1e40af; }
 .status-success { background-color: #d1fae5; color: #065f46; }
+.status-approved { background-color: #d1fae5; color: #065f46; }
 .status-cancelled { background-color: #fee2e2; color: #991b1b; }
 
 .total-label {

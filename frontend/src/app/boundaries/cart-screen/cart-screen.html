@@ -1,29 +1,4 @@
-<header class="site-header" id="site-header">
-  <div class="header-inner">
-    <a class="logo" id="logo-link" href="/">
-      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/>
-        <polygon points="10 8 16 12 10 16 10 8"/>
-      </svg>
-      <span class="logo-text">AIMS</span>
-    </a>
-
-    <nav class="nav-links">
-      <a class="nav-link" href="/">Home</a>
-    </nav>
-
-    <div class="header-actions">
-      <button class="cart-button active" id="cart-button" aria-label="Shopping Cart">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="8" cy="21" r="1"/>
-          <circle cx="19" cy="21" r="1"/>
-          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
-        </svg>
-        <span class="cart-badge" *ngIf="cartItemCount > 0">{{ cartItemCount }}</span>
-      </button>
-    </div>
-  </div>
-</header>
+<app-top-bar [activeCart]="true" [showHome]="false" [showCart]="false"></app-top-bar>
 
 <div class="cart-page-wrapper">
   <div class="cart-container">
