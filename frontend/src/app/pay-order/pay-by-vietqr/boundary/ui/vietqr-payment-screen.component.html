@@ -1,91 +1,203 @@
-<div class="payment-container">
-  <h2>VietQR Payment</h2>
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <a class="logo" id="logo-link" routerLink="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="10 8 16 12 10 16 10 8"/>
+      </svg>
+      <span class="logo-text">AIMS</span>
+    </a>
 
-  <!-- Trạng thái: Đang tạo mã QR -->
-  <div *ngIf="loading" class="spinner-container">
-    <div class="spinner"></div>
-    <p>Generating QR Code...</p>
-  </div>
+    <nav class="nav-links">
+      <a class="nav-link" routerLink="/">Home</a>
+    </nav>
 
-  <!-- Trạng thái: Lỗi (không có orderId hoặc API thất bại) -->
-  <div *ngIf="errorMessage" class="error-container">
-    <p class="error-text">{{ errorMessage }}</p>
-    <button (click)="goHome()" class="btn-home">Return to Home Page</button>
-  </div>
-
-  <!-- Trạng thái: Hiển thị mã QR -->
-  <div *ngIf="!loading && !paymentSuccess && !errorMessage" class="qr-container">
-    <p>Scan the QR code below with your banking app to pay.</p>
-
-    <div *ngIf="amount" class="amount-display">
-      <h3>
-        Total Amount:
-        <span class="highlight-amount">{{ amount | currency: 'VND' : 'symbol' : '1.0-0' }}</span>
-      </h3>
-      <p *ngIf="paymentContent" class="payment-content">Content: {{ paymentContent }}</p>
-    </div>
-
-    <!-- Hiển thị ảnh QR -->
-    <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
-
-    <div class="sandbox-controls">
-      <div class="button-group">
-        <button (click)="goBack()" class="btn-go-back" [disabled]="confirmingPayment">
-          &larr; Go Back
-        </button>
-        <!-- Nút xác nhận thanh toán (confirmPayment theo SD v2) -->
-        <button 
-          (click)="confirmPayment()" 
-          class="btn-simulate"
-          [disabled]="confirmingPayment">
-          <span *ngIf="!confirmingPayment">I have paid</span>
-          <span *ngIf="confirmingPayment">Confirming payment...</span>
-        </button>
-      </div>
-      <p *ngIf="confirmingPayment" class="confirming-text">
-        Please wait while we verify your payment with VietQR...
-      </p>
+    <div class="header-actions">
+      <button class="cart-button" id="cart-button" aria-label="Shopping Cart" routerLink="/cart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="21" r="1"/>
+          <circle cx="19" cy="21" r="1"/>
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </svg>
+        <span class="cart-badge" *ngIf="getTotalQuantity() > 0">{{ getTotalQuantity() }}</span>
+      </button>
     </div>
   </div>
+</header>
 
-  <!-- Trạng thái: Thanh toán thành công (SuccessfulPaidScreen theo SD v2) -->
-  <div *ngIf="paymentSuccess" class="success-container">
-    <div class="success-icon">✓</div>
-    <h3>Payment Successful!</h3>
-    <p>Your order is now processing.</p>
+<div class="payment-page-wrapper">
+  <div class="payment-container">
+    
 
-    <div class="success-section" *ngIf="confirmation?.order as order">
-      <h4>Order Information</h4>
-      <div class="detail-grid">
-        <span>Customer Name</span>
-        <strong>{{ order.customerName }}</strong>
-        <span>Phone Number</span>
-        <strong>{{ order.phoneNumber }}</strong>
-        <span>Shipping Address</span>
-        <strong>{{ order.shippingAddress }}</strong>
-        <span>Province</span>
-        <strong>{{ order.province }}</strong>
-        <span>Total Amount</span>
-        <strong>{{ order.totalAmount | number }} VND</strong>
-        <span>Order Status</span>
-        <strong>{{ order.status }}</strong>
+    <!-- Back Navigation -->
+    <div class="back-nav" *ngIf="!paymentSuccess && !loading && !errorMessage">
+      <a (click)="goBack()" class="back-link cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Invoice</span>
+      </a>
+    </div>
+
+    <!-- State 1: Generating QR -->
+    <div *ngIf="loading" class="loading-state card">
+      <div class="spinner-wrapper">
+        <div class="spinner"></div>
+      </div>
+      <h2>Generating Secure QR Code</h2>
+      <p>We are creating a custom VietQR code for your order. Please wait...</p>
+    </div>
+
+    <!-- State 2: Error -->
+    <div *ngIf="errorMessage && !paymentSuccess" class="error-state card">
+      <div class="error-icon">✕</div>
+      <h2>Payment Setup Failed</h2>
+      <p class="error-message-text">{{ errorMessage }}</p>
+      <button (click)="goHome()" class="btn-home">Return to Home Page</button>
+    </div>
+
+    <!-- State 3: QR Code Display -->
+    <div *ngIf="!loading && !paymentSuccess && !errorMessage" class="qr-display-state">
+      <h1 class="page-title">VietQR Payment</h1>
+      
+      <div class="payment-grid">
+        <!-- Left column: QR Scan -->
+        <div class="qr-card">
+          <h2 class="card-subtitle">Scan to Pay</h2>
+          <p class="scan-instructions">Open your mobile banking app, select scan QR code and point to the image below.</p>
+          
+          <div class="qr-image-wrapper">
+            <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
+            <div *ngIf="!qrDataURL" class="qr-placeholder">Generating QR Image...</div>
+          </div>
+          
+          <div class="vietqr-badge">
+            <span class="vietqr-logo-text">Viet<span>QR</span></span>
+            <span class="secure-tag">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              NAPAS Secure
+            </span>
+          </div>
+        </div>
+
+        <!-- Right column: Invoice details & Actions -->
+        <div class="payment-details-card">
+          <h2 class="card-subtitle">Transaction Details</h2>
+          
+          <div class="amount-container">
+            <span class="label">Amount to Pay</span>
+            <span class="amount-value">{{ formatPrice(amount) }}</span>
+          </div>
+
+          <div class="details-rows">
+            <div class="details-row">
+              <span class="label">Order ID</span>
+              <span class="value font-mono">{{ orderId }}</span>
+            </div>
+            
+            <div class="details-row" *ngIf="paymentContent">
+              <span class="label">Payment Content</span>
+              <span class="value content-box font-mono">{{ paymentContent }}</span>
+            </div>
+            
+            <div class="payment-guide-box">
+              <span class="guide-title">Important Instructions:</span>
+              <ol class="guide-list">
+                <li>Make sure to scan the exact QR code shown here.</li>
+                <li>Do not change the prefilled amount or transaction description.</li>
+                <li>Once transfer is complete, click <strong>"I have paid"</strong> below.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button 
+              (click)="confirmPayment()" 
+              class="btn-simulate"
+              [disabled]="confirmingPayment">
+              <span *ngIf="!confirmingPayment" class="flex items-center gap-2 justify-center">
+                I have paid
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </span>
+              <span *ngIf="confirmingPayment" class="flex items-center gap-2 justify-center">
+                <svg class="animate-spin h-5 w-5 mr-1" viewBox="0 0 24 24" fill="none">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Verifying payment...
+              </span>
+            </button>
+            
+            <button (click)="goBack()" class="btn-go-back" [disabled]="confirmingPayment">
+              &larr; Go Back
+            </button>
+          </div>
+
+          <p *ngIf="confirmingPayment" class="confirming-text text-indigo-600">
+            Please wait while we verify your payment with VietQR...
+          </p>
+        </div>
       </div>
     </div>
 
-    <div class="success-section" *ngIf="confirmation?.transaction as transaction">
-      <h4>Transaction Information</h4>
-      <div class="detail-grid">
-        <span>Transaction ID</span>
-        <strong>{{ transaction.transactionId }}</strong>
-        <span>Transaction Content</span>
-        <strong>{{ transaction.transactionContent }}</strong>
-        <span>Transaction Datetime</span>
-        <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>
-        <span>Payment Method</span>
-        <strong>{{ transaction.paymentMethod }}</strong>
+    <!-- State 4: Payment Success -->
+    <div *ngIf="paymentSuccess" class="success-state card">
+      <div class="success-icon-wrapper">
+        <div class="success-icon">✓</div>
       </div>
-    </div>
+      <h2>Payment Successful!</h2>
+      <p class="success-subtitle">Thank you for your payment. Your order has been placed successfully and is now processing.</p>
 
-    <button (click)="goHome()" class="btn-home" style="margin-top: 20px;">Return to Home Page</button>
+      <div class="details-grid-wrapper">
+        
+        <!-- Order Info Section -->
+        <div class="details-section" *ngIf="confirmation?.order as order">
+          <h3>Order Information</h3>
+          <div class="detail-grid">
+            <span>Customer Name</span>
+            <strong>{{ order.customerName }}</strong>
+            
+            <span>Phone Number</span>
+            <strong>{{ order.phoneNumber }}</strong>
+            
+            <span>Province / City</span>
+            <strong>{{ order.province }}</strong>
+            
+            <span>Shipping Address</span>
+            <strong>{{ order.shippingAddress }}</strong>
+            
+            <span>Total Amount</span>
+            <strong class="text-indigo-600">{{ formatPrice(order.totalAmount) }}</strong>
+            
+            <span>Order Status</span>
+            <span class="status-badge">{{ order.status }}</span>
+          </div>
+        </div>
+
+        <!-- Transaction Info Section -->
+        <div class="details-section" *ngIf="confirmation?.transaction as transaction">
+          <h3>Transaction Information</h3>
+          <div class="detail-grid">
+            <span>Transaction ID</span>
+            <strong class="font-mono">{{ transaction.transactionId }}</strong>
+            
+            <span>Content</span>
+            <strong class="font-mono">{{ transaction.transactionContent }}</strong>
+            
+            <span>Transaction Time</span>
+            <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>
+            
+            <span>Payment Method</span>
+            <strong>{{ transaction.paymentMethod }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <button (click)="goHome()" class="btn-home-success">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Return to Home Page
+      </button>
+    </div>
   </div>
 </div>

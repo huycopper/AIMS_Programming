@@ -34,6 +34,24 @@ export class InvoiceScreen implements OnInit {
     private cartService: CartService,
   ) { }
 
+  /**
+   * Calculate total quantity of items in cart for header badge
+   */
+  getTotalQuantity(): number {
+    return this.cartService.getCart().items.reduce((total, item) => total + Number(item.quantity), 0);
+  }
+
+  /**
+   * Format price to VND currency string
+   */
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
+      return price + '₫';
+    }
+    return numPrice.toLocaleString('vi-VN') + '₫';
+  }
+
   ngOnInit(): void {
     // Retrieve invoice data from router state (passed by DeliveryInfoScreen)
     const state = history.state;

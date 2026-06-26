@@ -1,122 +1,206 @@
-<div class="invoice-container container mx-auto p-4 max-w-3xl">
-  <div *ngIf="!invoiceData" class="text-center p-8">
-    <p class="text-gray-500">No invoice data available. Redirecting...</p>
+<header class="site-header" id="site-header">
+  <div class="header-inner">
+    <a class="logo" id="logo-link" routerLink="/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="10 8 16 12 10 16 10 8"/>
+      </svg>
+      <span class="logo-text">AIMS</span>
+    </a>
+
+    <nav class="nav-links">
+      <a class="nav-link" routerLink="/">Home</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="cart-button" id="cart-button" aria-label="Shopping Cart" routerLink="/cart">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="21" r="1"/>
+          <circle cx="19" cy="21" r="1"/>
+          <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>
+        </svg>
+        <span class="cart-badge" *ngIf="getTotalQuantity() > 0">{{ getTotalQuantity() }}</span>
+      </button>
+    </div>
   </div>
+</header>
 
-  <div *ngIf="invoiceData" class="invoice-content">
-    <h1 class="text-2xl font-bold mb-6 text-center">Order Invoice</h1>
+<div class="invoice-page-wrapper">
+  <div class="invoice-container">
+    
 
-    <!-- Delivery Information Summary -->
-    <div class="delivery-summary bg-gray-50 rounded-lg p-4 mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-gray-800">Delivery Information</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-        <div>
-          <span class="text-gray-500">Name:</span>
-          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.name }}</span>
+    <!-- Back Navigation -->
+    <div class="back-nav">
+      <a (click)="goBackToDelivery()" class="back-link cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Delivery Info</span>
+      </a>
+    </div>
+
+    <div *ngIf="!invoiceData" class="empty-state">
+      <div class="empty-state-icon">⚠</div>
+      <h2>No Invoice Data Available</h2>
+      <p>Please return to your cart to complete delivery information first.</p>
+      <a routerLink="/cart" class="btn-primary-action">Go to Cart</a>
+    </div>
+
+    <div *ngIf="invoiceData">
+      <h1 class="page-title">Order Invoice</h1>
+      
+      <div class="invoice-grid">
+        
+        <!-- Left Column: Details -->
+        <div class="invoice-details-column">
+          
+          <!-- Delivery Info Card -->
+          <div class="info-card">
+            <h2 class="info-card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="1" y="3" width="15" height="13" rx="2" ry="2"/>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                <circle cx="5.5" cy="18.5" r="2.5"/>
+                <circle cx="18.5" cy="18.5" r="2.5"/>
+              </svg>
+              Delivery Information
+            </h2>
+            <div class="delivery-details-grid">
+              <div class="detail-item">
+                <span class="detail-label">Recipient Name</span>
+                <span class="detail-value">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {{ invoiceData.deliveryInfo.name }}
+                </span>
+              </div>
+              
+              <div class="detail-item">
+                <span class="detail-label">Phone Number</span>
+                <span class="detail-value">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  {{ invoiceData.deliveryInfo.phone }}
+                </span>
+              </div>
+              
+              <div class="detail-item" *ngIf="invoiceData.deliveryInfo.email">
+                <span class="detail-label">Email Address</span>
+                <span class="detail-value">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  {{ invoiceData.deliveryInfo.email }}
+                </span>
+              </div>
+              
+              <div class="detail-item">
+                <span class="detail-label">Province / City</span>
+                <span class="detail-value">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  {{ invoiceData.deliveryInfo.province }}
+                </span>
+              </div>
+              
+              <div class="detail-item full-width">
+                <span class="detail-label">Detailed Address</span>
+                <span class="detail-value">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                  {{ invoiceData.deliveryInfo.address }}
+                </span>
+              </div>
+              
+              <div class="detail-item full-width note-item" *ngIf="invoiceData.deliveryInfo.note">
+                <span class="detail-label">Delivery Note</span>
+                <span class="detail-value italic">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  "{{ invoiceData.deliveryInfo.note }}"
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Product List Card -->
+          <div class="info-card">
+            <h2 class="info-card-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <path d="M16 10a4 4 0 0 1-8 0"/>
+              </svg>
+              Items in Invoice
+            </h2>
+            <div class="product-table-wrapper">
+              <table class="product-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of displayItems; let i = index">
+                    <td class="index-col">{{ i + 1 }}</td>
+                    <td class="product-info-col">
+                      <div class="product-name">{{ item.title }}</div>
+                    </td>
+                    <td class="text-center qty-col">{{ item.quantity }}</td>
+                    <td class="text-right price-col">{{ formatPrice(item.unitPrice) }}</td>
+                    <td class="text-right total-col">{{ formatPrice(item.unitPrice * item.quantity) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
         </div>
-        <div>
-          <span class="text-gray-500">Phone:</span>
-          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.phone }}</span>
+        
+        <!-- Right Column: Summary Card & Action Buttons -->
+        <div class="invoice-summary-column">
+          <div class="summary-card">
+            <h2 class="summary-title">Payment Summary</h2>
+            
+            <div class="summary-details">
+              <div class="summary-row">
+                <span class="row-label">Subtotal (excl. VAT)</span>
+                <span class="row-value">{{ formatPrice(invoiceData.subtotal) }}</span>
+              </div>
+              
+              <div class="summary-row">
+                <span class="row-label">VAT (10%)</span>
+                <span class="row-value">{{ formatPrice(invoiceData.vat) }}</span>
+              </div>
+              
+              <div class="summary-row">
+                <span class="row-label">
+                  Shipping Fee
+                  <span class="weight-tag">({{ invoiceData.totalWeight | number:'1.1-2' }}kg)</span>
+                </span>
+                <span class="row-value">{{ formatPrice(invoiceData.shippingFee) }}</span>
+              </div>
+              
+              <div class="summary-total-divider"></div>
+              
+              <div class="summary-total-row">
+                <span class="total-label">Total Amount</span>
+                <span class="total-value">{{ formatPrice(invoiceData.totalAmount) }}</span>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <button (click)="confirmOrder()" class="btn-confirm">
+                Confirm Order & Pay
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 11 12 14 22 4"/>
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
-        <div *ngIf="invoiceData.deliveryInfo.email">
-          <span class="text-gray-500">Email:</span>
-          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.email }}</span>
-        </div>
-        <div>
-          <span class="text-gray-500">Province:</span>
-          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.province }}</span>
-        </div>
-        <div class="md:col-span-2">
-          <span class="text-gray-500">Address:</span>
-          <span class="ml-2 font-medium">{{ invoiceData.deliveryInfo.address }}</span>
-        </div>
-        <div *ngIf="invoiceData.deliveryInfo.note" class="md:col-span-2">
-          <span class="text-gray-500">Note:</span>
-          <span class="ml-2 font-medium italic">{{ invoiceData.deliveryInfo.note }}</span>
-        </div>
+        
       </div>
     </div>
-
-    <!-- Product List Table -->
-    <div class="product-table mb-6">
-      <h2 class="text-lg font-semibold mb-3 text-gray-800">Products</h2>
-      <div class="overflow-x-auto">
-        <table class="w-full border-collapse">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="text-left p-3 border-b font-medium text-gray-600">#</th>
-              <th class="text-left p-3 border-b font-medium text-gray-600">Product</th>
-              <th class="text-center p-3 border-b font-medium text-gray-600">Quantity</th>
-              <th class="text-right p-3 border-b font-medium text-gray-600">Unit Price</th>
-              <th class="text-right p-3 border-b font-medium text-gray-600">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of displayItems; let i = index" class="border-b hover:bg-gray-50">
-              <td class="p-3 text-gray-500">{{ i + 1 }}</td>
-              <td class="p-3 font-medium">{{ item.title }}</td>
-              <td class="p-3 text-center">{{ item.quantity }}</td>
-              <td class="p-3 text-right">{{ item.unitPrice | number }} VND</td>
-              <td class="p-3 text-right font-medium">
-                {{ item.unitPrice * item.quantity | number }} VND
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Invoice Breakdown -->
-    <div class="invoice-breakdown bg-white border rounded-lg p-4">
-      <h2 class="text-lg font-semibold mb-3 text-gray-800">Payment Summary</h2>
-      <div class="space-y-2">
-        <!-- Subtotal -->
-        <div class="flex justify-between">
-          <span class="text-gray-600">Subtotal (excl. VAT):</span>
-          <span class="font-medium">{{ invoiceData.subtotal | number }} VND</span>
-        </div>
-
-        <!-- VAT -->
-        <div class="flex justify-between">
-          <span class="text-gray-600">VAT (10%):</span>
-          <span class="font-medium">{{ invoiceData.vat | number }} VND</span>
-        </div>
-
-        <!-- Shipping Breakdown -->
-        <div class="flex justify-between">
-          <span class="text-gray-600">
-            Shipping Fee
-            <span class="text-xs text-gray-400"> ({{ invoiceData.totalWeight }}kg) </span>
-          </span>
-          <span class="font-medium">{{ invoiceData.shippingFee | number }} VND</span>
-        </div>
-
-
-
-        <hr class="my-3" />
-
-        <!-- Total -->
-        <div class="flex justify-between text-xl font-bold text-blue-700">
-          <span>Total Amount:</span>
-          <span>{{ invoiceData.totalAmount | number }} VND</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="flex gap-4 mt-6">
-      <button
-        (click)="goBackToDelivery()"
-        class="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
-      >
-        &larr; Edit Delivery Info
-      </button>
-      <button
-        (click)="confirmOrder()"
-        class="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
-      >
-        Confirm Order ✓
-      </button>
-    </div>
+    
   </div>
 </div>

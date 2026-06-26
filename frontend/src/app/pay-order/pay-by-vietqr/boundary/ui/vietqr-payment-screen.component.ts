@@ -1,15 +1,16 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { VietQrPaymentControl } from '../../control/vietqr-payment.control';
 import { VietQrPaymentStorageControl } from '../../control/vietqr-payment-storage.control';
 import { PaymentConfirmationResponse } from '../../entity/vietqr-payment.models';
+import { CartService } from '../../../../services/cart.service';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './vietqr-payment-screen.component.html',
   styleUrls: ['./vietqr-payment-screen.component.css'],
 })
@@ -32,8 +33,27 @@ export class VietQRPaymentScreen implements OnInit {
     private storageControl: VietQrPaymentStorageControl,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    private location: Location
+    private location: Location,
+    private cartService: CartService
   ) {}
+
+  /**
+   * Get total quantity of items in cart for the header
+   */
+  getTotalQuantity(): number {
+    return this.cartService.getCart().items.reduce((total, item) => total + Number(item.quantity), 0);
+  }
+
+  /**
+   * Format price to VND currency string
+   */
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
+      return price + '₫';
+    }
+    return numPrice.toLocaleString('vi-VN') + '₫';
+  }
 
   ngOnInit() {
     const state = history.state;
