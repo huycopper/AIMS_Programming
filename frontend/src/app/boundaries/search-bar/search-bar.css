@@ -247,3 +247,88 @@
   border-color: #cbd5e1;
   color: var(--text-primary);
 }
+
+/* ===== Responsive: Small Tablet (≤ 768px) ===== */
+@media (max-width: 768px) {
+  .search-sidebar {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .filter-title {
+    font-size: 11px;
+  }
+
+  .price-bucket {
+    padding: 6px 10px;
+  }
+
+  .price-bucket span {
+    font-size: 13px;
+  }
+}
+
+/* ===== Responsive: Mobile (≤ 480px) ===== */
+@media (max-width: 480px) {
+  .search-sidebar {
+    padding: 1rem;
+    gap: 1rem;
+    border-radius: var(--radius-md);
+  }
+
+  .filter-section {
+    gap: 0.6rem;
+  }
+
+  .filter-title {
+    font-size: 10.5px;
+    gap: 6px;
+  }
+
+  .filter-title::before {
+    height: 10px;
+    width: 2.5px;
+  }
+
+  .search-input {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .search-button {
+    width: 40px;
+  }
+
+  .standalone-input {
+    font-size: 13px;
+  }
+
+  .price-bucket {
+    padding: 5px 8px;
+    gap: 8px;
+  }
+
+  .price-bucket input[type='radio'] {
+    width: 16px;
+    height: 16px;
+  }
+
+  .price-bucket span {
+    font-size: 12.5px;
+  }
+
+  .price-input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .clear-button {
+    padding: 9px 14px;
+    font-size: 12.5px;
+  }
+
+  .apply-button {
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+}

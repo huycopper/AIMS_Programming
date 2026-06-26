@@ -394,3 +394,182 @@
   background: #f1f5f9;
   border-color: var(--border-color);
 }
+
+/* ===== Responsive: Tablet (≤ 992px) ===== */
+@media (max-width: 992px) {
+  .header-inner {
+    gap: 1.5rem;
+    padding: 0 1rem;
+  }
+
+  .logo-text {
+    font-size: 20px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+}
+
+/* ===== Responsive: Small Tablet (≤ 768px) ===== */
+@media (max-width: 768px) {
+  .header-inner {
+    height: 58px;
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .logo-text {
+    font-size: 17px;
+    letter-spacing: -0.5px;
+  }
+
+  .main-content {
+    grid-template-columns: 1fr;
+    padding: 1.25rem 1rem;
+    gap: 1.25rem;
+  }
+
+  .section-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .product-grid,
+  .loading-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .error-state,
+  .empty-state {
+    padding: 2.5rem 1rem;
+  }
+
+  .pagination {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .page-btn {
+    min-width: 36px;
+    height: 36px;
+    font-size: 13px;
+    padding: 0 10px;
+  }
+}
+
+/* ===== Responsive: Mobile (≤ 480px) ===== */
+@media (max-width: 480px) {
+  .site-header {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .header-inner {
+    height: 52px;
+    padding: 0 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .logo-text {
+    font-size: 14px;
+    letter-spacing: -0.25px;
+  }
+
+  .cart-button {
+    padding: 8px;
+    border-radius: 8px;
+  }
+
+  .cart-badge {
+    top: -5px;
+    right: -5px;
+    font-size: 10px;
+    min-width: 16px;
+    height: 16px;
+  }
+
+  .main-content {
+    padding: 1rem 0.75rem;
+    gap: 1rem;
+  }
+
+  .section-header {
+    padding-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  .result-count {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .product-grid,
+  .loading-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .skeleton-image {
+    height: 110px;
+  }
+
+  .skeleton-body {
+    padding: 0.75rem;
+    gap: 8px;
+  }
+
+  .error-state,
+  .empty-state {
+    padding: 2rem 0.75rem;
+    border-radius: var(--radius-md);
+  }
+
+  .error-state svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  .empty-state svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .empty-state h3 {
+    font-size: 16px;
+  }
+
+  .empty-state p,
+  .error-state p {
+    font-size: 13px;
+  }
+
+  .retry-button {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+
+  .pagination {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    gap: 4px;
+  }
+
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+    padding: 0 8px;
+    border-radius: 6px;
+  }
+}
