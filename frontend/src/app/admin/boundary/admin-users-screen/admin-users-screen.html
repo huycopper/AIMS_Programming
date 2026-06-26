@@ -1,6 +1,6 @@
 <div class="admin-shell">
   <header class="admin-header">
-    <a routerLink="/" class="brand-link">AIMS Admin</a>
+    <span class="brand-link">AIMS Admin</span>
     <nav class="admin-nav">
       <a routerLink="/admin/users" class="active">User Directory</a>
       <a routerLink="/product_manager/products" *ngIf="authService.hasRole('PRODUCT_MANAGER')">Products</a>

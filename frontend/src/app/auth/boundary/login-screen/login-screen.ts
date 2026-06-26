@@ -192,7 +192,7 @@ import { AuthService } from '../../control/auth.service.js';
         border: 0;
         border-radius: 8px;
         padding: 0 16px;
-        background: #2563eb;
+        background: #4f46e5;
         color: #ffffff;
         font: inherit;
         font-weight: 700;
@@ -203,7 +203,7 @@ import { AuthService } from '../../control/auth.service.js';
       }
 
       button:hover:not(:disabled) {
-        background: #1d4ed8;
+        background: #4338ca;
         transform: translateY(-1px);
       }
 

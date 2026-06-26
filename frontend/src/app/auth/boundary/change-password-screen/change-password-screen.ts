@@ -63,7 +63,6 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
             <p class="eyebrow">Staff account</p>
             <h2 id="change-password-title">Change Password</h2>
           </div>
-          <button class="logout-button" type="button" (click)="logout()">Logout</button>
         </div>
 
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
@@ -218,25 +217,14 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
         cursor: not-allowed;
       }
 
-      .logout-button {
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
-        color: #334155;
-      }
-
-      .logout-button:hover {
-        border-color: #94a3b8;
-        background: #f8fafc;
-      }
-
       .submit-button {
         margin-top: 6px;
-        background: #2563eb;
+        background: #4f46e5;
         color: #ffffff;
       }
 
       .submit-button:hover:not(:disabled) {
-        background: #1d4ed8;
+        background: #4338ca;
       }
 
       .error-summary {
@@ -273,10 +261,6 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
         h2 {
           font-size: 24px;
         }
-
-        .logout-button {
-          width: 100%;
-        }
       }
     `,
   ]
@@ -295,10 +279,6 @@ export class ChangePasswordScreen {
     private readonly authService: AuthService,
     private readonly router: Router,
   ) {}
-
-  logout() {
-    this.authService.logout();
-  }
 
   async submit() {
     if (this.form.invalid || this.isSubmitting()) {
