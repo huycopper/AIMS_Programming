@@ -53,6 +53,14 @@ body {
   color: var(--text-primary);
 }
 
+/* Ensure Angular route scroll restoration works correctly.
+   Tailwind base may set height:100% on html/body which
+   prevents window-level scrolling. */
+html {
+  height: auto !important;
+  overflow-y: auto !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

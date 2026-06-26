@@ -64,8 +64,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * AC-1: Load 20 random products on homepage load.
-   * "When the homepage loads, the system displays 20 random products"
+   * AC-1: Load products for the homepage with pagination.
+   * Loads all active products sorted by newest first, 20 per page.
    */
   loadRandomProducts(): void {
     this.isLoading = true;
@@ -73,12 +73,23 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.currentSearchParams = {};
 
-    this.productService.getRandomProducts().subscribe({
-      next: (products) => {
-        this.products = products;
-        this.totalProducts = products.length;
-        this.totalPages = 1;
-        this.currentPage = 1;
+    this.loadProducts({ page: this.currentPage, limit: this.pageSize });
+  }
+
+  /**
+   * Shared product loading logic used by both homepage browsing and search.
+   */
+  private loadProducts(params: SearchProductsParams): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+
+    this.productService.searchProducts(params).subscribe({
+      next: (result: PaginatedProducts) => {
+        this.products = result.data;
+        this.totalProducts = result.total;
+        this.currentPage = result.page;
+        this.pageSize = result.limit;
+        this.totalPages = Math.ceil(result.total / result.limit);
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -97,7 +108,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
    *  the system displays all matching products"
    */
   onSearchChanged(params: SearchProductsParams): void {
-    // If no filters applied, go back to random
+    // If no filters applied, go back to browse mode
     const hasFilters =
       params.search ||
       params.category ||
@@ -105,32 +116,17 @@ export class ProductListComponent implements OnInit, OnDestroy {
       params.maxPrice !== undefined;
 
     if (!hasFilters) {
+      this.currentPage = 1;
       this.loadRandomProducts();
       return;
     }
 
-    this.isLoading = true;
     this.isSearchMode = true;
-    this.errorMessage = '';
     this.currentSearchParams = { ...params };
+    this.currentSearchParams.page = 1;
+    this.currentPage = 1;
 
-    this.productService.searchProducts(params).subscribe({
-      next: (result: PaginatedProducts) => {
-        this.products = result.data;
-        this.totalProducts = result.total;
-        this.currentPage = result.page;
-        this.pageSize = result.limit;
-        this.totalPages = Math.ceil(result.total / result.limit);
-        this.isLoading = false;
-        this.cdr.markForCheck();
-      },
-      error: (err) => {
-        console.error('Search failed:', err);
-        this.errorMessage = 'Search failed. Please try again.';
-        this.isLoading = false;
-        this.cdr.markForCheck();
-      },
-    });
+    this.loadProducts(this.currentSearchParams);
   }
 
   /**
@@ -142,8 +138,17 @@ export class ProductListComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.currentSearchParams.page = page;
-    this.onSearchChanged(this.currentSearchParams);
+    this.currentPage = page;
+
+    if (this.isSearchMode) {
+      this.currentSearchParams.page = page;
+      this.loadProducts(this.currentSearchParams);
+    } else {
+      this.loadProducts({ page, limit: this.pageSize });
+    }
+
+    // Scroll to top of page when navigating to a new page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /**

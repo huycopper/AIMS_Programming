@@ -47,8 +47,8 @@
             Featured Products
           }
         </h1>
-        @if (isSearchMode) {
-          <span class="result-count">{{ totalProducts }} products found</span>
+        @if (totalProducts > 0) {
+          <span class="result-count">{{ totalProducts }} products @if (isSearchMode) { found }</span>
         }
       </div>
 
@@ -123,8 +123,16 @@
         </div>
 
         <!-- Pagination -->
-        @if (isSearchMode && totalPages > 1) {
+        @if (totalPages > 1) {
           <nav class="pagination" id="pagination" aria-label="Product pages">
+            <button
+              class="page-btn"
+              [disabled]="currentPage <= 1"
+              (click)="goToPage(1)"
+              aria-label="First page"
+            >
+              «
+            </button>
             <button
               class="page-btn"
               [disabled]="currentPage <= 1"
@@ -153,6 +161,16 @@
             >
               ›
             </button>
+            <button
+              class="page-btn"
+              [disabled]="currentPage >= totalPages"
+              (click)="goToPage(totalPages)"
+              aria-label="Last page"
+            >
+              »
+            </button>
+
+            <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
           </nav>
         }
       }
