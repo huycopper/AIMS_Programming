@@ -83,6 +83,10 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
       this.cart = cart;
       if (!cart || cart.items.length === 0) {
         this.router.navigate(['/cart']);
+      } else {
+        if (this.province && this.address) {
+          this.recalculateShipping();
+        }
       }
       this.cdr?.markForCheck();
     });

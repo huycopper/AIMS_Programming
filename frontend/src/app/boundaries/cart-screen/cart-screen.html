@@ -27,29 +27,6 @@
 
 <div class="cart-page-wrapper">
   <div class="cart-container">
-    <!-- Stepper Tracker -->
-    <div class="checkout-stepper">
-      <div class="step active">
-        <span class="step-number">1</span>
-        <span class="step-label">Shopping Cart</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step">
-        <span class="step-number">2</span>
-        <span class="step-label">Delivery Info</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step">
-        <span class="step-number">3</span>
-        <span class="step-label">Payment</span>
-      </div>
-      <div class="step-divider"></div>
-      <div class="step">
-        <span class="step-number">4</span>
-        <span class="step-label">Invoice</span>
-      </div>
-    </div>
-
     <!-- Back to Shop Link -->
     <div class="back-nav">
       <a routerLink="/" class="back-link">
@@ -132,7 +109,7 @@
                 <h3 class="item-title" [title]="item.product.title">{{ item.product.title }}</h3>
                 <div class="item-meta">
                   <span class="meta-label">Weight:</span>
-                  <span class="meta-value">{{ item.product.weight }}g</span>
+                  <span class="meta-value">{{ item.product.weight | number:'1.1-2' }}kg</span>
                 </div>
                 <div *ngIf="insufficientStockItem[item.product.productId]" class="stock-warning">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -200,7 +177,7 @@
             
             <div class="summary-row">
               <span class="row-label">Total Weight</span>
-              <span class="row-value">{{ totalWeight }}g</span>
+              <span class="row-value">{{ totalWeight | number:'1.1-2' }}kg</span>
             </div>
 
             <div class="summary-row">

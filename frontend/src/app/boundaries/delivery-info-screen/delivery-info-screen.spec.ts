@@ -96,6 +96,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '0912345678';
       component.province = 'Hà Nội';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(false);
       expect(component.validationErrors['name']).toBeDefined();
     });
@@ -105,6 +106,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '';
       component.province = 'Hà Nội';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(false);
       expect(component.validationErrors['phone']).toBeDefined();
     });
@@ -114,6 +116,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '12345';
       component.province = 'Hà Nội';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(false);
       expect(component.validationErrors['phone']).toContain('Invalid');
     });
@@ -123,6 +126,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '0912345678';
       component.province = 'Hà Nội';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(true);
     });
 
@@ -131,6 +135,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '+84912345678';
       component.province = 'Hà Nội';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(true);
     });
 
@@ -139,6 +144,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '0912345678';
       component.province = '';
       component.address = '123 Street';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(false);
       expect(component.validationErrors['province']).toBeDefined();
     });
@@ -148,6 +154,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '0912345678';
       component.province = 'Hà Nội';
       component.address = '';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(false);
       expect(component.validationErrors['address']).toBeDefined();
     });
@@ -162,13 +169,14 @@ describe('DeliveryInfoScreen', () => {
       expect(component.validationErrors['email']).toBeDefined();
     });
 
-    it('should accept empty email (optional)', () => {
+    it('should return false when email is empty', () => {
       component.name = 'Test';
       component.phone = '0912345678';
       component.province = 'Hà Nội';
       component.address = '123 Street';
       component.email = '';
-      expect(component.validateForm()).toBe(true);
+      expect(component.validateForm()).toBe(false);
+      expect(component.validationErrors['email']).toBeDefined();
     });
 
     it('should return true when all required fields are valid', () => {
@@ -176,6 +184,7 @@ describe('DeliveryInfoScreen', () => {
       component.phone = '0912345678';
       component.province = 'Hà Nội';
       component.address = '123 Đại Cồ Việt';
+      component.email = 'test@example.com';
       expect(component.validateForm()).toBe(true);
       expect(Object.keys(component.validationErrors).length).toBe(0);
     });
@@ -205,5 +214,45 @@ describe('DeliveryInfoScreen', () => {
     // The actual API call happens after debounce
     expect(component.province).toBe('Hà Nội');
     expect(component.address).toBe('123 Street');
+  });
+
+  it('should automatically recalculate shipping fee on init if province and address are pre-filled', () => {
+    const cart = new Cart();
+    cart.addItem({
+      productId: 'p1',
+      productType: 'BOOK',
+      title: 'Test Book',
+      weight: 0.5,
+      currentPrice: 60000,
+    } as any, 2);
+    const localCartSubject = new BehaviorSubject<Cart>(cart);
+    const localMockCartService = {
+      getCartObservable: () => localCartSubject.asObservable(),
+      getCart: () => localCartSubject.getValue(),
+    };
+    const localMockOrderService = {
+      calculateShipping: vi.fn().mockReturnValue(of({ shippingFee: 22000 })),
+    };
+
+    const localComponent = new DeliveryInfoScreen(
+      localMockCartService as CartService,
+      localMockOrderService as any,
+      mockRouter as any,
+      { markForCheck: vi.fn() } as any,
+    );
+
+    // Mock loadDeliveryDraft to fill in province and address
+    vi.spyOn(localComponent as any, 'loadDeliveryDraft').mockImplementation(function(this: any) {
+      this.province = 'Hà Nội';
+      this.address = '123 Street';
+    });
+
+    localComponent.ngOnInit();
+
+    expect(localMockOrderService.calculateShipping).toHaveBeenCalledWith(
+      'Hà Nội',
+      '123 Street',
+      expect.any(Array)
+    );
   });
 });
