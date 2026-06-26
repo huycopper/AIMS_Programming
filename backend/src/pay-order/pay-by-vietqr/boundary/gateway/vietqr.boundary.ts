@@ -109,6 +109,7 @@ export class VietQRBoundary {
     const data = (await response.json()) as {
       qrCode?: string;
       qrLink?: string;
+      content?: string;
     };
 
     if (!data.qrCode) {
@@ -118,13 +119,16 @@ export class VietQRBoundary {
       throw new Error('VietQR GenerateQR response missing qrCode');
     }
 
+    // Dùng content từ VietQR trả về (đây là content VietQR thực sự embed vào QR,
+    const returnedContent = data.content ?? content;
+
     this.logger.log(
-      `VietQR QR code generated successfully. qrLink: ${data.qrLink}`,
+      `VietQR QR code generated successfully. qrLink: ${data.qrLink}, content: ${returnedContent}`,
     );
 
     const qrDataURL = await QRCode.toDataURL(data.qrCode); // Chuyển QR thành URL
 
-    return { qrDataURL, amount, content };
+    return { qrDataURL, amount, content: returnedContent };
   }
 
   /**
