@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, EntityManager } from 'typeorm';
 import { AdminAuditLog } from '../entity/admin-audit-log.entity.js';
@@ -45,6 +45,8 @@ export interface RecordActionInput {
 
 @Injectable()
 export class AdminAuditLogControl {
+  private readonly logger = new Logger(AdminAuditLogControl.name);
+
   constructor(
     @InjectRepository(AdminAuditLog)
     private readonly auditLogRepo: Repository<AdminAuditLog>,
@@ -68,7 +70,9 @@ export class AdminAuditLogControl {
     log.notificationEmail = input.notificationEmail || null;
     log.notificationStatus = input.notificationStatus || 'NOT_ATTEMPTED';
 
-    return await repo.save(log);
+    const saved = await repo.save(log);
+    this.logger.log(`Audit log recorded — id=${saved.auditLogId}, action=${input.actionType}, actor=${input.actorUserId}, affected=${input.affectedUserId || 'N/A'}`);
+    return saved;
   }
 
   async updateNotificationStatus(
@@ -78,5 +82,6 @@ export class AdminAuditLogControl {
   ): Promise<void> {
     const repo = entityManager ? entityManager.getRepository(AdminAuditLog) : this.auditLogRepo;
     await repo.update(auditLogId, { notificationStatus: status });
+    this.logger.debug(`Audit notification status updated — logId=${auditLogId}, status=${status}`);
   }
 }

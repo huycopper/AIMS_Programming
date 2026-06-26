@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -23,6 +24,7 @@ const isSupportedRole = (role: string): role is SupportedRole =>
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private dummyHashPromise: Promise<string>;
   private saltRounds: number;
 
@@ -294,6 +296,7 @@ export class AuthService {
 
     const user = tokenEntity.user;
     if (!user) {
+      this.logger.warn('completePasswordReset failed — token has no associated user');
       throw new BadRequestException({
         statusCode: 400,
         code: 'INVALID_RESET_TOKEN',
@@ -302,6 +305,7 @@ export class AuthService {
     }
 
     if (user.status !== 'ACTIVE') {
+      this.logger.warn(`completePasswordReset failed — user not active (userId=${user.userId}, status=${user.status})`);
       throw new BadRequestException({
         statusCode: 400,
         code: 'USER_NOT_ACTIVE',
@@ -310,6 +314,7 @@ export class AuthService {
     }
 
     if (!this.validatePasswordPolicy(dto.newPassword)) {
+      this.logger.warn(`completePasswordReset failed — password policy violation (userId=${user.userId})`);
       throw new BadRequestException({
         statusCode: 400,
         code: 'PASSWORD_POLICY_VIOLATION',
@@ -322,5 +327,7 @@ export class AuthService {
     await this.dataSource.getRepository(User).update(user.userId, {
       passwordHash: newHash,
     });
+
+    this.logger.log(`Password reset completed successfully — userId=${user.userId}`);
   }
 }

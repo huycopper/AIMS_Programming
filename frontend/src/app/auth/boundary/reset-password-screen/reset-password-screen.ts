@@ -71,11 +71,20 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
               <span>New Password</span>
               <input formControlName="newPassword" type="password" placeholder="New Password" autocomplete="new-password" aria-describedby="error-summary">
             </label>
+            <div class="policy-hint">
+              Password must be 8+ characters, include at least one uppercase letter, one lowercase letter, and one digit. No leading/trailing spaces.
+            </div>
+            @if (form.get('newPassword')?.hasError('passwordPolicy') && form.get('newPassword')?.dirty) {
+              <div class="field-error">Password does not meet the requirements above.</div>
+            }
 
             <label>
               <span>Confirm New Password</span>
               <input formControlName="confirmationPassword" type="password" placeholder="Confirm New Password" autocomplete="new-password" aria-describedby="error-summary">
             </label>
+            @if (form.errors?.['mismatch'] && form.get('confirmationPassword')?.dirty) {
+              <div class="field-error">Passwords do not match.</div>
+            }
 
             <button class="submit-button" type="submit" [disabled]="isSubmitting() || form.invalid">
               {{ isSubmitting() ? 'Resetting...' : 'Reset Password' }}
@@ -84,9 +93,6 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
         }
 
         <div id="error-summary" class="error-summary" role="alert">
-        @if (form.errors?.['mismatch']) {
-          <div class="error">Passwords do not match.</div>
-        }
         @if (errorMessage()) {
           <div class="error">{{ errorMessage() }}</div>
         }
@@ -223,6 +229,19 @@ export function passwordMatchValidator(group: AbstractControl): ValidationErrors
 
       .submit-button:hover:not(:disabled) {
         background: #115e59;
+      }
+
+      .policy-hint {
+        font-size: 12px;
+        color: #6b7280;
+        line-height: 1.4;
+        margin-top: -4px;
+      }
+
+      .field-error {
+        font-size: 12px;
+        color: #dc2626;
+        font-weight: 600;
       }
 
       .error-summary {

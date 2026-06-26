@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, EntityManager } from 'typeorm';
 import { PasswordResetToken } from '../entity/password-reset-token.entity.js';
@@ -6,6 +6,8 @@ import crypto from 'crypto';
 
 @Injectable()
 export class PasswordResetTokenControl {
+  private readonly logger = new Logger(PasswordResetTokenControl.name);
+
   constructor(
     @InjectRepository(PasswordResetToken)
     private readonly tokenRepo: Repository<PasswordResetToken>,
@@ -42,6 +44,7 @@ export class PasswordResetTokenControl {
     tokenEntity.createdBy = createdBy;
 
     const saved = await repo.save(tokenEntity);
+    this.logger.log(`Password reset token generated — userId=${userId}, expiresAt=${tokenEntity.expiresAt.toISOString()}, createdBy=${createdBy || 'system'}`);
     return { rawToken, entity: saved };
   }
 
@@ -54,6 +57,7 @@ export class PasswordResetTokenControl {
     });
 
     if (!tokenEntity) {
+      this.logger.warn('Token verification failed — token not found in database');
       throw new BadRequestException({
         statusCode: 400,
         code: 'INVALID_RESET_TOKEN',
@@ -62,6 +66,7 @@ export class PasswordResetTokenControl {
     }
 
     if (tokenEntity.usedAt !== null) {
+      this.logger.warn(`Token verification failed — token already used (userId=${tokenEntity.userId})`);
       throw new BadRequestException({
         statusCode: 400,
         code: 'INVALID_RESET_TOKEN',
@@ -70,6 +75,7 @@ export class PasswordResetTokenControl {
     }
 
     if (tokenEntity.expiresAt.getTime() < Date.now()) {
+      this.logger.warn(`Token verification failed — token expired (userId=${tokenEntity.userId}, expiredAt=${tokenEntity.expiresAt.toISOString()})`);
       throw new BadRequestException({
         statusCode: 400,
         code: 'INVALID_RESET_TOKEN',
@@ -79,6 +85,8 @@ export class PasswordResetTokenControl {
 
     // Mark as used
     tokenEntity.usedAt = new Date();
-    return await this.tokenRepo.save(tokenEntity);
+    const consumed = await this.tokenRepo.save(tokenEntity);
+    this.logger.log(`Token verified and consumed — userId=${tokenEntity.userId}`);
+    return consumed;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import { User } from '../../user/entities/user.entity.js';
@@ -25,6 +25,8 @@ export interface AdminUserResponse {
 
 @Injectable()
 export class AdminUsersService {
+  private readonly logger = new Logger(AdminUsersService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -139,9 +141,11 @@ export class AdminUsersService {
 
     if (existingUser) {
       if (existingUser.username.toLowerCase() === dto.username.toLowerCase()) {
+        this.logger.warn(`createUser failed — duplicate username="${dto.username}" (actor=${actorUserId})`);
         throw new ConflictException('Username is already taken.');
       }
       if (existingUser.email.toLowerCase() === dto.email.toLowerCase()) {
+        this.logger.warn(`createUser failed — duplicate email="${dto.email}" (actor=${actorUserId})`);
         throw new ConflictException('Email is already registered.');
       }
     }
@@ -226,6 +230,8 @@ export class AdminUsersService {
       emailSent ? 'SENT' : 'FAILED',
     );
 
+    this.logger.log(`User created successfully — userId=${userId}, username=${dto.username}, email=${dto.email}, roles=[${dto.roles}], emailSent=${emailSent} (actor=${actorUserId})`);
+
     // Return the created user response
     return {
       userId,
@@ -263,6 +269,7 @@ export class AdminUsersService {
           .getCount();
 
         if (activeAdminsCount === 0) {
+          this.logger.warn(`Last-admin lockout blocked — targetUserId=${userId}, actionType=${actionType}`);
           throw new BadRequestException('Cannot modify status or remove ADMIN role because this is the last active Administrator in the system.');
         }
       }
@@ -334,6 +341,8 @@ export class AdminUsersService {
       emailSent ? 'SENT' : 'FAILED',
     );
 
+    this.logger.log(`Roles updated — targetUserId=${targetUserId}, oldRoles=[${oldRoles}], newRoles=[${newRoles}], emailSent=${emailSent} (actor=${actorUserId})`);
+
     return {
       userId: targetUserId,
       username: user.username,
@@ -362,6 +371,7 @@ export class AdminUsersService {
     const newStatus = dto.status;
 
     if (oldStatus === newStatus) {
+      this.logger.debug(`updateUserStatus skipped — status unchanged (${oldStatus}) for userId=${targetUserId}`);
       return {
         userId: targetUserId,
         username: user.username,
@@ -416,6 +426,8 @@ export class AdminUsersService {
       auditLogId,
       emailSent ? 'SENT' : 'FAILED',
     );
+
+    this.logger.log(`Status updated — targetUserId=${targetUserId}, ${oldStatus}→${newStatus}, actionType=${actionType}, emailSent=${emailSent} (actor=${actorUserId})`);
 
     return {
       userId: targetUserId,
@@ -476,6 +488,8 @@ export class AdminUsersService {
       auditLogId,
       emailSent ? 'SENT' : 'FAILED',
     );
+
+    this.logger.log(`Password reset triggered — targetUserId=${targetUserId}, email=${user.email}, emailSent=${emailSent} (actor=${actorUserId})`);
 
     return {
       userId: targetUserId,
