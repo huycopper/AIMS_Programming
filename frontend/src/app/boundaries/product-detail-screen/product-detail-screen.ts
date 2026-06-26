@@ -20,16 +20,23 @@ export class ProductDetailScreen implements OnInit, OnDestroy {
   isLoading = true;
   errorMessage = '';
   addToCartMessage = '';
+  isSuccessPopupOpen = false;
+  cartItemCount = 0;
   private subscription?: Subscription;
+  private cartSub?: Subscription;
 
   constructor(
     private readonly route: ActivatedRoute,
     private readonly productService: ProductService,
     private readonly cartService: CartService,
     private readonly cdr: ChangeDetectorRef,
-  ) {}
+  ) { }
 
   ngOnInit(): void {
+    this.cartSub = this.cartService.getCartObservable().subscribe(cart => {
+      this.cartItemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+      this.cdr.markForCheck();
+    });
     this.subscription = this.route.paramMap
       .pipe(
         switchMap((params) => {
@@ -56,6 +63,7 @@ export class ProductDetailScreen implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription?.unsubscribe();
+    this.cartSub?.unsubscribe();
   }
 
   addToCart(): void {
@@ -91,7 +99,26 @@ export class ProductDetailScreen implements OnInit, OnDestroy {
     }
 
     this.cartService.addItem(this.product, normalizedQuantity);
-    this.addToCartMessage = `Added ${normalizedQuantity} to cart.`;
+    this.addToCartMessage = '';
+    this.isSuccessPopupOpen = true;
+
+    if (this.popupTimeout) {
+      clearTimeout(this.popupTimeout);
+    }
+    this.popupTimeout = setTimeout(() => {
+      this.isSuccessPopupOpen = false;
+      this.cdr.markForCheck();
+    }, 3000);
+  }
+
+  private popupTimeout?: any;
+
+  closeSuccessPopup(): void {
+    this.isSuccessPopupOpen = false;
+    if (this.popupTimeout) {
+      clearTimeout(this.popupTimeout);
+      this.popupTimeout = undefined;
+    }
   }
 
   formatPrice(value: number): string {
