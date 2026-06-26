@@ -28,7 +28,7 @@ export class CartScreen implements OnInit, OnDestroy {
       this.cart = cart;
       this.totalExclVAT = cart.calculateSubTotal();
       this.totalWeight = cart.getTotalWeight();
-      this.cdr.markForCheck();
+      this.cdr?.markForCheck();
     });
   }
 

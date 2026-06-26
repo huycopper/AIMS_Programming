@@ -1,13 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminOrderDetail, PendingOrderRow, StockConflict } from '../../models/order.model';
 import { OrderService } from '../../services/order.service';
+import { AuthService } from '../../auth/control/auth.service';
 
 @Component({
   selector: 'app-order-management-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './order-management-screen.html',
   styleUrl: './order-management-screen.css',
 })
@@ -25,11 +27,37 @@ export class OrderManagementScreen implements OnInit {
   rejectReason = '';
   isRejectDialogOpen = false;
   isApproveDialogOpen = false;
+  isProfileDropdownOpen = false;
 
   constructor(
     private readonly orderService: OrderService,
     private readonly cdr: ChangeDetectorRef,
+    public readonly authService: AuthService = {
+      currentUser: (() => null) as any,
+      roles: (() => []) as any,
+      logout: () => {},
+      hasRole: () => false,
+      hasAnyRole: () => false,
+    } as any,
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-profile-container')) {
+      this.isProfileDropdownOpen = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  toggleProfileDropdown(): void {
+    this.isProfileDropdownOpen = !this.isProfileDropdownOpen;
+    this.cdr.markForCheck();
+  }
+
+  logout(): void {
+    this.authService.logout();
+  }
 
   ngOnInit(): void {
     this.loadOrders();

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   BulkDeleteProductResult,
   CreateProductRequest,
@@ -12,6 +13,7 @@ import {
   UpdateProductRequest,
 } from '../../models/product.model';
 import { ProductService } from '../../services/product.service';
+import { AuthService } from '../../auth/control/auth.service';
 
 type ProductDraft = {
   productType: ProductType;
@@ -64,7 +66,7 @@ type StockFilter = '' | 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 @Component({
   selector: 'app-product-management-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './product-management-screen.html',
   styleUrl: './product-management-screen.css',
 })
@@ -110,11 +112,37 @@ export class ProductManagementScreen implements OnInit {
   originalStockQuantity: number | null = null;
   fieldErrors: Record<string, string> = {};
   draft: ProductDraft = this.createEmptyDraft();
+  isProfileDropdownOpen = false;
 
   constructor(
     private readonly productService: ProductService,
     private readonly cdr: ChangeDetectorRef,
+    public readonly authService: AuthService = {
+      currentUser: (() => null) as any,
+      roles: (() => []) as any,
+      logout: () => {},
+      hasRole: () => false,
+      hasAnyRole: () => false,
+    } as any,
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-profile-container')) {
+      this.isProfileDropdownOpen = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  toggleProfileDropdown(): void {
+    this.isProfileDropdownOpen = !this.isProfileDropdownOpen;
+    this.cdr.markForCheck();
+  }
+
+  logout(): void {
+    this.authService.logout();
+  }
 
   ngOnInit(): void {
     this.loadProducts();

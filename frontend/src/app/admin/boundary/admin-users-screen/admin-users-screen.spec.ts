@@ -29,7 +29,7 @@ describe('AdminUsersScreen', () => {
       navigate: vi.fn(),
     };
 
-    component = new AdminUsersScreen(adminUserService, authService, router);
+    component = new AdminUsersScreen(adminUserService, authService, router, { markForCheck: vi.fn() } as any);
     component.ngOnInit();
   });
 

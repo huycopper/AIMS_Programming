@@ -39,12 +39,12 @@ describe('authentication and role guards (Story 5.3 ATDD)', () => {
     const result = TestBed.runInInjectionContext(() =>
       authGuard(
         {} as ActivatedRouteSnapshot,
-        { url: '/admin/products?search=book' } as RouterStateSnapshot,
+        { url: '/product_manager/products?search=book' } as RouterStateSnapshot,
       ),
     );
     expect(result).toEqual(expect.objectContaining({ commands: ['/staff/login'] }));
     expect(router.createUrlTree).toHaveBeenCalledWith(['/staff/login'], {
-      queryParams: { returnUrl: '/admin/products?search=book' },
+      queryParams: { returnUrl: '/product_manager/products?search=book' },
     });
   });
 
@@ -65,14 +65,14 @@ describe('authentication and role guards (Story 5.3 ATDD)', () => {
     );
     const route = { data: { roles: required } } as unknown as ActivatedRouteSnapshot;
     const result = TestBed.runInInjectionContext(() =>
-      roleGuard(route, { url: '/admin/products' } as RouterStateSnapshot),
+      roleGuard(route, { url: '/product_manager/products' } as RouterStateSnapshot),
     );
     expect(result === true).toBe(allowed);
     if (!allowed) expect(router.createUrlTree).toHaveBeenCalledWith(['/forbidden']);
   });
 
   it.each([
-    ['/admin/products', '/admin/products'],
+    ['/product_manager/products', '/product_manager/products'],
     ['/staff/change-password?from=menu', '/staff/change-password?from=menu'],
     ['//evil.example/steal', null],
     ['https://evil.example/steal', null],

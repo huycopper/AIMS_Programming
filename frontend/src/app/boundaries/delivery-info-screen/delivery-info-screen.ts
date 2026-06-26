@@ -84,7 +84,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
       if (!cart || cart.items.length === 0) {
         this.router.navigate(['/cart']);
       }
-      this.cdr.markForCheck();
+      this.cdr?.markForCheck();
     });
     this.subscriptions.push(cartSub);
 
@@ -155,12 +155,12 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
         next: (result) => { // If successful
           this.shippingResult = result;
           this.isCalculatingShipping = false;
-          this.cdr.markForCheck();
+          this.cdr?.markForCheck();
         },
         error: (err) => {
           this.errorMessage = 'Failed to calculate shipping fee. Please try again.';
           this.isCalculatingShipping = false;
-          this.cdr.markForCheck();
+          this.cdr?.markForCheck();
           console.error('Shipping calculation error:', err);
         },
       });
@@ -224,7 +224,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
       next: (invoiceData) => {
         this.isSubmitting = false;
         this.saveCurrentInvoice(invoiceData);
-        this.cdr.markForCheck();
+        this.cdr?.markForCheck();
         // Navigate to invoice screen with invoice data
         this.router.navigate(['/invoice'], {
           state: { invoiceData, cart: this.cart },
@@ -234,7 +234,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.errorMessage =
           'Failed to place order. Please check your information and try again.';
-        this.cdr.markForCheck();
+        this.cdr?.markForCheck();
         console.error('Place order error:', err);
       },
     });

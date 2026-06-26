@@ -27,7 +27,7 @@ describe('CartScreen', () => {
       navigate: vi.fn(),
     };
 
-    component = new CartScreen(mockCartService as any, mockRouter as any);
+    component = new CartScreen(mockCartService as any, mockRouter as any, { markForCheck: vi.fn() } as any);
     component.ngOnInit();
   });
 

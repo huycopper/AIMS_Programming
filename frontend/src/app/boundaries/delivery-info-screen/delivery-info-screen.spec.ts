@@ -75,6 +75,7 @@ describe('DeliveryInfoScreen', () => {
       mockCartService as CartService,
       mockOrderService as OrderService,
       mockRouter as any,
+      { markForCheck: vi.fn() } as any,
     );
     component.ngOnInit();
   });

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AdminUserService } from '../../control/admin-user.service';
@@ -33,12 +33,28 @@ export class AdminUsersScreen implements OnInit {
   isEditRolesModalOpen = false;
   editRolesModel = { user: null as AdminUserResponse | null, roleAdmin: false, rolePM: false };
 
+  isProfileDropdownOpen = false;
+
   constructor(
     private readonly adminUserService: AdminUserService,
     public readonly authService: AuthService,
     private readonly router: Router,
     private readonly cdr: ChangeDetectorRef,
   ) {}
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.user-profile-container')) {
+      this.isProfileDropdownOpen = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  toggleProfileDropdown(): void {
+    this.isProfileDropdownOpen = !this.isProfileDropdownOpen;
+    this.cdr.markForCheck();
+  }
 
   ngOnInit(): void {
     this.loadUsers();

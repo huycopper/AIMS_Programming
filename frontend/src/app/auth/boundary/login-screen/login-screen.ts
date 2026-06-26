@@ -287,7 +287,7 @@ export class LoginScreen {
         if (this.authService.hasRole('ADMIN')) {
           returnUrl = '/admin/users';
         } else if (this.authService.hasRole('PRODUCT_MANAGER')) {
-          returnUrl = '/admin/products';
+          returnUrl = '/product_manager/products';
         } else {
           returnUrl = '/';
         }

@@ -53,7 +53,7 @@ describe('staff authentication forms (Story 5.3 ATDD)', () => {
 
     await screen.submit();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/admin/products');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/product_manager/products');
   });
 
   it('[P1] login does not force admin-only staff to change password by default', async () => {

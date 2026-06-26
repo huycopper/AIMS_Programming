@@ -21,7 +21,7 @@ describe('authInterceptor (Story 5.3 ATDD)', () => {
     accessToken: vi.fn(() => 'signed-token'),
     clearSession: vi.fn(),
   };
-  const router = { navigate: vi.fn(), url: '/admin/products' };
+  const router = { navigate: vi.fn(), url: '/product_manager/products' };
 
   beforeEach(() => {
     auth.accessToken.mockReturnValue('signed-token');
@@ -71,7 +71,7 @@ describe('authInterceptor (Story 5.3 ATDD)', () => {
       .flush({}, { status: 401, statusText: 'Unauthorized' });
     expect(auth.clearSession).toHaveBeenCalledTimes(1);
     expect(router.navigate).toHaveBeenCalledWith(['/staff/login'], {
-      queryParams: { returnUrl: '/admin/products' },
+      queryParams: { returnUrl: '/product_manager/products' },
     });
   });
 

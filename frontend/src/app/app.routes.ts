@@ -35,13 +35,13 @@ export const routes: Routes = [
     data: { roles: ['ADMIN'] },
   },
   {
-    path: 'admin/products',
+    path: 'product_manager/products',
     component: ProductManagementScreen,
     canActivate: [authGuard, roleGuard],
     data: { roles: ['PRODUCT_MANAGER'] },
   },
   {
-    path: 'admin/orders',
+    path: 'product_manager/orders',
     component: OrderManagementScreen,
     canActivate: [authGuard, roleGuard],
     data: { roles: ['PRODUCT_MANAGER'] },
