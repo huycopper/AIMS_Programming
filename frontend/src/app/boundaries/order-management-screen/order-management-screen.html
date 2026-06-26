@@ -2,7 +2,6 @@
   <header class="admin-header">
     <a class="brand-link" href="/">AIMS</a>
     <nav class="admin-nav" aria-label="Staff navigation">
-      <a href="/">Catalog</a>
       <a href="/admin/products">Products</a>
       <a class="active" href="/admin/orders" aria-current="page">Pending Orders</a>
     </nav>
@@ -122,82 +121,84 @@
         </button>
       </header>
 
-      @if (isDetailLoading) {
-        <div class="detail-loading">Loading order detail...</div>
-      } @else {
-        <section class="summary-grid">
-          <article>
-            <span>Total</span><strong>{{ formatPrice(selectedOrder.invoice.totalAmount) }}</strong>
-          </article>
-          <article>
-            <span>Subtotal</span><strong>{{ formatPrice(selectedOrder.invoice.subtotal) }}</strong>
-          </article>
-          <article>
-            <span>VAT</span><strong>{{ formatPrice(selectedOrder.invoice.vat) }}</strong>
-          </article>
-          <article>
-            <span>Shipping</span
-            ><strong>{{ formatPrice(selectedOrder.invoice.shippingFee) }}</strong>
-          </article>
-        </section>
+      <div class="detail-body">
+        @if (isDetailLoading) {
+          <div class="detail-loading">Loading order detail...</div>
+        } @else {
+          <section class="summary-grid">
+            <article>
+              <span>Total</span><strong>{{ formatPrice(selectedOrder.invoice.totalAmount) }}</strong>
+            </article>
+            <article>
+              <span>Subtotal</span><strong>{{ formatPrice(selectedOrder.invoice.subtotal) }}</strong>
+            </article>
+            <article>
+              <span>VAT</span><strong>{{ formatPrice(selectedOrder.invoice.vat) }}</strong>
+            </article>
+            <article>
+              <span>Shipping</span
+              ><strong>{{ formatPrice(selectedOrder.invoice.shippingFee) }}</strong>
+            </article>
+          </section>
 
-        <section class="detail-section">
-          <h3>Delivery</h3>
-          <p>
-            {{ selectedOrder.deliveryInfo.name }} / {{ selectedOrder.deliveryInfo.phone }} /
-            {{ selectedOrder.deliveryInfo.email }}
-          </p>
-          <p>{{ selectedOrder.deliveryInfo.address }}, {{ selectedOrder.deliveryInfo.province }}</p>
-          @if (selectedOrder.deliveryInfo.note) {
-            <p>{{ selectedOrder.deliveryInfo.note }}</p>
-          }
-        </section>
-
-        <section class="detail-section">
-          <h3>Line Items</h3>
-          <div class="line-list">
-            @for (item of selectedOrder.items; track item.orderItemId) {
-              <article>
-                <div>
-                  <strong>{{ item.productTitle }}</strong>
-                  <span>{{ item.quantity }} x {{ formatPrice(item.unitPrice) }}</span>
-                </div>
-                <div>
-                  <strong>{{ item.currentProduct?.stockQuantity ?? 0 }}</strong>
-                  <span>{{ item.currentProduct?.status || 'MISSING' }}</span>
-                </div>
-              </article>
+          <section class="detail-section">
+            <h3>Delivery</h3>
+            <p>
+              {{ selectedOrder.deliveryInfo.name }} / {{ selectedOrder.deliveryInfo.phone }} /
+              {{ selectedOrder.deliveryInfo.email }}
+            </p>
+            <p>{{ selectedOrder.deliveryInfo.address }}, {{ selectedOrder.deliveryInfo.province }}</p>
+            @if (selectedOrder.deliveryInfo.note) {
+              <p>{{ selectedOrder.deliveryInfo.note }}</p>
             }
-          </div>
-        </section>
+          </section>
 
-        @if (hasStockConflicts) {
-          <section class="stock-alert">
-            <h3>Stock Conflicts</h3>
-            @for (conflict of selectedOrder.stockConflicts; track conflict.productId) {
-              <p>{{ conflictText(conflict) }}</p>
+          <section class="detail-section">
+            <h3>Line Items</h3>
+            <div class="line-list">
+              @for (item of selectedOrder.items; track item.orderItemId) {
+                <article>
+                  <div>
+                    <strong>{{ item.productTitle }}</strong>
+                    <span>{{ item.quantity }} x {{ formatPrice(item.unitPrice) }}</span>
+                  </div>
+                  <div>
+                    <strong>{{ item.currentProduct?.stockQuantity ?? 0 }}</strong>
+                    <span>{{ item.currentProduct?.status || 'MISSING' }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          @if (hasStockConflicts) {
+            <section class="stock-alert">
+              <h3>Stock Conflicts</h3>
+              @for (conflict of selectedOrder.stockConflicts; track conflict.productId) {
+                <p>{{ conflictText(conflict) }}</p>
+              }
+            </section>
+          }
+
+          <section class="detail-section">
+            <h3>Payment and Refund</h3>
+            @if (selectedOrder.payment) {
+              <p>
+                {{ selectedOrder.payment.paymentMethod }} / {{ selectedOrder.payment.status }} /
+                {{ formatPrice(selectedOrder.payment.amount) }}
+              </p>
+            } @else {
+              <p>No successful payment transaction.</p>
+            }
+            @if (selectedOrder.refund) {
+              <p>
+                {{ selectedOrder.refund.refundMethod }} / {{ selectedOrder.refund.refundStatus }} /
+                {{ formatPrice(selectedOrder.refund.refundAmount) }}
+              </p>
             }
           </section>
         }
-
-        <section class="detail-section">
-          <h3>Payment and Refund</h3>
-          @if (selectedOrder.payment) {
-            <p>
-              {{ selectedOrder.payment.paymentMethod }} / {{ selectedOrder.payment.status }} /
-              {{ formatPrice(selectedOrder.payment.amount) }}
-            </p>
-          } @else {
-            <p>No successful payment transaction.</p>
-          }
-          @if (selectedOrder.refund) {
-            <p>
-              {{ selectedOrder.refund.refundMethod }} / {{ selectedOrder.refund.refundStatus }} /
-              {{ formatPrice(selectedOrder.refund.refundAmount) }}
-            </p>
-          }
-        </section>
-      }
+      </div>
 
       <footer class="detail-actions">
         <button
