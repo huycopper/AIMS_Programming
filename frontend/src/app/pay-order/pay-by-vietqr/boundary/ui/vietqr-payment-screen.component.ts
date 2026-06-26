@@ -126,6 +126,10 @@ export class VietQRPaymentScreen implements OnInit {
     this.location.back();
   }
 
+  payWithPayPal() {
+    alert('This feature is in progress');
+  }
+
   formatTransactionDate(value?: string): string {
     if (!value) return '';
 

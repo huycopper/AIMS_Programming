@@ -74,10 +74,6 @@
           
           <div class="vietqr-badge">
             <span class="vietqr-logo-text">Viet<span>QR</span></span>
-            <span class="secure-tag">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-              NAPAS Secure
-            </span>
           </div>
         </div>
 
@@ -93,21 +89,12 @@
           <div class="details-rows">
             <div class="details-row">
               <span class="label">Order ID</span>
-              <span class="value font-mono">{{ orderId }}</span>
+              <span class="value">{{ orderId }}</span>
             </div>
             
             <div class="details-row" *ngIf="paymentContent">
               <span class="label">Payment Content</span>
-              <span class="value content-box font-mono">{{ paymentContent }}</span>
-            </div>
-            
-            <div class="payment-guide-box">
-              <span class="guide-title">Important Instructions:</span>
-              <ol class="guide-list">
-                <li>Make sure to scan the exact QR code shown here.</li>
-                <li>Do not change the prefilled amount or transaction description.</li>
-                <li>Once transfer is complete, click <strong>"I have paid"</strong> below.</li>
-              </ol>
+              <span class="value content-box">{{ paymentContent }}</span>
             </div>
           </div>
 
@@ -128,9 +115,17 @@
                 Verifying payment...
               </span>
             </button>
-            
-            <button (click)="goBack()" class="btn-go-back" [disabled]="confirmingPayment">
-              &larr; Go Back
+
+            <button 
+              (click)="payWithPayPal()" 
+              class="btn-paypal"
+              [disabled]="confirmingPayment">
+              <span class="flex items-center gap-2 justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="inline">
+                  <path d="M20.067 8.478c.088.528.058 1.102-.122 1.685-.71 2.298-2.73 4.14-5.328 4.14H11.12l-.993 6.273a.573.573 0 0 1-.568.483H6.072a.382.382 0 0 1-.378-.442l2.67-16.9a.955.955 0 0 1 .945-.805h7.24c1.378 0 2.503.35 3.193 1.052.684.696.883 1.636.525 2.924-.047.169-.1.332-.158.49zm-5.467 1.34c.052-.33.023-.62-.12-.85-.157-.253-.497-.378-1.026-.378H9.957l-1.126 7.12H10.9c.795 0 1.488-.135 1.94-.486.438-.34.698-.946.812-1.666a3.834 3.834 0 0 0-.052-1.74z"/>
+                </svg>
+                Pay with PayPal
+              </span>
             </button>
           </div>
 
@@ -180,10 +175,10 @@
           <h3>Transaction Information</h3>
           <div class="detail-grid">
             <span>Transaction ID</span>
-            <strong class="font-mono">{{ transaction.transactionId }}</strong>
+            <strong>{{ transaction.transactionId }}</strong>
             
             <span>Content</span>
-            <strong class="font-mono">{{ transaction.transactionContent }}</strong>
+            <strong>{{ transaction.transactionContent }}</strong>
             
             <span>Transaction Time</span>
             <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>

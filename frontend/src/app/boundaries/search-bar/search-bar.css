@@ -3,86 +3,122 @@
 }
 
 .search-sidebar {
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-premium);
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .filter-section {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
 .filter-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.75px;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Search Input */
+.filter-title::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  background: var(--primary);
+  border-radius: 9999px;
+}
+
+/* Search Input Group */
 .search-input-group {
   display: flex;
   gap: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid #d1d5db;
-  transition: border-color 0.2s ease;
+  border: 1px solid var(--border-color);
+  background: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .search-input-group:focus-within {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 .search-input {
   flex: 1;
-  padding: 10px 14px;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
   border: none;
   outline: none;
   font-size: 14px;
-  color: #111827;
+  font-weight: 500;
+  color: var(--text-primary);
   background: transparent;
 }
 
 .search-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 .standalone-input {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
   width: 100%;
   box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.standalone-input:focus {
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 .search-button {
-  padding: 10px 14px;
+  width: 46px;
   border: none;
-  background: #6366f1;
+  background: var(--primary);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
 }
 
 .search-button:hover {
-  background: #4f46e5;
+  background: var(--primary-hover);
 }
 
+.search-button svg {
+  transition: transform 0.2s ease;
+}
+
+.search-button:hover svg {
+  transform: scale(1.1);
+}
+
+/* Price Buckets */
 .price-bucket-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .price-bucket {
@@ -90,29 +126,37 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
-  transition: background 0.15s ease;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .price-bucket:hover {
-  background: #f3f4f6;
+  background: var(--bg-main);
+  border-color: var(--border-color);
 }
 
 .price-bucket input[type='radio'] {
-  width: 16px;
-  height: 16px;
-  accent-color: #6366f1;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
   cursor: pointer;
 }
 
 .price-bucket span {
-  font-size: 14px;
-  color: #374151;
-  font-weight: 500;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  font-weight: 550;
+  transition: color 0.15s ease;
 }
 
-/* Price Range */
+.price-bucket input[type='radio']:checked + span {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Price Range Inputs */
 .price-range-group {
   display: flex;
   align-items: center;
@@ -121,26 +165,29 @@
 
 .price-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   font-size: 14px;
-  color: #111827;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: #f8fafc;
   outline: none;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 0;
 }
 
 .price-input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }
 
 .price-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
-/* Remove number input spinners */
+/* Remove spin buttons */
 .price-input::-webkit-outer-spin-button,
 .price-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -148,46 +195,55 @@
 }
 .price-input[type='number'] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .price-separator {
-  color: #9ca3af;
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 /* Buttons */
 .apply-button {
-  padding: 8px 16px;
-  background: #6366f1;
+  padding: 11px 16px;
+  background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 13px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
+  letter-spacing: 0.25px;
 }
 
 .apply-button:hover {
-  background: #4f46e5;
+  background: linear-gradient(135deg, #4f46e5 0%, #3b31c2 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+}
+
+.apply-button:active {
+  transform: translateY(0);
 }
 
 .clear-button {
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: transparent;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
 }
 
 .clear-button:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  color: #374151;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: var(--text-primary);
 }

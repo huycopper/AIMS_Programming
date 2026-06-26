@@ -35,7 +35,6 @@
       placeholder="Fiction, Programming, Rock..."
       maxlength="100"
       (keyup.enter)="onCategoryChange()"
-      (blur)="onCategoryChange()"
     />
   </div>
 
@@ -66,6 +65,7 @@
         placeholder="Min"
         min="0"
         maxlength="10"
+        (keyup.enter)="onApplyPriceFilter()"
       />
       <span class="price-separator">-</span>
       <input
@@ -76,15 +76,9 @@
         placeholder="Max"
         min="0"
         maxlength="10"
+        (keyup.enter)="onApplyPriceFilter()"
       />
     </div>
-    <button
-      id="apply-price-filter"
-      class="apply-button"
-      (click)="onApplyPriceFilter()"
-    >
-      Apply
-    </button>
   </div>
 
   <button
