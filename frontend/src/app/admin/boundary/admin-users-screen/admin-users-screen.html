@@ -8,7 +8,7 @@
     </nav>
     <div class="user-profile-container" style="margin-left: auto; position: relative;" *ngIf="authService.currentUser() as user">
       <button type="button" class="profile-trigger" (click)="toggleProfileDropdown()" aria-haspopup="true" [attr.aria-expanded]="isProfileDropdownOpen">
-        <span class="username-display">{{ user.username }}</span>
+        <span class="username-display">{{ user.username.split('_').join(' ') }}</span>
         <svg class="chevron-icon" [class.rotated]="isProfileDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
@@ -19,7 +19,7 @@
           <span class="signed-in-label">Signed in as</span>
           <span class="user-email" title="{{ user.email }}">{{ user.email }}</span>
           <div class="user-roles-list">
-            <span *ngFor="let role of user.roles" class="role-chip">{{ role }}</span>
+            <span *ngFor="let role of user.roles" class="role-chip">{{ role.split('_').join(' ') }}</span>
           </div>
         </div>
         <a routerLink="/staff/change-password" (click)="isProfileDropdownOpen = false" class="dropdown-item">
@@ -124,13 +124,13 @@
           <tbody>
             <tr *ngFor="let user of users" (click)="selectUser(user)">
               <td>
-                <strong style="color: #4f46e5;">{{ user.username }}</strong>
+                <strong style="color: #4f46e5;">{{ user.username.split('_').join(' ') }}</strong>
               </td>
               <td>{{ user.email }}</td>
               <td>
                 <div style="display: flex; gap: 4px; flex-wrap: wrap;">
                   <span class="role-badge" *ngFor="let role of user.roles">
-                    {{ role }}
+                    {{ role.split('_').join(' ') }}
                   </span>
                 </div>
               </td>
@@ -209,7 +209,7 @@
       <form (submit)="submitCreateUser($event)" #createForm="ngForm">
         <div class="modal-body">
           <div class="form-group">
-            <label for="newUsername">Username <span class="required">*</span></label>
+            <label for="newUsername"><span>Username <span class="required">*</span></span></label>
             <input
               type="text"
               id="newUsername"
@@ -227,7 +227,7 @@
           </div>
 
           <div class="form-group" style="margin-top: 12px;">
-            <label for="newEmail">Email Address <span class="required">*</span></label>
+            <label for="newEmail"><span>Email Address <span class="required">*</span></span></label>
             <input
               type="email"
               id="newEmail"
@@ -254,7 +254,7 @@
                   name="roleAdmin"
                   [(ngModel)]="createModel.roleAdmin"
                 />
-                <span>Administrator (ADMIN)</span>
+                <span>Administrator</span>
               </label>
               <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
                 <input
@@ -262,7 +262,7 @@
                   name="rolePM"
                   [(ngModel)]="createModel.rolePM"
                 />
-                <span>Product Manager (PRODUCT_MANAGER)</span>
+                <span>Product Manager</span>
               </label>
             </div>
             <div class="field-error" *ngIf="!createModel.roleAdmin && !createModel.rolePM && createForm.submitted">
@@ -294,7 +294,7 @@
       <form (submit)="submitEditRoles($event)">
         <div class="modal-body">
           <p style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: #475569;">
-            Update assigned roles for user: <strong>{{ editRolesModel.user?.username }}</strong>
+            Update assigned roles for user: <strong>{{ editRolesModel.user?.username?.split('_')?.join(' ') }}</strong>
           </p>
 
           <div class="form-group">
@@ -308,7 +308,7 @@
                   name="editRoleAdmin"
                   [(ngModel)]="editRolesModel.roleAdmin"
                 />
-                <span>Administrator (ADMIN)</span>
+                <span>Administrator</span>
               </label>
               <label style="display: flex; align-items: center; gap: 6px; font-weight: normal; cursor: pointer; flex-direction: row;">
                 <input
@@ -316,7 +316,7 @@
                   name="editRolePM"
                   [(ngModel)]="editRolesModel.rolePM"
                 />
-                <span>Product Manager (PRODUCT_MANAGER)</span>
+                <span>Product Manager</span>
               </label>
             </div>
             <div class="field-error" *ngIf="!editRolesModel.roleAdmin && !editRolesModel.rolePM">

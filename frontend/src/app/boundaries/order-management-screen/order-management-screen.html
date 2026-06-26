@@ -7,7 +7,7 @@
     </nav>
     <div class="user-profile-container" style="margin-left: auto; position: relative;" *ngIf="authService.currentUser() as user">
       <button type="button" class="profile-trigger" (click)="toggleProfileDropdown()" aria-haspopup="true" [attr.aria-expanded]="isProfileDropdownOpen">
-        <span class="username-display">{{ user.username }}</span>
+        <span class="username-display">{{ user.username.split('_').join(' ') }}</span>
         <svg class="chevron-icon" [class.rotated]="isProfileDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
@@ -18,7 +18,7 @@
           <span class="signed-in-label">Signed in as</span>
           <span class="user-email" title="{{ user.email }}">{{ user.email }}</span>
           <div class="user-roles-list">
-            <span *ngFor="let role of user.roles" class="role-chip">{{ role }}</span>
+            <span *ngFor="let role of user.roles" class="role-chip">{{ role.split('_').join(' ') }}</span>
           </div>
         </div>
         <a routerLink="/staff/change-password" (click)="isProfileDropdownOpen = false" class="dropdown-item">

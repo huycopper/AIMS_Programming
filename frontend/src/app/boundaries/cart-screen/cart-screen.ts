@@ -21,6 +21,10 @@ export class CartScreen implements OnInit, OnDestroy {
   insufficientStockItem: { [productId: string]: number } = {};
   private subscription: Subscription | null = null;
 
+  get cartItemCount(): number {
+    return this.cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+  }
+
   constructor(private cartService: CartService, private router: Router, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
