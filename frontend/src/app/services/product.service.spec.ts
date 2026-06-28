@@ -50,6 +50,17 @@ describe('ProductService manager APIs', () => {
     expect(call[1].params.get('page')).toBe('2');
   });
 
+  it('calls public random products endpoint', () => {
+    service.getRandomProducts().subscribe();
+
+    expect(httpClient.get).toHaveBeenCalledWith(
+      'http://localhost:8080/api/products/random',
+      expect.objectContaining({
+        params: expect.anything(),
+      }),
+    );
+  });
+
   it('calls public product detail endpoint', () => {
     service.getProductById('product-1').subscribe();
 

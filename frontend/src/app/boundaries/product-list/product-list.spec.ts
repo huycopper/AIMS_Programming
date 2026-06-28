@@ -1,13 +1,42 @@
+// @vitest-environment jsdom
+
 import '@angular/compiler';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BehaviorSubject, of } from 'rxjs';
 import { Cart } from '../../models/cart.model';
+import { Product } from '../../models/product.model';
 import { ProductListComponent } from './product-list';
 
 describe('ProductListComponent', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'scrollTo', {
+      value: vi.fn(),
+      writable: true,
+    });
+  });
+
+  const randomProducts = Array.from({ length: 20 }, (_, index) => ({
+    productId: `product-${index}`,
+    productType: 'BOOK',
+    title: `Book ${index}`,
+    category: 'Books',
+    generalDescription: null,
+    height: 1,
+    width: 1,
+    length: 1,
+    weight: 1,
+    barcode: `barcode-${index}`,
+    originalValue: 100000,
+    currentPrice: 100000,
+    stockQuantity: 5,
+    status: 'ACTIVE',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  })) as Product[];
+
   const createComponent = () => {
     const productService = {
-      getRandomProducts: vi.fn().mockReturnValue(of([])),
+      getRandomProducts: vi.fn().mockReturnValue(of(randomProducts)),
       searchProducts: vi.fn().mockReturnValue(
         of({
           data: [],
@@ -28,6 +57,19 @@ describe('ProductListComponent', () => {
 
     return { component, productService };
   };
+
+  it('loads 20 random products on startup', () => {
+    const { component, productService } = createComponent();
+
+    component.ngOnInit();
+
+    expect(productService.getRandomProducts).toHaveBeenCalledWith();
+    expect(productService.searchProducts).not.toHaveBeenCalled();
+    expect(component.products).toEqual(randomProducts);
+    expect(component.totalProducts).toBe(20);
+    expect(component.totalPages).toBe(1);
+    expect(component.isSearchMode).toBe(false);
+  });
 
   it('uses paginated search for actual category-only filtering', () => {
     const { component, productService } = createComponent();

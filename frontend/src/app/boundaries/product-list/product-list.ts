@@ -64,16 +64,31 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * AC-1: Load products for the homepage with pagination.
-   * Loads all active products sorted by newest first, 20 per page.
+   * AC-1: Load 20 random products for the homepage.
    */
   loadRandomProducts(): void {
     this.isLoading = true;
     this.isSearchMode = false;
     this.errorMessage = '';
     this.currentSearchParams = {};
+    this.currentPage = 1;
 
-    this.loadProducts({ page: this.currentPage, limit: this.pageSize });
+    this.productService.getRandomProducts().subscribe({
+      next: (products: Product[]) => {
+        this.products = products;
+        this.totalProducts = products.length;
+        this.pageSize = 20;
+        this.totalPages = 1;
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Failed to load random products:', err);
+        this.errorMessage = 'Failed to load products. Please try again.';
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   /**
