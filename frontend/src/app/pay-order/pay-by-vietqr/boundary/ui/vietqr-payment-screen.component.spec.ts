@@ -19,53 +19,59 @@ describe('VietQRPaymentScreen (unit)', () => {
     mockActivatedRoute = {
       snapshot: {
         paramMap: {
-          get: vi.fn().mockReturnValue('test-order-123')
-        }
-      }
+          get: vi.fn().mockReturnValue('test-order-123'),
+        },
+      },
     };
 
     mockRouter = {
-      navigate: vi.fn()
+      navigate: vi.fn(),
     };
 
     mockVietQrPaymentControl = {
-      requestPayment: vi.fn().mockReturnValue(of({
-        qrDataURL: 'data:image/png;base64,fake-qr-data',
-        amount: 132000,
-        content: 'AIMS 1234'
-      })),
-      confirmPayment: vi.fn().mockReturnValue(of({
-        status: 'PENDING_CONFIRMATION',
-        message: 'Waiting for sync'
-      })),
-      checkPaymentState: vi.fn().mockReturnValue(of({
-        status: 'PENDING_CONFIRMATION',
-        message: 'No transaction yet'
-      })),
+      requestPayment: vi.fn().mockReturnValue(
+        of({
+          qrDataURL: 'data:image/png;base64,fake-qr-data',
+          amount: 132000,
+          content: 'AIMS 1234',
+        }),
+      ),
+      confirmPayment: vi.fn().mockReturnValue(
+        of({
+          status: 'PENDING_CONFIRMATION',
+          message: 'Waiting for sync',
+        }),
+      ),
+      checkPaymentState: vi.fn().mockReturnValue(
+        of({
+          status: 'PENDING_CONFIRMATION',
+          message: 'No transaction yet',
+        }),
+      ),
       pollConfirmation: vi.fn().mockReturnValue(new Subject()),
-      isConfirmed: vi.fn().mockImplementation((res) => res.status === 'SUCCESS')
+      isConfirmed: vi.fn().mockImplementation((res) => res.status === 'SUCCESS'),
     };
 
     mockVietQrPaymentStorageControl = {
       loadCurrentOrderId: vi.fn().mockReturnValue(''),
       saveCurrentOrderId: vi.fn(),
-      clearOrderingDrafts: vi.fn()
+      clearOrderingDrafts: vi.fn(),
     };
 
     mockSanitizer = {
-      bypassSecurityTrustResourceUrl: vi.fn().mockImplementation((val) => val)
+      bypassSecurityTrustResourceUrl: vi.fn().mockImplementation((val) => val),
     };
 
     mockCdr = {
-      detectChanges: vi.fn()
+      detectChanges: vi.fn(),
     };
 
     mockLocation = {
-      back: vi.fn()
+      back: vi.fn(),
     };
 
     mockCartService = {
-      getCart: vi.fn().mockReturnValue({ items: [] })
+      getCart: vi.fn().mockReturnValue({ items: [] }),
     };
 
     component = new VietQRPaymentScreen(
@@ -76,7 +82,7 @@ describe('VietQRPaymentScreen (unit)', () => {
       mockSanitizer,
       mockCdr,
       mockLocation,
-      mockCartService
+      mockCartService,
     );
   });
 
@@ -93,7 +99,7 @@ describe('VietQRPaymentScreen (unit)', () => {
     mockVietQrPaymentStorageControl.loadCurrentOrderId = vi.fn().mockReturnValue(null);
     Object.defineProperty(history, 'state', {
       value: {},
-      configurable: true
+      configurable: true,
     });
 
     component.ngOnInit();
@@ -120,7 +126,7 @@ describe('VietQRPaymentScreen (unit)', () => {
       message: 'Payment confirmed',
       orderId: 'test-order-123',
       order: { totalAmount: 132000 },
-      transaction: { transactionContent: 'AIMS 1234', amount: 132000 }
+      transaction: { transactionContent: 'AIMS 1234', amount: 132000 },
     };
     mockVietQrPaymentControl.checkPaymentState = vi.fn().mockReturnValue(of(mockSuccessResponse));
     mockVietQrPaymentControl.isConfirmed = vi.fn().mockReturnValue(true);
@@ -150,7 +156,7 @@ describe('VietQRPaymentScreen (unit)', () => {
       message: 'Payment confirmed',
       orderId: 'test-order-123',
       order: { totalAmount: 132000 },
-      transaction: { transactionContent: 'AIMS 1234', amount: 132000 }
+      transaction: { transactionContent: 'AIMS fallback-content', amount: 132000 },
     };
     mockVietQrPaymentControl.pollConfirmation = vi.fn().mockReturnValue(of(mockSuccessResponse));
 
@@ -164,13 +170,17 @@ describe('VietQRPaymentScreen (unit)', () => {
   });
 
   it('should handle polling timeout', () => {
-    mockVietQrPaymentControl.pollConfirmation = vi.fn().mockReturnValue(throwError(() => new Error('TIMEOUT')));
+    mockVietQrPaymentControl.pollConfirmation = vi
+      .fn()
+      .mockReturnValue(throwError(() => new Error('TIMEOUT')));
 
     component.ngOnInit();
     component.confirmPayment();
 
     expect(component.paymentSuccess).toBe(false);
     expect(component.confirmingPayment).toBe(false);
-    expect(component.errorMessage).toBe('Payment has not been confirmed yet. Please try again after VietQR sends the transaction.');
+    expect(component.errorMessage).toBe(
+      'Payment has not been confirmed yet. Please try again after VietQR sends the transaction.',
+    );
   });
 });

@@ -2,12 +2,20 @@
 
 <div class="payment-page-wrapper">
   <div class="payment-container">
-    
-
     <!-- Back Navigation -->
     <div class="back-nav" *ngIf="!paymentSuccess && !loading && !errorMessage">
       <a (click)="goBack()" class="back-link cursor-pointer">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <line x1="19" y1="12" x2="5" y2="12"></line>
           <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
@@ -35,18 +43,20 @@
     <!-- State 3: QR Code Display -->
     <div *ngIf="!loading && !paymentSuccess && !errorMessage" class="qr-display-state">
       <h1 class="page-title">VietQR Payment</h1>
-      
+
       <div class="payment-grid">
         <!-- Left column: QR Scan -->
         <div class="qr-card">
           <h2 class="card-subtitle">Scan to Pay</h2>
-          <p class="scan-instructions">Open your mobile banking app, select scan QR code and point to the image below.</p>
-          
+          <p class="scan-instructions">
+            Open your mobile banking app, select scan QR code and point to the image below.
+          </p>
+
           <div class="qr-image-wrapper">
             <img *ngIf="qrDataURL" [src]="safeQrUrl" class="qr-image" alt="VietQR Code" />
             <div *ngIf="!qrDataURL" class="qr-placeholder">Generating QR Image...</div>
           </div>
-          
+
           <div class="vietqr-badge">
             <span class="vietqr-logo-text">Viet<span>QR</span></span>
           </div>
@@ -55,7 +65,7 @@
         <!-- Right column: Invoice details & Actions -->
         <div class="payment-details-card">
           <h2 class="card-subtitle">Transaction Details</h2>
-          
+
           <div class="amount-container">
             <span class="label">Amount to Pay</span>
             <span class="amount-value">{{ formatPrice(amount) }}</span>
@@ -66,7 +76,7 @@
               <span class="label">Order ID</span>
               <span class="value">{{ orderId }}</span>
             </div>
-            
+
             <div class="details-row" *ngIf="paymentContent">
               <span class="label">Payment Content</span>
               <span class="value content-box">{{ paymentContent }}</span>
@@ -74,30 +84,57 @@
           </div>
 
           <div class="action-buttons">
-            <button 
-              (click)="confirmPayment()" 
-              class="btn-simulate"
-              [disabled]="confirmingPayment">
+            <button (click)="confirmPayment()" class="btn-simulate" [disabled]="confirmingPayment">
               <span *ngIf="!confirmingPayment" class="flex items-center gap-2 justify-center">
                 I have paid
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
               </span>
               <span *ngIf="confirmingPayment" class="flex items-center gap-2 justify-center">
                 <svg class="animate-spin h-5 w-5 mr-1" viewBox="0 0 24 24" fill="none">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Verifying payment...
               </span>
             </button>
 
-            <button 
-              (click)="payWithPayPal()" 
-              class="btn-paypal"
-              [disabled]="confirmingPayment">
+            <button (click)="payWithPayPal()" class="btn-paypal" [disabled]="confirmingPayment">
               <span class="flex items-center gap-2 justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="inline">
-                  <path d="M20.067 8.478c.088.528.058 1.102-.122 1.685-.71 2.298-2.73 4.14-5.328 4.14H11.12l-.993 6.273a.573.573 0 0 1-.568.483H6.072a.382.382 0 0 1-.378-.442l2.67-16.9a.955.955 0 0 1 .945-.805h7.24c1.378 0 2.503.35 3.193 1.052.684.696.883 1.636.525 2.924-.047.169-.1.332-.158.49zm-5.467 1.34c.052-.33.023-.62-.12-.85-.157-.253-.497-.378-1.026-.378H9.957l-1.126 7.12H10.9c.795 0 1.488-.135 1.94-.486.438-.34.698-.946.812-1.666a3.834 3.834 0 0 0-.052-1.74z"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  class="inline"
+                >
+                  <path
+                    d="M20.067 8.478c.088.528.058 1.102-.122 1.685-.71 2.298-2.73 4.14-5.328 4.14H11.12l-.993 6.273a.573.573 0 0 1-.568.483H6.072a.382.382 0 0 1-.378-.442l2.67-16.9a.955.955 0 0 1 .945-.805h7.24c1.378 0 2.503.35 3.193 1.052.684.696.883 1.636.525 2.924-.047.169-.1.332-.158.49zm-5.467 1.34c.052-.33.023-.62-.12-.85-.157-.253-.497-.378-1.026-.378H9.957l-1.126 7.12H10.9c.795 0 1.488-.135 1.94-.486.438-.34.698-.946.812-1.666a3.834 3.834 0 0 0-.052-1.74z"
+                  />
                 </svg>
                 Pay with PayPal
               </span>
@@ -117,29 +154,30 @@
         <div class="success-icon">✓</div>
       </div>
       <h2>Payment Successful!</h2>
-      <p class="success-subtitle">Thank you for your payment. Your order has been placed successfully and is now processing.</p>
+      <p class="success-subtitle">
+        Thank you for your payment. Your order has been placed successfully and is now processing.
+      </p>
 
       <div class="details-grid-wrapper">
-        
         <!-- Order Info Section -->
         <div class="details-section" *ngIf="confirmation?.order as order">
           <h3>Order Information</h3>
           <div class="detail-grid">
             <span>Customer Name</span>
             <strong>{{ order.customerName }}</strong>
-            
+
             <span>Phone Number</span>
             <strong>{{ order.phoneNumber }}</strong>
-            
+
             <span>Province / City</span>
             <strong>{{ order.province }}</strong>
-            
+
             <span>Shipping Address</span>
             <strong>{{ order.shippingAddress }}</strong>
-            
+
             <span>Total Amount</span>
             <strong class="text-indigo-600">{{ formatPrice(order.totalAmount) }}</strong>
-            
+
             <span>Order Status</span>
             <span class="status-badge">{{ order.status }}</span>
           </div>
@@ -151,13 +189,13 @@
           <div class="detail-grid">
             <span>Transaction ID</span>
             <strong>{{ transaction.transactionId }}</strong>
-            
+
             <span>Content</span>
-            <strong>{{ transaction.transactionContent }}</strong>
-            
+            <strong>{{ paymentContent || transaction.transactionContent }}</strong>
+
             <span>Transaction Time</span>
             <strong>{{ formatTransactionDate(transaction.transactionDatetime) }}</strong>
-            
+
             <span>Payment Method</span>
             <strong>{{ transaction.paymentMethod }}</strong>
           </div>
@@ -165,7 +203,21 @@
       </div>
 
       <button (click)="goHome()" class="btn-home-success">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="inline mr-1.5"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9 22 9 12 15 12 15 22" />
+        </svg>
         Return to Home Page
       </button>
     </div>

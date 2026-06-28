@@ -12,6 +12,7 @@ export class PayThroughVietQRController {
   private readonly logger = new Logger(PayThroughVietQRController.name);
 
   private accessToken: string;
+  private readonly generatedPaymentContentByOrderId = new Map<string, string>();
 
   constructor(
     private readonly vietQRBoundary: VietQRBoundary,
@@ -32,6 +33,7 @@ export class PayThroughVietQRController {
       order,
       this.accessToken,
     );
+    this.generatedPaymentContentByOrderId.set(order.orderId, qrResult.content);
 
     return qrResult;
   }
@@ -46,6 +48,7 @@ export class PayThroughVietQRController {
     const callbackResult = await this.vietQRBoundary.handleAPICallback(
       order,
       this.accessToken,
+      this.generatedPaymentContentByOrderId.get(order.orderId),
     );
 
     this.logger.log(
@@ -104,12 +107,14 @@ export class PayThroughVietQRController {
       await this.orderRepo.save(order);
     }
 
-    return this.buildPaymentConfirmationResponse(
+    const response = this.buildPaymentConfirmationResponse(
       order,
       transaction,
       'SUCCESS',
       'Payment confirmed successfully.',
     );
+    this.generatedPaymentContentByOrderId.delete(orderId);
+    return response;
   }
 
   /**
@@ -184,7 +189,7 @@ export class PayThroughVietQRController {
         email: order.deliveryInfo?.email || '',
       },
       transaction: transaction
-        ? this.buildTransactionSummary(transaction)
+        ? this.buildTransactionSummary(order, transaction)
         : undefined,
     };
   }
@@ -193,8 +198,14 @@ export class PayThroughVietQRController {
    * Trích xuất các trường giao dịch cần trả về cho client, đồng thời giữ các
    * mã định danh dự phòng từ cả dữ liệu VietQR và dữ liệu giao dịch nội bộ.
    */
-  private buildTransactionSummary(transaction: PaymentTransaction) {
+  private buildTransactionSummary(
+    order: Order,
+    transaction: PaymentTransaction,
+  ) {
     const details = transaction.paymentDetails || {};
+    const generatedContent = this.generatedPaymentContentByOrderId.get(
+      order.orderId,
+    );
 
     return {
       transactionId:
@@ -204,7 +215,7 @@ export class PayThroughVietQRController {
       paymentTransactionId: transaction.paymentTransactionId,
       transactionReference:
         transaction.transactionRef || details.referencenumber || '',
-      transactionContent: details.content || '',
+      transactionContent: generatedContent || details.content || '',
       transactionDatetime: this.resolveTransactionDatetime(transaction),
       amount: Number(transaction.amount),
       paymentMethod: transaction.paymentMethod,

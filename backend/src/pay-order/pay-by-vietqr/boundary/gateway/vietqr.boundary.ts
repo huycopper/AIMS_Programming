@@ -149,6 +149,7 @@ export class VietQRBoundary {
   async handleAPICallback(
     order: Order,
     accessToken: string,
+    paymentContent?: string,
   ): Promise<ApiCallbackResult> {
     this.logger.log(
       `Calling VietQR Test Callback API for order ${order.orderId}`,
@@ -156,7 +157,7 @@ export class VietQRBoundary {
 
     // Tạo payment code từ order
     const paymentCode = VietQrPaymentCode.fromOrder(order);
-    const content = paymentCode.content;
+    const content = paymentContent || paymentCode.content;
 
     // Body theo tài liệu 5-CallAPITestCallback.md
     const body = {
