@@ -12,6 +12,7 @@ describe('InvoiceScreen', () => {
   let mockCartService: any;
 
   const mockInvoiceData = {
+    orderId: 'order_123',
     deliveryInfo: {
       name: 'Test User',
       phone: '0912345678',
@@ -34,6 +35,7 @@ describe('InvoiceScreen', () => {
   };
 
   beforeEach(() => {
+    localStorage.clear();
     mockRouter = {
       navigate: vi.fn(),
       getCurrentNavigation: vi.fn().mockReturnValue(null),
@@ -82,13 +84,15 @@ describe('InvoiceScreen', () => {
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/delivery']);
   });
 
-  it('should clear cart and navigate home on confirmOrder()', () => {
+  it('should navigate to VietQR payment screen on confirmOrder()', () => {
     component.confirmOrder();
-    expect(mockCartService.emptyCart).toHaveBeenCalled();
-    expect(mockRouter.navigate).toHaveBeenCalledWith(['/']);
+    expect(mockRouter.navigate).toHaveBeenCalledWith(['/vietqr-payment', 'order_123'], {
+      state: { orderId: 'order_123' }
+    });
   });
 
   it('should redirect to cart if no invoice data', () => {
+    localStorage.clear();
     Object.defineProperty(window, 'history', {
       value: { ...window.history, state: {} },
       writable: true,

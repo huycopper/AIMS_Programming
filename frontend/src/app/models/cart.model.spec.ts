@@ -64,12 +64,30 @@ describe('Cart Model', () => {
       expect(cart.getTotalWeight()).toBe(2.0); // 0.5*2 + 1.0*1
     });
 
-    it('should update quantity and cap at stock limit', () => {
+    it('should update quantity without hiding stock shortages', () => {
       cart.addItem(mockProduct2, 2);
       cart.updateQuantity('p2', 10);
       
       const item = cart.getItem('p2');
-      expect(item?.quantity).toBe(5); // Capped at stockQuantity 5
+      expect(item?.quantity).toBe(10);
+    });
+
+    it('should combine repeated add requests for the same product', () => {
+      cart.addItem(mockProduct1, 3);
+      cart.addItem(mockProduct1, 2);
+
+      const item = cart.getItem('p1');
+      expect(item?.quantity).toBe(5);
+    });
+
+    it('should refresh product snapshots while preserving requested quantity', () => {
+      cart.addItem(mockProduct1, 5);
+      cart.updateProductSnapshot({ ...mockProduct1, stockQuantity: 3, currentPrice: 95 });
+
+      const item = cart.getItem('p1');
+      expect(item?.quantity).toBe(5);
+      expect(item?.product.stockQuantity).toBe(3);
+      expect(item?.getSubtotal()).toBe(475);
     });
 
     it('should remove items', () => {

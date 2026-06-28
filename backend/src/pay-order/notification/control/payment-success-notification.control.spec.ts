@@ -20,20 +20,25 @@ describe('PaymentSuccessNotificationControl', () => {
 
     emailBoundaryMock = {
       sendEmail: jest.fn(),
-    } as any;
+    };
 
     templateControlMock = {
-      buildMessage: jest.fn().mockReturnValue(
-        new EmailMessage('to@example.com', 'subject', 'html', 'text')
-      ),
-    } as any;
+      buildMessage: jest
+        .fn()
+        .mockReturnValue(
+          new EmailMessage('to@example.com', 'subject', 'html', 'text'),
+        ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentSuccessNotificationControl,
         { provide: ConfigService, useValue: configServiceMock },
         { provide: EmailBoundary, useValue: emailBoundaryMock },
-        { provide: PaymentSuccessEmailTemplateControl, useValue: templateControlMock },
+        {
+          provide: PaymentSuccessEmailTemplateControl,
+          useValue: templateControlMock,
+        },
       ],
     }).compile();
 
@@ -50,7 +55,10 @@ describe('PaymentSuccessNotificationControl', () => {
 
     const transaction = {} as PaymentTransaction;
 
-    const result = await control.sendPaymentSuccessNotification(order, transaction);
+    const result = await control.sendPaymentSuccessNotification(
+      order,
+      transaction,
+    );
 
     expect(result.success).toBe(true);
     expect(result.sentAt).toBeDefined();
@@ -68,7 +76,10 @@ describe('PaymentSuccessNotificationControl', () => {
 
     emailBoundaryMock.sendEmail.mockResolvedValue(undefined);
 
-    const result = await control.sendPaymentSuccessNotification(order, transaction);
+    const result = await control.sendPaymentSuccessNotification(
+      order,
+      transaction,
+    );
 
     expect(result.success).toBe(true);
     expect(result.sentAt).toBeDefined();
@@ -86,7 +97,10 @@ describe('PaymentSuccessNotificationControl', () => {
 
     emailBoundaryMock.sendEmail.mockRejectedValue(new Error('SMTP Error'));
 
-    const result = await control.sendPaymentSuccessNotification(order, transaction);
+    const result = await control.sendPaymentSuccessNotification(
+      order,
+      transaction,
+    );
 
     expect(result.success).toBe(false);
     expect(result.sentAt).toBeUndefined();

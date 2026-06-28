@@ -1,0 +1,301 @@
+<div class="admin-shell" [class.detail-open]="selectedOrder">
+  <header class="admin-header">
+    <span class="brand-link">AIMS manager</span>
+    <nav class="admin-nav" aria-label="Staff navigation">
+      <a href="/product_manager/products">Products</a>
+      <a class="active" href="/product_manager/orders" aria-current="page">Pending Orders</a>
+    </nav>
+    <div class="user-profile-container" style="margin-left: auto; position: relative;" *ngIf="authService.currentUser() as user">
+      <button type="button" class="profile-trigger" (click)="toggleProfileDropdown()" aria-haspopup="true" [attr.aria-expanded]="isProfileDropdownOpen">
+        <span class="username-display">{{ user.username.split('_').join(' ') }}</span>
+        <svg class="chevron-icon" [class.rotated]="isProfileDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <div class="profile-dropdown-menu" *ngIf="isProfileDropdownOpen">
+        <div class="dropdown-header">
+          <span class="signed-in-label">Signed in as</span>
+          <span class="user-email" title="{{ user.email }}">{{ user.email }}</span>
+          <div class="user-roles-list">
+            <span *ngFor="let role of user.roles" class="role-chip">{{ role.split('_').join(' ') }}</span>
+          </div>
+        </div>
+        <a routerLink="/staff/change-password" (click)="isProfileDropdownOpen = false" class="dropdown-item">
+          <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Change Password
+        </a>
+        <div class="dropdown-divider"></div>
+        <button type="button" (click)="logout(); isProfileDropdownOpen = false" class="dropdown-item danger-item">
+          <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="page-head">
+      <div>
+        <h1>Pending Orders</h1>
+        <p>{{ total }} pending / page {{ page }} of {{ totalPages }} / {{ limit }} per page</p>
+      </div>
+      <button type="button" class="secondary" (click)="loadOrders()" [disabled]="isLoading">
+        Refresh
+      </button>
+    </section>
+
+    @if (errorMessage) {
+      <div class="system-banner error">{{ errorMessage }}</div>
+    }
+    @if (successMessage) {
+      <div class="system-banner success">{{ successMessage }}</div>
+    }
+
+    <section class="table-panel" aria-label="Pending order table">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Address</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (isLoading) {
+              @for (row of [1, 2, 3, 4, 5]; track row) {
+                <tr class="skeleton-row">
+                  <td colspan="7"><span></span></td>
+                </tr>
+              }
+            } @else if (orders.length === 0) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <strong>No pending orders.</strong>
+                </td>
+              </tr>
+            } @else {
+              @for (order of orders; track order.orderId) {
+                <tr
+                  [class.active-row]="selectedOrder?.orderId === order.orderId"
+                  (click)="selectOrder(order)"
+                >
+                  <td>
+                    <strong>#{{ order.orderId }}</strong>
+                    <span class="status-chip">{{ order.status }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ order.customerName }}</strong>
+                    <span>{{ order.customerEmail }} / {{ order.customerPhone }}</span>
+                  </td>
+                  <td>
+                    <strong>{{ order.province }}</strong>
+                    <span>{{ order.address }}</span>
+                  </td>
+                  <td>{{ order.itemCount }}</td>
+                  <td>{{ formatPrice(order.totalAmount) }}</td>
+                  <td>
+                    @if (order.payment) {
+                      <strong>{{ order.payment.paymentMethod }}</strong>
+                      <span>{{ order.payment.status }}</span>
+                    } @else {
+                      <span>No successful payment</span>
+                    }
+                  </td>
+                  <td>{{ formatDate(order.createdAt) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+      <footer class="pager">
+        <button
+          type="button"
+          class="ghost"
+          (click)="previousPage()"
+          [disabled]="page <= 1 || isLoading"
+        >
+          Previous
+        </button>
+        <span>Page {{ page }} / {{ totalPages }}</span>
+        <button
+          type="button"
+          class="ghost"
+          (click)="nextPage()"
+          [disabled]="page >= totalPages || isLoading"
+        >
+          Next
+        </button>
+      </footer>
+    </section>
+  </main>
+
+  @if (selectedOrder) {
+    <aside class="order-detail" aria-live="polite">
+      <header class="detail-head">
+        <div>
+          <h2>Order #{{ selectedOrder.orderId }}</h2>
+          <p>{{ selectedOrder.customerName }} / {{ selectedOrder.status }}</p>
+        </div>
+        <button type="button" class="icon-button" (click)="closeDetail()" aria-label="Close detail">
+          x
+        </button>
+      </header>
+
+      <div class="detail-body">
+        @if (isDetailLoading) {
+          <div class="detail-loading">Loading order detail...</div>
+        } @else {
+          <section class="summary-grid">
+            <article>
+              <span>Total</span><strong>{{ formatPrice(selectedOrder.invoice.totalAmount) }}</strong>
+            </article>
+            <article>
+              <span>Subtotal</span><strong>{{ formatPrice(selectedOrder.invoice.subtotal) }}</strong>
+            </article>
+            <article>
+              <span>VAT</span><strong>{{ formatPrice(selectedOrder.invoice.vat) }}</strong>
+            </article>
+            <article>
+              <span>Shipping</span
+              ><strong>{{ formatPrice(selectedOrder.invoice.shippingFee) }}</strong>
+            </article>
+          </section>
+
+          <section class="detail-section">
+            <h3>Delivery</h3>
+            <p>
+              {{ selectedOrder.deliveryInfo.name }} / {{ selectedOrder.deliveryInfo.phone }} /
+              {{ selectedOrder.deliveryInfo.email }}
+            </p>
+            <p>{{ selectedOrder.deliveryInfo.address }}, {{ selectedOrder.deliveryInfo.province }}</p>
+            @if (selectedOrder.deliveryInfo.note) {
+              <p>{{ selectedOrder.deliveryInfo.note }}</p>
+            }
+          </section>
+
+          <section class="detail-section">
+            <h3>Line Items</h3>
+            <div class="line-list">
+              @for (item of selectedOrder.items; track item.orderItemId) {
+                <article>
+                  <div>
+                    <strong>{{ item.productTitle }}</strong>
+                    <span>{{ item.quantity }} x {{ formatPrice(item.unitPrice) }}</span>
+                  </div>
+                  <div>
+                    <strong>{{ item.currentProduct?.stockQuantity ?? 0 }}</strong>
+                    <span>{{ item.currentProduct?.status || 'MISSING' }}</span>
+                  </div>
+                </article>
+              }
+            </div>
+          </section>
+
+          @if (hasStockConflicts) {
+            <section class="stock-alert">
+              <h3>Stock Conflicts</h3>
+              @for (conflict of selectedOrder.stockConflicts; track conflict.productId) {
+                <p>{{ conflictText(conflict) }}</p>
+              }
+            </section>
+          }
+
+          <section class="detail-section">
+            <h3>Payment and Refund</h3>
+            @if (selectedOrder.payment) {
+              <p>
+                {{ selectedOrder.payment.paymentMethod }} / {{ selectedOrder.payment.status }} /
+                {{ formatPrice(selectedOrder.payment.amount) }}
+              </p>
+            } @else {
+              <p>No successful payment transaction.</p>
+            }
+            @if (selectedOrder.refund) {
+              <p>
+                {{ selectedOrder.refund.refundMethod }} / {{ selectedOrder.refund.refundStatus }} /
+                {{ formatPrice(selectedOrder.refund.refundAmount) }}
+              </p>
+            }
+          </section>
+        }
+      </div>
+
+      <footer class="detail-actions">
+        <button
+          type="button"
+          class="secondary"
+          (click)="openRejectDialog()"
+          [disabled]="!selectedOrder.canReject || isSubmitting"
+        >
+          Reject
+        </button>
+        <button
+          type="button"
+          (click)="openApproveDialog()"
+          [disabled]="!selectedOrder.canApprove || isSubmitting"
+        >
+          Approve
+        </button>
+      </footer>
+    </aside>
+  }
+
+  @if (isApproveDialogOpen && selectedOrder) {
+    <div class="dialog-backdrop" (click)="closeApproveDialog()">
+      <section
+        class="confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="approve-title"
+        (click)="$event.stopPropagation()"
+      >
+        <h2 id="approve-title">Approve order</h2>
+        <p>Stock will be deducted for order #{{ selectedOrder.orderId }}.</p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary" (click)="closeApproveDialog()">Cancel</button>
+          <button type="button" (click)="submitApprove()" [disabled]="isSubmitting">
+            Confirm approve
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+
+  @if (isRejectDialogOpen && selectedOrder) {
+    <div class="dialog-backdrop" (click)="closeRejectDialog()">
+      <section
+        class="confirm-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reject-title"
+        (click)="$event.stopPropagation()"
+      >
+        <h2 id="reject-title">Reject order</h2>
+        <label>
+          <span>Reason</span>
+          <textarea name="rejectReason" [(ngModel)]="rejectReason" maxlength="1000"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="secondary" (click)="closeRejectDialog()">Cancel</button>
+          <button type="button" class="danger" (click)="submitReject()" [disabled]="isSubmitting">
+            Confirm reject
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

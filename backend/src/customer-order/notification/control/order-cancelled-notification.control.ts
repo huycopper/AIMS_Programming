@@ -31,7 +31,11 @@ export class OrderCancelledNotificationControl {
       'APP_PUBLIC_URL',
       'http://localhost:4200',
     );
-    const message = this.templateControl.buildMessage(order, refund, appPublicUrl);
+    const message = this.templateControl.buildMessage(
+      order,
+      refund,
+      appPublicUrl,
+    );
 
     await this.emailBoundary.sendEmail(message);
   }

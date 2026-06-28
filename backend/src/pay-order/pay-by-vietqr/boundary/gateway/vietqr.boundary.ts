@@ -13,7 +13,8 @@ export class VietQRBoundary {
 
   private readonly VIETQR_TOKEN_URL = process.env.VIETQR_TOKEN_URL!;
   private readonly VIETQR_GENERATE_URL = process.env.VIETQR_GENERATE_URL!;
-  private readonly VIETQR_TEST_CALLBACK_URL = process.env.VIETQR_TEST_CALLBACK_URL!;
+  private readonly VIETQR_TEST_CALLBACK_URL =
+    process.env.VIETQR_TEST_CALLBACK_URL!;
   private readonly VIETQR_USERNAME = process.env.VIETQR_USERNAME!;
   private readonly VIETQR_PASSWORD = process.env.VIETQR_PASSWORD!;
   private readonly BANK_CODE = process.env.BANK_CODE!;
@@ -36,7 +37,9 @@ export class VietQRBoundary {
     });
     if (!response.ok) {
       const errorBody = await response.text();
-      this.logger.error(`VietQR GetToken failed: ${response.status} - ${errorBody}`);
+      this.logger.error(
+        `VietQR GetToken failed: ${response.status} - ${errorBody}`,
+      );
       throw new Error(`Failed to get VietQR access token: ${response.status}`);
     }
 
@@ -45,17 +48,26 @@ export class VietQRBoundary {
       expires_in?: number;
     };
     if (!data.access_token) {
-      this.logger.error(`VietQR GetToken response missing access_token: ${JSON.stringify(data)}`);
+      this.logger.error(
+        `VietQR GetToken response missing access_token: ${JSON.stringify(data)}`,
+      );
       throw new Error('VietQR GetToken response missing access_token');
     }
 
-    this.logger.log(`VietQR access token obtained successfully (expires in ${data.expires_in}s)`);
+    this.logger.log(
+      `VietQR access token obtained successfully (expires in ${data.expires_in}s)`,
+    );
     return data.access_token;
   }
 
   // Gọi API VietQR để sinh mã QR thanh toán
-  async generateQRCode(order: Order, accessToken: string): Promise<GenerateQrCodeResult> {
-    this.logger.log(`Calling VietQR API to generate QR for order ${order.orderId}`);
+  async generateQRCode(
+    order: Order,
+    accessToken: string,
+  ): Promise<GenerateQrCodeResult> {
+    this.logger.log(
+      `Calling VietQR API to generate QR for order ${order.orderId}`,
+    );
 
     const paymentCode = VietQrPaymentCode.fromOrder(order);
     const shortOrderId = paymentCode.shortOrderId;
@@ -88,25 +100,35 @@ export class VietQRBoundary {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      this.logger.error(`VietQR GenerateQR failed: ${response.status} - ${errorBody}`);
+      this.logger.error(
+        `VietQR GenerateQR failed: ${response.status} - ${errorBody}`,
+      );
       throw new Error(`Failed to generate VietQR code: ${response.status}`);
     }
 
     const data = (await response.json()) as {
       qrCode?: string;
       qrLink?: string;
+      content?: string;
     };
 
     if (!data.qrCode) {
-      this.logger.error(`VietQR GenerateQR response missing qrCode: ${JSON.stringify(data)}`);
+      this.logger.error(
+        `VietQR GenerateQR response missing qrCode: ${JSON.stringify(data)}`,
+      );
       throw new Error('VietQR GenerateQR response missing qrCode');
     }
 
-    this.logger.log(`VietQR QR code generated successfully. qrLink: ${data.qrLink}`);
+    // Dùng content từ VietQR trả về (đây là content VietQR thực sự embed vào QR,
+    const returnedContent = data.content ?? content;
+
+    this.logger.log(
+      `VietQR QR code generated successfully. qrLink: ${data.qrLink}, content: ${returnedContent}`,
+    );
 
     const qrDataURL = await QRCode.toDataURL(data.qrCode); // Chuyển QR thành URL
 
-    return { qrDataURL, amount, content };
+    return { qrDataURL, amount, content: returnedContent };
   }
 
   /**
@@ -124,12 +146,18 @@ export class VietQRBoundary {
    * @param accessToken - Token VietQR đã lấy được từ getAccessToken()
    * @returns Kết quả từ VietQR Test Callback API { status, message }
    */
-  async handleAPICallback(order: Order, accessToken: string): Promise<ApiCallbackResult> {
-    this.logger.log(`Calling VietQR Test Callback API for order ${order.orderId}`);
+  async handleAPICallback(
+    order: Order,
+    accessToken: string,
+    paymentContent?: string,
+  ): Promise<ApiCallbackResult> {
+    this.logger.log(
+      `Calling VietQR Test Callback API for order ${order.orderId}`,
+    );
 
     // Tạo payment code từ order
     const paymentCode = VietQrPaymentCode.fromOrder(order);
-    const content = paymentCode.content;
+    const content = paymentContent || paymentCode.content;
 
     // Body theo tài liệu 5-CallAPITestCallback.md
     const body = {
@@ -140,7 +168,9 @@ export class VietQRBoundary {
       bankCode: this.BANK_CODE,
     };
 
-    this.logger.log(`VietQR Test Callback request body: ${JSON.stringify(body)}`);
+    this.logger.log(
+      `VietQR Test Callback request body: ${JSON.stringify(body)}`,
+    );
 
     const response = await fetch(this.VIETQR_TEST_CALLBACK_URL, {
       method: 'POST',
@@ -153,8 +183,12 @@ export class VietQRBoundary {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      this.logger.error(`VietQR Test Callback failed: ${response.status} - ${errorBody}`);
-      throw new Error(`Failed to call VietQR Test Callback: ${response.status}`);
+      this.logger.error(
+        `VietQR Test Callback failed: ${response.status} - ${errorBody}`,
+      );
+      throw new Error(
+        `Failed to call VietQR Test Callback: ${response.status}`,
+      );
     }
 
     const data = (await response.json()) as {
@@ -165,8 +199,12 @@ export class VietQRBoundary {
     this.logger.log(`VietQR Test Callback response: ${JSON.stringify(data)}`);
 
     if (data.status === undefined || data.message === undefined) {
-      this.logger.error(`VietQR Test Callback response missing status or message: ${JSON.stringify(data)}`);
-      throw new Error('VietQR Test Callback response missing status or message');
+      this.logger.error(
+        `VietQR Test Callback response missing status or message: ${JSON.stringify(data)}`,
+      );
+      throw new Error(
+        'VietQR Test Callback response missing status or message',
+      );
     }
 
     return { status: data.status, message: data.message };

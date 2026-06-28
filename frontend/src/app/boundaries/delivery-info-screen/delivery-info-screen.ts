@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -7,6 +7,7 @@ import { CartService } from '../../services/cart.service';
 import { OrderService } from '../../services/order.service';
 import { Cart } from '../../models/cart.model';
 import { CartItemPayload, ShippingFeeResult } from '../../models/order.model';
+import { TopBarComponent } from '../../shared/top-bar/top-bar';
 
 /**
  * DeliveryInfoScreen — Boundary component (BCE pattern).
@@ -16,7 +17,7 @@ import { CartItemPayload, ShippingFeeResult } from '../../models/order.model';
 @Component({
   selector: 'app-delivery-info-screen',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, TopBarComponent],
   templateUrl: './delivery-info-screen.html',
   styleUrl: './delivery-info-screen.css',
 })
@@ -72,6 +73,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
     private cartService: CartService,
     private orderService: OrderService,
     private router: Router,
+    private cdr: ChangeDetectorRef,
   ) { }
 
   ngOnInit(): void {
@@ -82,7 +84,12 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
       this.cart = cart;
       if (!cart || cart.items.length === 0) {
         this.router.navigate(['/cart']);
+      } else {
+        if (this.province && this.address) {
+          this.recalculateShipping();
+        }
       }
+      this.cdr?.markForCheck();
     });
     this.subscriptions.push(cartSub);
 
@@ -153,10 +160,12 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
         next: (result) => { // If successful
           this.shippingResult = result;
           this.isCalculatingShipping = false;
+          this.cdr?.markForCheck();
         },
         error: (err) => {
           this.errorMessage = 'Failed to calculate shipping fee. Please try again.';
           this.isCalculatingShipping = false;
+          this.cdr?.markForCheck();
           console.error('Shipping calculation error:', err);
         },
       });
@@ -220,6 +229,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
       next: (invoiceData) => {
         this.isSubmitting = false;
         this.saveCurrentInvoice(invoiceData);
+        this.cdr?.markForCheck();
         // Navigate to invoice screen with invoice data
         this.router.navigate(['/invoice'], {
           state: { invoiceData, cart: this.cart },
@@ -229,6 +239,7 @@ export class DeliveryInfoScreen implements OnInit, OnDestroy {
         this.isSubmitting = false;
         this.errorMessage =
           'Failed to place order. Please check your information and try again.';
+        this.cdr?.markForCheck();
         console.error('Place order error:', err);
       },
     });

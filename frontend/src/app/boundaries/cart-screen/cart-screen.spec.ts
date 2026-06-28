@@ -3,12 +3,13 @@ import '@angular/compiler';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { CartScreen } from './cart-screen';
 import { CartService } from '../../services/cart.service';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { Cart } from '../../models/cart.model';
 
 describe('CartScreen', () => {
   let component: CartScreen;
   let mockCartService: any;
+  let mockProductService: any;
   let mockRouter: any;
   let cartSubject: BehaviorSubject<Cart>;
 
@@ -18,16 +19,38 @@ describe('CartScreen', () => {
 
     mockCartService = {
       getCartObservable: () => cartSubject.asObservable(),
-      updateQuantity: vi.fn(),
-      removeItem: vi.fn(),
+      updateQuantity: vi.fn((productId: string, quantity: number) => {
+        const cart = cartSubject.getValue();
+        cart.updateQuantity(productId, quantity);
+        cartSubject.next(cart);
+      }),
+      removeItem: vi.fn((productId: string) => {
+        const cart = cartSubject.getValue();
+        cart.removeItem(productId);
+        cartSubject.next(cart);
+      }),
+      updateProductSnapshot: vi.fn((product: any) => {
+        const cart = cartSubject.getValue();
+        cart.updateProductSnapshot(product);
+        cartSubject.next(cart);
+      }),
       getCart: () => cartSubject.getValue()
+    };
+
+    mockProductService = {
+      getProductById: vi.fn().mockReturnValue(of({})),
     };
 
     mockRouter = {
       navigate: vi.fn(),
     };
 
-    component = new CartScreen(mockCartService as any, mockRouter as any);
+    component = new CartScreen(
+      mockCartService as any,
+      mockRouter as any,
+      { markForCheck: vi.fn() } as any,
+      mockProductService as any,
+    );
     component.ngOnInit();
   });
 
@@ -64,7 +87,7 @@ describe('CartScreen', () => {
     expect(mockCartService.removeItem).toHaveBeenCalledWith('p1');
   });
 
-  it('should set insufficientStockItem banner for insufficient stock', () => {
+  it('should set exact insufficient stock warning for lacking quantity', () => {
     const mockProduct = {
       productId: 'p1',
       title: 'Test Book',
@@ -76,14 +99,67 @@ describe('CartScreen', () => {
     cartSubject.next(cart);
 
     // Try to update to a quantity greater than stock
-    component.handleQuantityChange('p1', 5, 3);
+    component.handleQuantityChange('p1', 5);
 
-    expect(component.insufficientStockItem['p1']).toBe(3);
-    expect(mockCartService.updateQuantity).toHaveBeenCalledWith('p1', 3); // Updates to max available
+    expect(component.insufficientStockItems['p1']).toEqual({
+      productId: 'p1',
+      title: 'Test Book',
+      requested: 5,
+      available: 3,
+      lacking: 2,
+    });
+    expect(mockCartService.updateQuantity).toHaveBeenCalledWith('p1', 5);
   });
 
-  it('should navigate to /delivery when askToPlaceOrder is called', () => {
+  it('should navigate to /delivery when askToPlaceOrder is called without shortages', () => {
     component.askToPlaceOrder();
     expect(mockRouter.navigate).toHaveBeenCalledWith(['/delivery']);
+  });
+
+  it('should block delivery when unresolved shortages exist', () => {
+    const cart = new Cart();
+    cart.addItem({
+      productId: 'p1',
+      title: 'Test Book',
+      stockQuantity: 3,
+      currentPrice: 90,
+      weight: 0.5,
+    } as any, 5);
+    cartSubject.next(cart);
+
+    component.askToPlaceOrder();
+
+    expect(mockRouter.navigate).not.toHaveBeenCalled();
+    expect(component.checkoutError).toContain('update the cart');
+  });
+
+  it('should refresh product snapshots from backend stock', () => {
+    const staleProduct = {
+      productId: 'p1',
+      productType: 'BOOK',
+      title: 'Test Book',
+      category: 'Books',
+      weight: 0.5,
+      currentPrice: 90,
+      stockQuantity: 10
+    } as any;
+    const freshProduct = { ...staleProduct, stockQuantity: 3, currentPrice: 95 };
+    const cart = new Cart();
+    cart.addItem(staleProduct, 5);
+    cartSubject.next(cart);
+    mockProductService.getProductById.mockReturnValue(of(freshProduct));
+
+    component.ngOnDestroy();
+    component = new CartScreen(
+      mockCartService as any,
+      mockRouter as any,
+      { markForCheck: vi.fn() } as any,
+      mockProductService as any,
+    );
+    component.ngOnInit();
+
+    expect(mockProductService.getProductById).toHaveBeenCalledWith('p1');
+    expect(component.insufficientStockItems['p1'].lacking).toBe(2);
+    expect(component.totalExclVAT).toBe(475);
   });
 });

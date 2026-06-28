@@ -12,6 +12,7 @@ export class PayThroughVietQRController {
   private readonly logger = new Logger(PayThroughVietQRController.name);
 
   private accessToken: string;
+  private readonly generatedPaymentContentByOrderId = new Map<string, string>();
 
   constructor(
     private readonly vietQRBoundary: VietQRBoundary,
@@ -20,13 +21,19 @@ export class PayThroughVietQRController {
     private readonly paymentTransactionRepo: Repository<PaymentTransaction>,
     @InjectRepository(Order)
     private readonly orderRepo: Repository<Order>,
-  ) { }
+  ) {}
 
-  async generateQRCode(order: Order): Promise<{ qrDataURL: string; amount: number; content: string }> {
+  async generateQRCode(
+    order: Order,
+  ): Promise<{ qrDataURL: string; amount: number; content: string }> {
     this.logger.log(`Generating QR Code for invoice ${order.orderId}`);
 
     this.accessToken = await this.vietQRBoundary.getAccessToken();
-    const qrResult = await this.vietQRBoundary.generateQRCode(order, this.accessToken);
+    const qrResult = await this.vietQRBoundary.generateQRCode(
+      order,
+      this.accessToken,
+    );
+    this.generatedPaymentContentByOrderId.set(order.orderId, qrResult.content);
 
     return qrResult;
   }
@@ -38,9 +45,15 @@ export class PayThroughVietQRController {
   async confirmPayment(order: Order): Promise<PaymentConfirmationResponse> {
     this.logger.log(`Confirming payment for order ${order.orderId}`);
 
-    const callbackResult = await this.vietQRBoundary.handleAPICallback(order, this.accessToken);
+    const callbackResult = await this.vietQRBoundary.handleAPICallback(
+      order,
+      this.accessToken,
+      this.generatedPaymentContentByOrderId.get(order.orderId),
+    );
 
-    this.logger.log(`API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`);
+    this.logger.log(
+      `API Callback result for order ${order.orderId}: ${JSON.stringify(callbackResult)}`,
+    );
 
     if (callbackResult.status !== 'SUCCESS') {
       return this.buildPaymentConfirmationResponse(
@@ -51,7 +64,10 @@ export class PayThroughVietQRController {
       );
     }
 
-    const confirmation = await this.waitForSuccessfulPayment(order.orderId, callbackResult.message);
+    const confirmation = await this.waitForSuccessfulPayment(
+      order.orderId,
+      callbackResult.message,
+    );
     if (confirmation.transaction) {
       return confirmation;
     }
@@ -59,7 +75,8 @@ export class PayThroughVietQRController {
     return {
       ...confirmation,
       status: 'PENDING_CONFIRMATION',
-      message: 'VietQR accepted the payment callback request. Waiting for transaction sync.',
+      message:
+        'VietQR accepted the payment callback request. Waiting for transaction sync.',
     };
   }
 
@@ -85,17 +102,19 @@ export class PayThroughVietQRController {
       );
     }
 
-    if (order.status !== 'PENDING_PROCESSING') {
+    if (order.status === 'PENDING') {
       order.status = 'PENDING_PROCESSING';
       await this.orderRepo.save(order);
     }
 
-    return this.buildPaymentConfirmationResponse(
+    const response = this.buildPaymentConfirmationResponse(
       order,
       transaction,
       'SUCCESS',
       'Payment confirmed successfully.',
     );
+    this.generatedPaymentContentByOrderId.delete(orderId);
+    return response;
   }
 
   /**
@@ -170,7 +189,7 @@ export class PayThroughVietQRController {
         email: order.deliveryInfo?.email || '',
       },
       transaction: transaction
-        ? this.buildTransactionSummary(transaction)
+        ? this.buildTransactionSummary(order, transaction)
         : undefined,
     };
   }
@@ -179,8 +198,14 @@ export class PayThroughVietQRController {
    * Trích xuất các trường giao dịch cần trả về cho client, đồng thời giữ các
    * mã định danh dự phòng từ cả dữ liệu VietQR và dữ liệu giao dịch nội bộ.
    */
-  private buildTransactionSummary(transaction: PaymentTransaction) {
+  private buildTransactionSummary(
+    order: Order,
+    transaction: PaymentTransaction,
+  ) {
     const details = transaction.paymentDetails || {};
+    const generatedContent = this.generatedPaymentContentByOrderId.get(
+      order.orderId,
+    );
 
     return {
       transactionId:
@@ -190,7 +215,7 @@ export class PayThroughVietQRController {
       paymentTransactionId: transaction.paymentTransactionId,
       transactionReference:
         transaction.transactionRef || details.referencenumber || '',
-      transactionContent: details.content || '',
+      transactionContent: generatedContent || details.content || '',
       transactionDatetime: this.resolveTransactionDatetime(transaction),
       amount: Number(transaction.amount),
       paymentMethod: transaction.paymentMethod,

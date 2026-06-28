@@ -1,217 +1,281 @@
-<div class="delivery-container container mx-auto p-4 max-w-6xl">
-  <button
-    (click)="goBack()"
-    class="text-blue-600 hover:underline mb-4 inline-flex items-center gap-1"
-  >
-    &larr; Back to Cart
-  </button>
+<app-top-bar [showHome]="false" [showCart]="false"></app-top-bar>
 
-  <h1 class="text-2xl font-bold mb-6">Delivery Information</h1>
-
-  <!-- Error Banner -->
-  <div
-    *ngIf="errorMessage"
-    class="bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg mb-4"
-  >
-    {{ errorMessage }}
-  </div>
-
-  <div class="flex flex-col lg:flex-row gap-8 items-start">
-    <!-- Left Column: Form -->
-    <div class="flex-1 lg:w-2/3">
-      <form (ngSubmit)="submitDeliveryInfo()" class="space-y-4">
-        <!-- Name -->
-    <div class="form-group">
-      <label for="delivery-name" class="block text-sm font-medium text-gray-700 mb-1">
-        Full Name <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="delivery-name"
-        type="text"
-        [(ngModel)]="name"
-        name="name"
-        (ngModelChange)="onDeliveryFieldChange('name')"
-        placeholder="Enter your full name"
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        [class.border-red-500]="validationErrors['name']"
-      />
-      <p *ngIf="validationErrors['name']" class="text-red-500 text-sm mt-1">
-        {{ validationErrors['name'] }}
-      </p>
+<div class="delivery-page-wrapper">
+  <div class="delivery-container">
+    <!-- Back Navigation -->
+    <div class="back-nav">
+      <a (click)="goBack()" class="back-link cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back to Cart</span>
+      </a>
     </div>
 
-    <!-- Phone -->
-    <div class="form-group">
-      <label for="delivery-phone" class="block text-sm font-medium text-gray-700 mb-1">
-        Phone Number <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="delivery-phone"
-        type="tel"
-        [(ngModel)]="phone"
-        name="phone"
-        (ngModelChange)="onDeliveryFieldChange('phone')"
-        placeholder="e.g., 0912345678"
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        [class.border-red-500]="validationErrors['phone']"
-      />
-      <p *ngIf="validationErrors['phone']" class="text-red-500 text-sm mt-1">
-        {{ validationErrors['phone'] }}
-      </p>
+    <h1 class="page-title">Delivery Information</h1>
+
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage" class="error-banner">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span>{{ errorMessage }}</span>
     </div>
 
-    <!-- Email -->
-    <div class="form-group">
-      <label for="delivery-email" class="block text-sm font-medium text-gray-700 mb-1">
-        Email <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="delivery-email"
-        type="email"
-        [(ngModel)]="email"
-        name="email"
-        (ngModelChange)="onDeliveryFieldChange('email')"
-        placeholder="your.email@example.com"
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        [class.border-red-500]="validationErrors['email']"
-      />
-      <p *ngIf="validationErrors['email']" class="text-red-500 text-sm mt-1">
-        {{ validationErrors['email'] }}
-      </p>
-    </div>
+    <div class="delivery-grid">
+      <!-- Left Column: Form -->
+      <div class="form-card">
+        <h2 class="form-title">Delivery Address</h2>
+        <form (ngSubmit)="submitDeliveryInfo()">
+          <!-- Name -->
+          <div class="form-group">
+            <label for="delivery-name" class="form-label">
+              Full Name <span class="required-star">*</span>
+            </label>
+            <input
+              id="delivery-name"
+              type="text"
+              [(ngModel)]="name"
+              name="name"
+              (ngModelChange)="onDeliveryFieldChange('name')"
+              placeholder="Enter your full name"
+              class="form-input"
+              [class.input-error]="validationErrors['name']"
+            />
+            <p *ngIf="validationErrors['name']" class="error-message">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span>{{ validationErrors['name'] }}</span>
+            </p>
+          </div>
 
-    <!-- Province -->
-    <div class="form-group">
-      <label for="delivery-province" class="block text-sm font-medium text-gray-700 mb-1">
-        Province / City <span class="text-red-500">*</span>
-      </label>
-      <select
-        id="delivery-province"
-        [(ngModel)]="province"
-        name="province"
-        (ngModelChange)="onDeliveryFieldChange('province', true)"
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-        [class.border-red-500]="validationErrors['province']"
-      >
-        <option value="" disabled>Select your province</option>
-        <option *ngFor="let p of provinces" [value]="p">{{ p }}</option>
-      </select>
-      <p *ngIf="validationErrors['province']" class="text-red-500 text-sm mt-1">
-        {{ validationErrors['province'] }}
-      </p>
-    </div>
+          <div class="form-grid">
+            <!-- Phone -->
+            <div class="form-group">
+              <label for="delivery-phone" class="form-label">
+                Phone Number <span class="required-star">*</span>
+              </label>
+              <input
+                id="delivery-phone"
+                type="tel"
+                [(ngModel)]="phone"
+                name="phone"
+                (ngModelChange)="onDeliveryFieldChange('phone')"
+                placeholder="e.g., 0912345678"
+                class="form-input"
+                [class.input-error]="validationErrors['phone']"
+              />
+              <p *ngIf="validationErrors['phone']" class="error-message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ validationErrors['phone'] }}</span>
+              </p>
+            </div>
 
-    <!-- Address -->
-    <div class="form-group">
-      <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">
-        Detailed Address <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="delivery-address"
-        type="text"
-        [(ngModel)]="address"
-        name="address"
-        placeholder="House number, street, ward/commune, district"
-        (ngModelChange)="onDeliveryFieldChange('address', true)"
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        [class.border-red-500]="validationErrors['address']"
-      />
-      <p *ngIf="validationErrors['address']" class="text-red-500 text-sm mt-1">
-        {{ validationErrors['address'] }}
-      </p>
-    </div>
-
-    <!-- Note -->
-    <div class="form-group">
-      <label for="delivery-note" class="block text-sm font-medium text-gray-700 mb-1">
-        Delivery Note (optional)
-      </label>
-      <textarea
-        id="delivery-note"
-        [(ngModel)]="note"
-        name="note"
-        (ngModelChange)="onDeliveryFieldChange('note')"
-        rows="3"
-        placeholder="Special instructions for delivery..."
-        class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      ></textarea>
-    </div>
-
-        <!-- Submit Button -->
-        <button
-          type="submit"
-          [disabled]="isSubmitting || isCalculatingShipping"
-          class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold text-lg mt-8 flex items-center justify-center"
-        >
-          <span *ngIf="!isSubmitting">Continue to Invoice</span>
-          <span *ngIf="isSubmitting" class="flex items-center">
-            <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </span>
-        </button>
-      </form>
-    </div>
-
-    <!-- Right Column: Cart Summary & Shipping -->
-    <div class="w-full lg:w-1/3 flex flex-col">
-      
-      <div class="bg-[#f4f4f4] border border-gray-300 p-5 shadow-sm h-fit">
-        <!-- Header -->
-        <div class="relative mb-5 flex items-center">
-          <h2 class="text-xl font-bold text-gray-800 pr-3 bg-[#f4f4f4] z-10">Order Summary</h2>
-          <div class="absolute left-0 right-0 h-px bg-gray-300 top-1/2"></div>
-        </div>
-        
-        <p class="text-sm text-gray-600 mb-4 pl-1">Items in cart: {{ getTotalQuantity() }}</p>
-
-        <!-- Items Box -->
-        <div class="bg-white border border-gray-300 mb-8 min-h-[200px]">
-          <div *ngIf="cart && cart.items.length > 0">
-            <div *ngFor="let item of cart.items" class="p-4 border-b border-gray-300 last:border-b-0">
-              <div class="flex justify-between items-start gap-2 mb-1">
-                <h4 class="font-bold text-gray-800 text-[15px] flex-1 min-w-0 break-words">{{ item.product.title }}</h4>
-                <div class="font-bold text-[#3b82f6] text-[15px] whitespace-nowrap flex-shrink-0">{{ formatPrice(item.product.currentPrice * item.quantity) }}</div>
-              </div>
-              <div class="text-gray-500 text-[13px] space-y-0.5">
-                <p>Price: {{ formatPrice(item.product.currentPrice) }}</p>
-                <p>Quantity: {{ item.quantity }}</p>
-              </div>
+            <!-- Email -->
+            <div class="form-group">
+              <label for="delivery-email" class="form-label">
+                Email <span class="required-star">*</span>
+              </label>
+              <input
+                id="delivery-email"
+                type="email"
+                [(ngModel)]="email"
+                name="email"
+                (ngModelChange)="onDeliveryFieldChange('email')"
+                placeholder="your.email@example.com"
+                class="form-input"
+                [class.input-error]="validationErrors['email']"
+              />
+              <p *ngIf="validationErrors['email']" class="error-message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ validationErrors['email'] }}</span>
+              </p>
             </div>
           </div>
+
+          <div class="form-grid">
+            <!-- Province -->
+            <div class="form-group">
+              <label for="delivery-province" class="form-label">
+                Province / City <span class="required-star">*</span>
+              </label>
+              <select
+                id="delivery-province"
+                [(ngModel)]="province"
+                name="province"
+                (ngModelChange)="onDeliveryFieldChange('province', true)"
+                class="form-input"
+                [class.input-error]="validationErrors['province']"
+              >
+                <option value="" disabled>Select your province</option>
+                <option *ngFor="let p of provinces" [value]="p">{{ p }}</option>
+              </select>
+              <p *ngIf="validationErrors['province']" class="error-message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ validationErrors['province'] }}</span>
+              </p>
+            </div>
+
+            <!-- Address -->
+            <div class="form-group">
+              <label for="delivery-address" class="form-label">
+                Detailed Address <span class="required-star">*</span>
+              </label>
+              <input
+                id="delivery-address"
+                type="text"
+                [(ngModel)]="address"
+                name="address"
+                placeholder="House number, street, ward/commune, district"
+                (ngModelChange)="onDeliveryFieldChange('address', true)"
+                class="form-input"
+                [class.input-error]="validationErrors['address']"
+              />
+              <p *ngIf="validationErrors['address']" class="error-message">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>{{ validationErrors['address'] }}</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="form-group">
+            <label for="delivery-note" class="form-label">
+              Delivery Note (optional)
+            </label>
+            <textarea
+              id="delivery-note"
+              [(ngModel)]="note"
+              name="note"
+              (ngModelChange)="onDeliveryFieldChange('note')"
+              rows="3"
+              placeholder="Special instructions for delivery..."
+              class="form-input"
+            ></textarea>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            [disabled]="isSubmitting || isCalculatingShipping"
+            class="btn-submit"
+          >
+            <span *ngIf="!isSubmitting">Continue to Invoice</span>
+            <span *ngIf="isSubmitting" class="flex items-center">
+              <svg class="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Right Column: Cart Summary & Shipping -->
+      <div class="summary-card">
+        <h2 class="summary-title">Order Summary</h2>
+        
+        <!-- Items count -->
+        <div class="flex justify-between text-xs text-gray-400 mb-3 px-1">
+          <span>Items in cart:</span>
+          <span class="font-semibold text-gray-600">{{ getTotalQuantity() }}</span>
         </div>
 
-        <!-- Loading Indicator for Shipping -->
-        <div *ngIf="isCalculatingShipping" class="flex flex-col items-center justify-center p-6 text-blue-600">
-          <svg class="animate-spin h-8 w-8 mb-2" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="font-medium text-sm">Calculating shipping...</span>
+        <!-- Compact Item List -->
+        <div class="summary-items-list">
+          <div *ngFor="let item of cart?.items" class="summary-item-row">
+            <div class="summary-item-icon-wrapper" [class]="'bg-' + item.product.productType.toLowerCase()">
+              <ng-container [ngSwitch]="item.product.productType">
+                <svg *ngSwitchCase="'BOOK'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
+                </svg>
+                <svg *ngSwitchCase="'CD'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg *ngSwitchCase="'DVD'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <circle cx="12" cy="12" r="4"/>
+                </svg>
+                <svg *ngSwitchCase="'NEWSPAPER'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/>
+                </svg>
+              </ng-container>
+            </div>
+            <div class="summary-item-info">
+              <h4 class="summary-item-title" [title]="item.product.title">
+                {{ item.product.title }}
+              </h4>
+              <span class="summary-item-meta">Qty: {{ item.quantity }} × {{ formatPrice(item.product.currentPrice) }}</span>
+            </div>
+            <div class="summary-item-price">
+              {{ formatPrice(item.product.currentPrice * item.quantity) }}
+            </div>
+          </div>
         </div>
 
         <!-- Totals block -->
-        <div *ngIf="shippingResult && !isCalculatingShipping">
-          <div class="border-t border-[#87b3e0] pt-4 mb-4">
-            <div class="flex justify-between text-[15px] text-gray-700 mb-2 px-1">
-              <span>Subtotal:</span>
-              <span>{{ formatPrice(cart?.calculateSubTotal()) }}</span>
-            </div>
-            <div class="flex justify-between text-[15px] text-gray-700 mb-4 px-1">
-              <span>Shipping:</span>
-              <span [class.text-[#22c55e]]="shippingResult.shippingFee === 0" [class.text-gray-700]="shippingResult.shippingFee !== 0">
+        <div class="summary-totals border-t border-gray-100 pt-4 mt-4">
+          <div class="flex justify-between text-sm text-gray-500 mb-2.5">
+            <span>Subtotal</span>
+            <span class="font-semibold text-gray-800">{{ formatPrice(cart?.calculateSubTotal()) }}</span>
+          </div>
+          
+          <div class="flex justify-between text-sm text-gray-500 mb-4">
+            <span>Shipping</span>
+            <span class="font-semibold" [class.text-[#22c55e]]="shippingResult?.shippingFee === 0" [class.text-gray-800]="shippingResult?.shippingFee !== 0">
+              <ng-container *ngIf="isCalculatingShipping">
+                <span class="flex items-center gap-1.5 text-indigo-600 text-xs">
+                  <svg class="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Calculating...
+                </span>
+              </ng-container>
+              <ng-container *ngIf="!isCalculatingShipping && shippingResult">
                 <ng-container *ngIf="shippingResult.shippingFee === 0">0₫ (Free)</ng-container>
                 <ng-container *ngIf="shippingResult.shippingFee > 0">{{ formatPrice(shippingResult.shippingFee) }}</ng-container>
-              </span>
-            </div>
+              </ng-container>
+              <ng-container *ngIf="!isCalculatingShipping && !shippingResult">
+                <span class="text-xs text-gray-400 font-normal italic"></span>
+              </ng-container>
+            </span>
           </div>
-          <div class="border-t border-[#87b3e0] mb-4"></div>
-          
-          <div class="border border-[#87b3e0] bg-white p-3 flex justify-between items-center">
-            <span class="text-gray-600 text-lg pl-1">Total:</span>
-            <span class="text-2xl font-bold text-[#3b82f6]">{{ formatPrice((cart?.calculateSubTotal() || 0) + shippingResult.shippingFee) }}</span>
+
+          <div class="border-t border-gray-100 my-4"></div>
+
+          <div class="flex justify-between items-baseline mb-3">
+            <span class="text-base font-bold text-gray-800">Total</span>
+            <span class="text-2xl font-extrabold text-indigo-600">
+              {{ formatPrice((cart?.calculateSubTotal() || 0) + (shippingResult?.shippingFee || 0)) }}
+            </span>
+          </div>
+          <div *ngIf="!shippingResult" class="text-[11px] text-gray-400 text-right italic">
+            * Excludes shipping fee
           </div>
         </div>
       </div>

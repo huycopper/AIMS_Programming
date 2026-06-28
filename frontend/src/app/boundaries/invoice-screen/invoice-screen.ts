@@ -4,6 +4,7 @@ import { Router, RouterModule } from '@angular/router';
 import { InvoiceData } from '../../models/order.model';
 import { Cart } from '../../models/cart.model';
 import { CartService } from '../../services/cart.service';
+import { TopBarComponent } from '../../shared/top-bar/top-bar';
 
 /**
  * InvoiceScreen — Boundary component (BCE pattern).
@@ -18,7 +19,7 @@ import { CartService } from '../../services/cart.service';
 @Component({
   selector: 'app-invoice-screen',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './invoice-screen.html',
   styleUrl: './invoice-screen.css',
 })
@@ -33,6 +34,24 @@ export class InvoiceScreen implements OnInit {
     private router: Router,
     private cartService: CartService,
   ) { }
+
+  /**
+   * Calculate total quantity of items in cart for header badge
+   */
+  getTotalQuantity(): number {
+    return this.cartService.getCart().items.reduce((total, item) => total + Number(item.quantity), 0);
+  }
+
+  /**
+   * Format price to VND currency string
+   */
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
+      return price + '₫';
+    }
+    return numPrice.toLocaleString('vi-VN') + '₫';
+  }
 
   ngOnInit(): void {
     // Retrieve invoice data from router state (passed by DeliveryInfoScreen)

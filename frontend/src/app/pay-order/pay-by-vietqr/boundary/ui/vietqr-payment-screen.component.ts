@@ -1,15 +1,17 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { VietQrPaymentControl } from '../../control/vietqr-payment.control';
 import { VietQrPaymentStorageControl } from '../../control/vietqr-payment-storage.control';
 import { PaymentConfirmationResponse } from '../../entity/vietqr-payment.models';
+import { CartService } from '../../../../services/cart.service';
+import { TopBarComponent } from '../../../../shared/top-bar/top-bar';
 
 @Component({
   selector: 'app-vietqr-payment-screen',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule, TopBarComponent],
   templateUrl: './vietqr-payment-screen.component.html',
   styleUrls: ['./vietqr-payment-screen.component.css'],
 })
@@ -32,8 +34,29 @@ export class VietQRPaymentScreen implements OnInit {
     private storageControl: VietQrPaymentStorageControl,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    private location: Location
+    private location: Location,
+    private cartService: CartService,
   ) {}
+
+  /**
+   * Get total quantity of items in cart for the header
+   */
+  getTotalQuantity(): number {
+    return this.cartService
+      .getCart()
+      .items.reduce((total, item) => total + Number(item.quantity), 0);
+  }
+
+  /**
+   * Format price to VND currency string
+   */
+  formatPrice(price: any): string {
+    const numPrice = Number(price);
+    if (isNaN(numPrice)) {
+      return price + '₫';
+    }
+    return numPrice.toLocaleString('vi-VN') + '₫';
+  }
 
   ngOnInit() {
     const state = history.state;
@@ -106,6 +129,10 @@ export class VietQRPaymentScreen implements OnInit {
     this.location.back();
   }
 
+  payWithPayPal() {
+    alert('This feature is in progress');
+  }
+
   formatTransactionDate(value?: string): string {
     if (!value) return '';
 
@@ -143,7 +170,8 @@ export class VietQRPaymentScreen implements OnInit {
       error: (err) => {
         this.confirmingPayment = false;
         if (err?.message === 'TIMEOUT') {
-          this.errorMessage = 'Payment has not been confirmed yet. Please try again after VietQR sends the transaction.';
+          this.errorMessage =
+            'Payment has not been confirmed yet. Please try again after VietQR sends the transaction.';
         } else {
           console.error('Payment polling failed', err);
           this.errorMessage = 'Cannot check payment status. Please try again.';
@@ -156,7 +184,7 @@ export class VietQRPaymentScreen implements OnInit {
   private applyPaymentSuccess(res: PaymentConfirmationResponse): void {
     this.confirmation = res;
     this.amount = res.order?.totalAmount ?? res.transaction?.amount ?? this.amount;
-    this.paymentContent = res.transaction?.transactionContent ?? this.paymentContent;
+    this.paymentContent = this.paymentContent || res.transaction?.transactionContent || null;
     this.paymentSuccess = true;
     this.loading = false;
     this.confirmingPayment = false;

@@ -1,14 +1,24 @@
 import { Routes } from '@angular/router';
 import { ProductListComponent } from './boundaries/product-list/product-list';
+import { ProductDetailScreen } from './boundaries/product-detail-screen/product-detail-screen';
 import { CartScreen } from './boundaries/cart-screen/cart-screen';
 import { DeliveryInfoScreen } from './boundaries/delivery-info-screen/delivery-info-screen';
 import { InvoiceScreen } from './boundaries/invoice-screen/invoice-screen';
 import { VietQRPaymentScreen } from './pay-order/pay-by-vietqr/boundary/ui/vietqr-payment-screen.component';
 import { CustomerOrderDetailsScreen } from './boundaries/customer-order-details-screen/customer-order-details-screen';
 import { CancelOrderScreen } from './boundaries/cancel-order-screen/cancel-order-screen';
+import { ProductManagementScreen } from './boundaries/product-management-screen/product-management-screen';
+import { OrderManagementScreen } from './boundaries/order-management-screen/order-management-screen';
+import { LoginScreen } from './auth/boundary/login-screen/login-screen';
+import { ChangePasswordScreen } from './auth/boundary/change-password-screen/change-password-screen';
+import { ResetPasswordScreen } from './auth/boundary/reset-password-screen/reset-password-screen';
+import { authGuard, roleGuard } from './auth/control/auth.guards';
+import { ForbiddenScreen } from './auth/boundary/forbidden-screen/forbidden-screen';
+import { AdminUsersScreen } from './admin/boundary/admin-users-screen/admin-users-screen';
 
 export const routes: Routes = [
   { path: '', component: ProductListComponent },
+  { path: 'products/:productId', component: ProductDetailScreen },
   { path: 'cart', component: CartScreen },
   { path: 'delivery', component: DeliveryInfoScreen },
   { path: 'invoice', component: InvoiceScreen },
@@ -16,5 +26,27 @@ export const routes: Routes = [
   { path: 'vietqr-payment', component: VietQRPaymentScreen },
   { path: 'orders/view/:viewToken', component: CustomerOrderDetailsScreen }, // Khi người dùng mở đường link này trên FE thì component này sẽ được thực thi
   { path: 'orders/cancel/:cancelToken', component: CancelOrderScreen },
+  { path: 'staff/login', component: LoginScreen },
+  { path: 'staff/change-password', component: ChangePasswordScreen, canActivate: [authGuard] },
+  { path: 'staff/reset-password', component: ResetPasswordScreen },
+  { path: 'forbidden', component: ForbiddenScreen },
+  {
+    path: 'admin/users',
+    component: AdminUsersScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] },
+  },
+  {
+    path: 'product_manager/products',
+    component: ProductManagementScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['PRODUCT_MANAGER'] },
+  },
+  {
+    path: 'product_manager/orders',
+    component: OrderManagementScreen,
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['PRODUCT_MANAGER'] },
+  },
   { path: '**', redirectTo: '' },
 ];

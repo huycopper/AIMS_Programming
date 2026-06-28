@@ -1,4 +1,6 @@
 import { Component, Input } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Product } from '../../models/product.model';
 import { CartService } from '../../services/cart.service';
 
@@ -10,21 +12,64 @@ import { CartService } from '../../services/cart.service';
 @Component({
   selector: 'app-product-item',
   standalone: true,
+  imports: [FormsModule],
   templateUrl: './product-item.html',
   styleUrl: './product-item.css',
 })
 export class ProductItemComponent {
   @Input({ required: true }) product!: Product;
+  quantity = 1;
+  addToCartMessage = '';
 
-  constructor(private cartService: CartService) {}
+  constructor(
+    private readonly cartService: CartService,
+    private readonly router: Router,
+  ) {}
 
-  addToCart(event?: Event, quantity: number = 1): void {
+  openProductDetail(): void {
+    this.router.navigate(['/products', this.product.productId]);
+  }
+
+  addToCart(event?: Event): void {
     if (event) {
-      event.stopPropagation(); // Prevent navigating to product detail
+      event.stopPropagation();
     }
-    if (this.product.stockQuantity > 0) {
-      this.cartService.addItem(this.product, quantity);
+
+    const requestedQuantity = Number(this.quantity);
+    if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
+      this.addToCartMessage = 'Enter a quantity of at least 1.';
+      return;
     }
+
+    if (this.product.stockQuantity <= 0) {
+      this.addToCartMessage = 'This product is out of stock.';
+      return;
+    }
+
+    const normalizedQuantity = Math.floor(requestedQuantity);
+    const existingQuantity =
+      this.cartService.getCart().getItem(this.product.productId)?.quantity ?? 0;
+    const remainingQuantity = this.product.stockQuantity - existingQuantity;
+
+    if (remainingQuantity <= 0) {
+      this.addToCartMessage = `You already have all ${this.product.stockQuantity} available units in your cart.`;
+      return;
+    }
+
+    if (normalizedQuantity > remainingQuantity) {
+      this.addToCartMessage =
+        existingQuantity > 0
+          ? `You already have ${existingQuantity} in cart. You can add at most ${remainingQuantity} more.`
+          : `Only ${this.product.stockQuantity} units are in stock. Please enter ${this.product.stockQuantity} or less.`;
+      return;
+    }
+
+    this.cartService.addItem(this.product, normalizedQuantity);
+    this.addToCartMessage = `Added ${normalizedQuantity} to cart.`;
+  }
+
+  stopCardAction(event: Event): void {
+    event.stopPropagation();
   }
 
   /**

@@ -55,7 +55,10 @@ describe('VietQR Split Webhook Components', () => {
         VietQrPaymentTransactionFactory,
         VietQrTransactionSyncControl,
         { provide: JwtService, useValue: jwtServiceMock },
-        { provide: PaymentSuccessNotificationControl, useValue: paymentSuccessNotificationControlMock },
+        {
+          provide: PaymentSuccessNotificationControl,
+          useValue: paymentSuccessNotificationControlMock,
+        },
         {
           provide: getRepositoryToken(PaymentTransaction),
           useValue: paymentTransactionRepoMock,
@@ -258,7 +261,9 @@ describe('VietQR Split Webhook Components', () => {
       paymentSuccessNotificationControlMock.sendPaymentSuccessNotification.mockImplementation(
         async () => {
           callSequence.push('send_email');
-          return PaymentSuccessNotificationResult.success(new Date('2026-06-18T20:00:00Z'));
+          return PaymentSuccessNotificationResult.success(
+            new Date('2026-06-18T20:00:00Z'),
+          );
         },
       );
 
@@ -344,6 +349,40 @@ describe('VietQR Split Webhook Components', () => {
       ]);
       expect(paymentTxMock.receiptEmailSentAt).toBeUndefined();
       expect(paymentTxMock.receiptEmailError).toBe('SMTP error');
+    });
+
+    it('should not move an already processed order back to pending processing', async () => {
+      const mockOrder = {
+        orderId: 'order-123',
+        totalAmount: 150000,
+        status: 'APPROVED',
+        deliveryInfo: { email: 'customer@example.com' },
+      } as unknown as Order;
+
+      jest.spyOn(orderMatcher, 'matchOrder').mockResolvedValue(mockOrder);
+      const paymentTxMock = {
+        paymentTransactionId: 'pt-123',
+        receiptEmailSentAt: new Date('2026-06-18T20:00:00Z'),
+        receiptEmailError: undefined,
+      } as any;
+      jest
+        .spyOn(transactionFactory, 'createPaymentTransaction')
+        .mockReturnValue(paymentTxMock);
+
+      const callbackDto: TransactionCallbackDto = {
+        transactionid: 'tx-123',
+        transactiontime: 123456,
+        referencenumber: 'ref-123',
+        amount: 150000,
+        content: 'AIMS order123',
+        bankaccount: 'bank-123',
+        orderId: 'order123',
+      };
+
+      await transactionSyncControl.syncTransaction(callbackDto);
+
+      expect(mockOrder.status).toBe('APPROVED');
+      expect(orderRepoMock.save).not.toHaveBeenCalled();
     });
 
     it('should throw error when order not found', async () => {

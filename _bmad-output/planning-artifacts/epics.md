@@ -37,6 +37,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **FR12:** Enable Administrators to manage user accounts (create, view, deactivate, block, unblock) and assign roles.
 - **FR13:** Support audit logging: history logs for product additions/edits/deletions, sensitive admin actions, and payment transactions.
 - **FR14:** Support automated email notifications for successful payment, order approval/rejection, and sensitive admin actions.
+- **FR15:** Enable Administrators and Product Managers to log in using either username or email and to change their own password.
 
 ### NonFunctional Requirements
 
@@ -46,6 +47,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **NFR4:** Securely hash passwords (bcrypt).
 - **NFR5:** Role-Based Access Control (RBAC) on the backend.
 - **NFR6:** Transaction integrity maintained on payment failure.
+- **NFR7:** Use signed JWT access tokens for authenticated staff sessions.
 
 ### Additional Requirements
 
@@ -68,7 +70,7 @@ This document provides the complete epic and story breakdown for AIMS_Programmin
 - **Epic 2:** FR5, FR6, FR7, UX-DR3, AR3
 - **Epic 3:** FR8, FR9, UX-DR4, UX-DR5, UX-DR6, NFR6, AR3
 - **Epic 4:** FR10, FR13, AR1, AR2, AR3
-- **Epic 5:** FR11, FR12, FR13, FR14, NFR4, NFR5, AR1, AR3
+- **Epic 5:** FR11, FR12, FR13, FR14, FR15, NFR4, NFR5, NFR7, AR1, AR3
 
 ---
 
@@ -207,7 +209,7 @@ So that the online store catalog stays current and accurate.
 
 ## Epic 5: Order Processing & User Management
 
-This epic covers backend administration of orders, refund handling, user account management, and role-based access control.
+This epic covers staff authentication, password management, backend administration of orders, refund handling, user account management, and role-based access control.
 
 ### Story 5.1: Order Fulfillment
 As a Product Manager,
@@ -230,18 +232,132 @@ So that I can manage order fulfillment and process refunds.
 
 ---
 
-### Story 5.2: User Management & RBAC
+### Story 5.2: Admin Portal Foundation and User Directory
 As an Administrator,
-I want to manage user accounts and assign roles,
-So that I can control access to the administration portal.
+I want a guarded administration portal with a user directory,
+So that I can inspect staff accounts before performing sensitive account-management actions.
 
 **Acceptance Criteria:**
 
-**Given** the Administrator is logged in
-**When** they create or modify user accounts or assign roles
-**Then** the system encrypts passwords using bcrypt and saves changes in the PostgreSQL DB (NFR4, AR1)
-**And** logs sensitive administration actions in the audit log (FR13)
+**Given** Story 5.3 authentication and RBAC primitives are complete
+**When** an authenticated user with role `ADMIN` navigates to the administration portal
+**Then** Angular allows access to the admin routes and the NestJS backend authorizes the corresponding endpoints with `ADMIN` role metadata (NFR5)
+**And** a user without `ADMIN` receives an access-denied UI state and a backend `403 Forbidden`, while unauthenticated users are redirected through the staff login flow.
 
-**Given** a user is logged in
-**When** they attempt to access backend endpoints or UI pages
-**Then** the NestJS backend and Angular router enforce RBAC permissions based on the user's roles (NFR5)
+**Given** the Administrator opens the user directory
+**When** the directory loads
+**Then** the system lists user accounts from `users` with username, email, status, assigned roles, and non-sensitive identifiers only
+**And** the system never returns `users.password_hash`, plaintext passwords, reset tokens, or secret values.
+
+**Given** sensitive administration actions will be implemented by later admin stories
+**When** the admin module foundation is added
+**Then** the sprint establishes a reusable audit-log control and affected-user notification control for email update, password reset, status change, role change, and account creation events (FR13, FR14)
+**And** any additive persistence needed for audit logs or password-reset tokens is justified against the Problem Statement as the highest authority when the derived database description is incomplete.
+
+---
+
+### Story 5.3: Staff Authentication & Password Management
+As an Administrator or Product Manager,
+I want to authenticate with my staff account and change my own password,
+So that I can securely access only the administration capabilities granted by all of my assigned roles.
+
+**Acceptance Criteria:**
+
+**Given** an active staff account with a bcrypt password hash
+**When** the staff member submits a valid password and either their unique username or unique email
+**Then** the system authenticates the credentials against `users.password_hash` using bcrypt and returns a signed, expiring JWT access token (FR15, NFR4, NFR7)
+**And** the token identifies the user and includes all roles assigned through `user_roles`
+**And** the system never stores, returns, or logs the plaintext password
+
+**Given** invalid credentials or an account whose status is `DEACTIVATED` or `BLOCKED`
+**When** a login is attempted
+**Then** the system denies authentication and does not issue a JWT
+**And** the response does not reveal whether the username/email, password, or account status caused the failure
+
+**Given** an authenticated staff member with one or more assigned roles
+**When** they access a protected backend endpoint or administration UI route
+**Then** both the NestJS backend and Angular router enforce RBAC using all roles in the JWT (NFR5)
+**And** `ADMIN` grants user-account management, account-status management, and role-assignment capabilities defined in Story 5.2
+**And** `PRODUCT_MANAGER` grants product administration and history capabilities defined in Story 4.1 and order-review, approval, and rejection capabilities defined in Story 5.1
+**And** a staff member with both roles receives the union of those permissions, while an unassigned permission is denied according to the principle of least privilege
+
+**Given** an authenticated Administrator or Product Manager
+**When** they submit their correct current password and a valid new password that meets the configured password policy
+**Then** the system replaces `users.password_hash` with a bcrypt hash of the new password (FR15, NFR4)
+**And** the old password can no longer be used for subsequent authentication
+
+**Given** an incorrect current password or an invalid new password
+**When** the staff member requests a password change
+**Then** the system rejects the request without changing `users.password_hash`
+
+---
+
+### Story 5.4: Admin User Creation and Initial Access
+As an Administrator,
+I want to create staff user accounts and assign their initial roles,
+So that new staff members can access only the administration capabilities they need.
+
+**Acceptance Criteria:**
+
+**Given** the Administrator submits a unique username, unique email, and at least one supported role
+**When** the create-user request is accepted
+**Then** the backend creates a `users` record and `user_roles` records transactionally in PostgreSQL (AR1)
+**And** the account receives only the selected roles, with each role name validated against supported roles such as `ADMIN` and `PRODUCT_MANAGER` (FR12)
+**And** every stored credential secret is bcrypt-hashed or token-hashed; plaintext passwords are never stored, returned, logged, or displayed to the Administrator (NFR4).
+
+**Given** a new user is created
+**When** the system provisions initial access
+**Then** the affected user receives an automatic email notification with the appropriate login or password-setup/reset process (FR14)
+**And** the creation and role assignment are written to the sensitive admin audit log with actor, affected user, timestamp, action type, and safe before/after metadata (FR13).
+
+**Given** duplicate identity data, unsupported roles, invalid email format, missing roles, or persistence failure
+**When** the Administrator submits the create-user form
+**Then** the system rejects the request without partial user or role writes and shows safe validation feedback without leaking secrets.
+
+---
+
+### Story 5.5: Admin Account Status and Role Management
+As an Administrator,
+I want to deactivate, block, unblock, and modify roles for user accounts,
+So that access can be changed according to least privilege and operational needs.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated Administrator views a user account
+**When** they deactivate, block, or unblock the account
+**Then** the backend updates `users.status` to `DEACTIVATED`, `BLOCKED`, or `ACTIVE` according to the requested action (FR12)
+**And** Story 5.3's backend guards immediately reject `DEACTIVATED` or `BLOCKED` users on subsequent protected requests (NFR5).
+
+**Given** an authenticated Administrator modifies a user's roles
+**When** they add or remove `ADMIN` and/or `PRODUCT_MANAGER`
+**Then** the backend updates `user_roles` transactionally and preserves the many-to-many relationship that allows each user to have multiple roles (FR12)
+**And** role removals take effect immediately according to Story 5.3's current-database role intersection, while newly added roles require the affected user to obtain a new token.
+
+**Given** a status or role change succeeds
+**When** the transaction commits
+**Then** the system writes a sensitive admin audit log entry and automatically notifies the affected user (FR13, FR14)
+**And** the UI refreshes the user detail and directory state without exposing passwords or secret values.
+
+---
+
+### Story 5.6: Admin Password Reset Trigger
+As an Administrator,
+I want to trigger a password reset process for a user account,
+So that the affected user can regain access without exposing their password to administrators.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated Administrator selects password reset for an existing user
+**When** the reset request is accepted
+**Then** the backend creates a secure reset process without returning or displaying the user's current password, a plaintext temporary password, or any reusable secret to the Administrator (FR12, NFR4)
+**And** any reset token or temporary secret stored by the backend is hashed and bounded by expiration and single-use semantics.
+
+**Given** a password reset is triggered
+**When** the reset process is recorded
+**Then** the affected user is automatically notified by email (FR14)
+**And** the action is written to the sensitive admin audit log with actor, affected user, timestamp, action type, and safe metadata (FR13).
+
+**Given** the affected user completes the reset process
+**When** they choose a new password
+**Then** the backend enforces the same bcrypt hashing and password policy primitives established by Story 5.3 (NFR4)
+**And** the Administrator still cannot view, retrieve, or infer the user's actual password.

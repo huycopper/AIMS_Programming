@@ -3,3 +3,7 @@ export { Book } from './book.entity.js';
 export { Cd } from './cd.entity.js';
 export { Dvd } from './dvd.entity.js';
 export { Newspaper } from './newspaper.entity.js';
+export {
+  ProductHistory,
+  ProductHistoryActionType,
+} from './product-history.entity.js';

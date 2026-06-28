@@ -11,11 +11,18 @@ export class PaymentSuccessEmail {
   public readonly viewOrderUrl: string; // Đường dẫn công khai để khách hàng tra cứu chi tiết đơn hàng
   public readonly cancelOrderUrl: string; // Đường dẫn công khai cho phép khách hàng hủy đơn hàng
 
-  constructor(order: Order, transaction: PaymentTransaction, appPublicUrl: string) {
+  constructor(
+    order: Order,
+    transaction: PaymentTransaction,
+    appPublicUrl: string,
+  ) {
     this.recipientEmail = order.deliveryInfo?.email || '';
     this.customerName = order.deliveryInfo?.name || 'Customer';
 
-    const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
+    const formatter = new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    });
     this.totalAmountFormatted = formatter.format(Number(order.totalAmount));
 
     this.orderId = order.orderId;

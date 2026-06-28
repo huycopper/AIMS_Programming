@@ -88,3 +88,77 @@ export interface PaginatedProducts {
   page: number;
   limit: number;
 }
+
+export interface ProductBasePayload {
+  productType: ProductType;
+  title: string;
+  category: string;
+  generalDescription?: string | null;
+  height: number;
+  width: number;
+  length: number;
+  weight: number;
+  barcode: string;
+  originalValue: number;
+  currentPrice: number;
+  stockQuantity: number;
+  status?: ProductStatus;
+}
+
+export type BookPayload = Omit<Book, 'productId'>;
+export type CdPayload = Omit<Cd, 'productId'>;
+export type DvdPayload = Omit<Dvd, 'productId'>;
+export type NewspaperPayload = Omit<Newspaper, 'productId'>;
+
+export interface ProductSubtypePayloads {
+  book?: BookPayload;
+  cd?: CdPayload;
+  dvd?: DvdPayload;
+  newspaper?: NewspaperPayload;
+}
+
+export type CreateProductRequest = ProductBasePayload & ProductSubtypePayloads;
+
+export type UpdateProductRequest = Partial<ProductBasePayload> &
+  ProductSubtypePayloads & {
+    stockAdjustmentReason?: string;
+  };
+
+export interface BulkDeleteProductsRequest {
+  productIds: string[];
+  reason?: string;
+}
+
+export interface BulkDeleteProductResult {
+  productId: string;
+  status: 'DELETED' | 'DEACTIVATED' | 'REJECTED';
+  message: string;
+}
+
+export interface BulkDeleteProductsResponse {
+  results: BulkDeleteProductResult[];
+}
+
+export type ProductHistoryActionType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'DEACTIVATE'
+  | 'STOCK_ADJUST';
+
+export interface ProductHistory {
+  historyId: string;
+  productId: string;
+  performedBy: string;
+  actionType: ProductHistoryActionType;
+  actionTime: string;
+  oldValueSnapshot: Record<string, unknown> | null;
+  newValueSnapshot: Record<string, unknown> | null;
+  reason: string | null;
+}
+
+export interface ProductHistoryQuery {
+  actionType?: ProductHistoryActionType;
+  from?: string;
+  to?: string;
+}

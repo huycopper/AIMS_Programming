@@ -37,6 +37,11 @@ export class CartService {
     this.updateState();
   }
 
+  updateProductSnapshot(product: Product): void {
+    this.cart.updateProductSnapshot(product);
+    this.updateState();
+  }
+
   emptyCart(): void {
     this.cart.emptyCart();
     this.updateState();
@@ -65,10 +70,8 @@ export class CartService {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           parsed.forEach(item => {
-            if (item.product && item.quantity) {
-              // Bypass addItem stock limits for initial load in case product is not available
-              // or just rely on addItem and it will cap at stock limit
-              this.cart.addItem(item.product, item.quantity);
+            if (item.product && Number(item.quantity) > 0) {
+              this.cart.addItem(item.product, Number(item.quantity));
             }
           });
           this.cartSubject.next(this.cart);

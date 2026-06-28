@@ -7,11 +7,24 @@ import { Book } from './entities/book.entity.js';
 import { Cd } from './entities/cd.entity.js';
 import { Dvd } from './entities/dvd.entity.js';
 import { Newspaper } from './entities/newspaper.entity.js';
+import { ProductHistory } from './entities/product-history.entity.js';
+import { AuthModule } from '../auth/auth.module.js';
+import { ProductStockMovementControl } from './control/product-stock-movement.control.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, Book, Cd, Dvd, Newspaper])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Product,
+      Book,
+      Cd,
+      Dvd,
+      Newspaper,
+      ProductHistory,
+    ]),
+    AuthModule,
+  ],
   controllers: [ProductController],
-  providers: [ProductService],
-  exports: [ProductService],
+  providers: [ProductService, ProductStockMovementControl],
+  exports: [ProductService, ProductStockMovementControl],
 })
 export class ProductModule {}

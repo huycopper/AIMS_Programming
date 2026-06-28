@@ -38,13 +38,13 @@ export class Cart {
   }
 
   addItem(product: Product, quantity: number): void {
-    if (quantity <= 0) return;
+    if (!Number.isFinite(quantity) || quantity <= 0) return;
+    const requestedQuantity = Math.floor(quantity);
     const existingItem = this.getItem(product.productId);
     if (existingItem) {
-      this.updateQuantity(product.productId, existingItem.quantity + quantity);
+      this.updateQuantity(product.productId, existingItem.quantity + requestedQuantity);
     } else {
-      const allowedQuantity = Math.min(quantity, product.stockQuantity);
-      this.items.push(new CartItem(product, allowedQuantity));
+      this.items.push(new CartItem(product, requestedQuantity));
     }
   }
 
@@ -53,17 +53,24 @@ export class Cart {
   }
 
   updateQuantity(productId: string, quantity: number): void {
-    if (quantity <= 0) {
+    if (!Number.isFinite(quantity) || quantity <= 0) {
       this.removeItem(productId);
       return;
     }
     const item = this.getItem(productId);
     if (item) {
-      item.quantity = Math.min(quantity, item.product.stockQuantity);
+      item.quantity = Math.floor(quantity);
     }
   }
 
   getItem(productId: string): CartItem | undefined {
     return this.items.find(item => item.product.productId === productId);
+  }
+
+  updateProductSnapshot(product: Product): void {
+    const item = this.getItem(product.productId);
+    if (item) {
+      item.product = product;
+    }
   }
 }

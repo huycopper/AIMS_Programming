@@ -1,0 +1,472 @@
+<div class="admin-shell" [class.drawer-open]="isDrawerOpen">
+  <header class="admin-header">
+    <span class="brand-link">AIMS manager</span>
+    <nav class="admin-nav" aria-label="Staff navigation">
+      <a class="active" href="/product_manager/products" aria-current="page">Products</a>
+      <a href="/product_manager/orders">Pending Orders</a>
+    </nav>
+    <div class="user-profile-container" style="margin-left: auto; position: relative;" *ngIf="authService.currentUser() as user">
+      <button type="button" class="profile-trigger" (click)="toggleProfileDropdown()" aria-haspopup="true" [attr.aria-expanded]="isProfileDropdownOpen">
+        <span class="username-display">{{ user.username.split('_').join(' ') }}</span>
+        <svg class="chevron-icon" [class.rotated]="isProfileDropdownOpen" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <div class="profile-dropdown-menu" *ngIf="isProfileDropdownOpen">
+        <div class="dropdown-header">
+          <span class="signed-in-label">Signed in as</span>
+          <span class="user-email" title="{{ user.email }}">{{ user.email }}</span>
+          <div class="user-roles-list">
+            <span *ngFor="let role of user.roles" class="role-chip">{{ role.split('_').join(' ') }}</span>
+          </div>
+        </div>
+        <a routerLink="/staff/change-password" (click)="isProfileDropdownOpen = false" class="dropdown-item">
+          <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          Change Password
+        </a>
+        <div class="dropdown-divider"></div>
+        <button type="button" (click)="logout(); isProfileDropdownOpen = false" class="dropdown-item danger-item">
+          <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="page-head">
+      <div>
+        <h1>Products</h1>
+        <p>{{ products.length }} shown / {{ loadedProducts.length }} loaded / {{ activeProductsCount }} active</p>
+      </div>
+      <button type="button" (click)="startCreate()">New Product</button>
+    </section>
+
+    @if (errorMessage) {
+      <div class="system-banner error" id="product-manager-error">{{ errorMessage }}</div>
+    }
+    @if (successMessage) {
+      <div class="system-banner success" id="product-manager-success">{{ successMessage }}</div>
+    }
+
+    @if (deleteResults.length > 0) {
+      <section class="result-summary" aria-label="Delete request result">
+        @for (status of ['DELETED', 'DEACTIVATED', 'REJECTED']; track status) {
+          @if (deleteResultsByStatus($any(status)).length > 0) {
+            <div>
+              <strong>{{ status }}</strong>
+              <span>{{ deleteResultsByStatus($any(status)).length }} products</span>
+            </div>
+          }
+        }
+      </section>
+    }
+
+    <section class="filters" aria-label="Product filters">
+      <label class="search-field">
+        <span>Search</span>
+        <input
+          name="search"
+          [(ngModel)]="search"
+          (keyup.enter)="applyFilters()"
+          placeholder="Title, category, barcode"
+        />
+      </label>
+      <label>
+        <span>Type</span>
+        <select name="typeFilter" [(ngModel)]="typeFilter">
+          <option value="">All types</option>
+          @for (type of productTypes; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Status</span>
+        <select name="statusFilter" [(ngModel)]="statusFilter">
+          @for (status of productStatuses; track status) {
+            <option [value]="status">{{ status ? statusLabel($any(status)) : 'All statuses' }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>Stock</span>
+        <select name="stockFilter" [(ngModel)]="stockFilter">
+          @for (filter of stockFilters; track filter.value) {
+            <option [value]="filter.value">{{ filter.label }}</option>
+          }
+        </select>
+      </label>
+      <button type="button" class="secondary" (click)="applyFilters()" [disabled]="isLoading">Apply</button>
+      <button type="button" class="ghost" (click)="clearFilters()" [disabled]="isLoading">Clear</button>
+    </section>
+
+    <section class="table-panel" aria-label="Product table">
+      @if (selectedProductIds.size > 0) {
+        <div class="bulk-bar">
+          <span>{{ selectedProductIds.size }} products selected.</span>
+          <div>
+            <button type="button" class="ghost amber" (click)="clearSelection()">Clear</button>
+            <button type="button" class="danger" (click)="openDeleteDialog()">Delete/deactivate</button>
+          </div>
+        </div>
+      }
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="check-col" aria-label="Selection"></th>
+              <th>Product</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Stock</th>
+              <th>Price</th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (isLoading) {
+              @for (row of [1, 2, 3, 4, 5]; track row) {
+                <tr class="skeleton-row">
+                  <td colspan="7"><span></span></td>
+                </tr>
+              }
+            } @else if (products.length === 0) {
+              <tr>
+                <td colspan="7" class="empty-cell">
+                  <strong>{{ loadedProducts.length === 0 ? 'No products in the catalog.' : 'No products match these filters.' }}</strong>
+                  @if (loadedProducts.length === 0) {
+                    <button type="button" (click)="startCreate()">New Product</button>
+                  }
+                </td>
+              </tr>
+            } @else {
+              @for (product of products; track product.productId) {
+                <tr
+                  [class.active-row]="selectedProduct?.productId === product.productId"
+                  [class.selected-row]="isSelected(product.productId)"
+                  (click)="selectProduct(product)"
+                >
+                  <td class="check-col" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      [attr.aria-label]="'Select ' + product.title"
+                      [checked]="isSelected(product.productId)"
+                      (click)="$event.preventDefault(); toggleDeleteSelection(product.productId, !isSelected(product.productId))"
+                      [disabled]="product.status !== 'ACTIVE' || (selectedProductIds.size >= 10 && !isSelected(product.productId))"
+                    />
+                  </td>
+                  <td>
+                    <strong>{{ product.title }}</strong>
+                    <span>{{ product.category }} / {{ product.barcode }}</span>
+                  </td>
+                  <td>{{ product.productType }}</td>
+                  <td>
+                    <span class="status-chip" [class.offline]="product.status !== 'ACTIVE'">
+                      {{ statusLabel(product.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="stock-chip" [class.low]="stockLabel(product) === 'Low stock'">
+                      {{ product.stockQuantity }} / {{ stockLabel(product) }}
+                    </span>
+                  </td>
+                  <td>{{ formatPrice(product.currentPrice) }}</td>
+                  <td>{{ formatDate(product.updatedAt) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  @if (isDrawerOpen) {
+    <aside class="product-drawer" aria-live="polite" [attr.aria-label]="drawerTitle">
+      <header class="drawer-head">
+        <div>
+          <h2>{{ drawerTitle }}</h2>
+          <p>
+            @if (selectedProduct) {
+              {{ selectedProduct.productType }} / {{ statusLabel(selectedProduct.status) }} / Barcode {{ selectedProduct.barcode }}
+            } @else {
+              One product at a time
+            }
+          </p>
+        </div>
+        <button type="button" class="icon-button" (click)="closeDrawer()" aria-label="Close drawer">x</button>
+      </header>
+
+      <nav class="tabs" aria-label="Product drawer tabs">
+        @for (tab of ['overview', 'edit', 'stock', 'history']; track tab) {
+          <button
+            type="button"
+            [class.active]="activeDrawerTab === tab"
+            [disabled]="isTabDisabled($any(tab))"
+            (click)="setDrawerTab($any(tab))"
+          >
+            {{ tab }}
+          </button>
+        }
+      </nav>
+
+      <div class="drawer-body">
+        @if (activeDrawerTab === 'overview' && selectedProduct) {
+          <section class="overview-grid">
+            <article>
+              <span>Status</span>
+              <strong>{{ statusLabel(selectedProduct.status) }}</strong>
+            </article>
+            <article>
+              <span>Stock</span>
+              <strong>{{ selectedProduct.stockQuantity }}</strong>
+            </article>
+            <article>
+              <span>Current price</span>
+              <strong>{{ formatPrice(selectedProduct.currentPrice) }}</strong>
+            </article>
+            <article>
+              <span>Original value</span>
+              <strong>{{ formatPrice(selectedProduct.originalValue) }}</strong>
+            </article>
+            <article>
+              <span>Dimensions</span>
+              <strong>{{ selectedProduct.height }} x {{ selectedProduct.width }} x {{ selectedProduct.length }}</strong>
+            </article>
+            <article>
+              <span>Weight</span>
+              <strong>{{ selectedProduct.weight }}</strong>
+            </article>
+          </section>
+          <section class="description-block">
+            <h3>Description</h3>
+            <p>{{ selectedProduct.generalDescription || 'No description provided.' }}</p>
+          </section>
+        }
+
+        @if (activeDrawerTab === 'edit') {
+          <form id="product-editor-form" (ngSubmit)="submitProduct()" #productForm="ngForm">
+            <section class="field-section">
+              <h3>Basic</h3>
+              <div class="form-grid">
+                <label>
+                  <span>Type</span>
+                  <select name="productType" [(ngModel)]="draft.productType">
+                    @for (type of productTypes; track type) {
+                      <option [value]="type">{{ type }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>Title</span>
+                  <input name="title" [(ngModel)]="draft.title" required />
+                  @if (fieldErrors['title']) { <small class="field-error">{{ fieldErrors['title'] }}</small> }
+                </label>
+                <label>
+                  <span>Category</span>
+                  <input name="category" [(ngModel)]="draft.category" required />
+                  @if (fieldErrors['category']) { <small class="field-error">{{ fieldErrors['category'] }}</small> }
+                </label>
+                <label>
+                  <span>Barcode</span>
+                  <input name="barcode" [(ngModel)]="draft.barcode" required />
+                  @if (fieldErrors['barcode']) { <small class="field-error">{{ fieldErrors['barcode'] }}</small> }
+                </label>
+              </div>
+              <label class="full">
+                <span>General description</span>
+                <textarea name="generalDescription" [(ngModel)]="draft.generalDescription"></textarea>
+              </label>
+            </section>
+
+            <section class="field-section">
+              <h3>Pricing and inventory</h3>
+              <div class="form-grid">
+                <label>
+                  <span>Original value</span>
+                  <input type="number" name="originalValue" [(ngModel)]="draft.originalValue" min="0" />
+                </label>
+                <label>
+                  <span>Current price</span>
+                  <input type="number" name="currentPrice" [(ngModel)]="draft.currentPrice" min="0" />
+                  <small class="helper">Allowed: {{ formatPrice(currentPriceMin) }} - {{ formatPrice(currentPriceMax) }}</small>
+                  @if (fieldErrors['currentPrice']) { <small class="field-error">{{ fieldErrors['currentPrice'] }}</small> }
+                </label>
+                <label>
+                  <span>Stock</span>
+                  <input type="number" name="stockQuantity" [(ngModel)]="draft.stockQuantity" min="0" />
+                </label>
+              </div>
+              @if (hasStockChanged) {
+                <label class="full">
+                  <span>Stock adjustment reason</span>
+                  <textarea name="stockAdjustmentReason" [(ngModel)]="draft.stockAdjustmentReason"></textarea>
+                  @if (fieldErrors['stockAdjustmentReason']) {
+                    <small class="field-error">{{ fieldErrors['stockAdjustmentReason'] }}</small>
+                  }
+                </label>
+              }
+            </section>
+
+            <section class="field-section">
+              <h3>Dimensions</h3>
+              <div class="form-grid">
+                <label><span>Height</span><input type="number" name="height" [(ngModel)]="draft.height" min="0" /></label>
+                <label><span>Width</span><input type="number" name="width" [(ngModel)]="draft.width" min="0" /></label>
+                <label><span>Length</span><input type="number" name="length" [(ngModel)]="draft.length" min="0" /></label>
+                <label><span>Weight</span><input type="number" name="weight" [(ngModel)]="draft.weight" min="0" /></label>
+              </div>
+            </section>
+
+            <section class="field-section">
+              <h3>{{ draft.productType }} details</h3>
+              @if (draft.productType === 'BOOK') {
+                <div class="form-grid">
+                  <label><span>Authors</span><input name="authorsText" [(ngModel)]="draft.authorsText" />@if (fieldErrors['authorsText']) { <small class="field-error">{{ fieldErrors['authorsText'] }}</small> }</label>
+                  <label><span>Cover</span><select name="coverType" [(ngModel)]="draft.coverType"><option value="PAPERBACK">PAPERBACK</option><option value="HARDCOVER">HARDCOVER</option></select></label>
+                  <label><span>Publisher</span><input name="bookPublisher" [(ngModel)]="draft.bookPublisher" />@if (fieldErrors['bookPublisher']) { <small class="field-error">{{ fieldErrors['bookPublisher'] }}</small> }</label>
+                  <label><span>Publication date</span><input type="date" name="bookPublicationDate" [(ngModel)]="draft.bookPublicationDate" />@if (fieldErrors['bookPublicationDate']) { <small class="field-error">{{ fieldErrors['bookPublicationDate'] }}</small> }</label>
+                  <label><span>Pages</span><input type="number" name="numberOfPages" [(ngModel)]="draft.numberOfPages" /></label>
+                  <label><span>Language</span><input name="bookLanguage" [(ngModel)]="draft.bookLanguage" /></label>
+                  <label><span>Genre</span><input name="bookGenre" [(ngModel)]="draft.bookGenre" /></label>
+                </div>
+              }
+
+              @if (draft.productType === 'CD') {
+                <div class="form-grid">
+                  <label><span>Artists</span><input name="artistsText" [(ngModel)]="draft.artistsText" />@if (fieldErrors['artistsText']) { <small class="field-error">{{ fieldErrors['artistsText'] }}</small> }</label>
+                  <label><span>Record label</span><input name="recordLabel" [(ngModel)]="draft.recordLabel" />@if (fieldErrors['recordLabel']) { <small class="field-error">{{ fieldErrors['recordLabel'] }}</small> }</label>
+                  <label><span>Genre</span><input name="cdGenre" [(ngModel)]="draft.cdGenre" />@if (fieldErrors['cdGenre']) { <small class="field-error">{{ fieldErrors['cdGenre'] }}</small> }</label>
+                  <label><span>Release date</span><input type="date" name="cdReleaseDate" [(ngModel)]="draft.cdReleaseDate" /></label>
+                  <label class="wide"><span>Tracks</span><textarea name="tracksText" [(ngModel)]="draft.tracksText"></textarea>@if (fieldErrors['tracksText']) { <small class="field-error">{{ fieldErrors['tracksText'] }}</small> }</label>
+                </div>
+              }
+
+              @if (draft.productType === 'DVD') {
+                <div class="form-grid">
+                  <label><span>Disc</span><select name="discType" [(ngModel)]="draft.discType"><option value="BLU_RAY">BLU_RAY</option><option value="HD_DVD">HD_DVD</option></select></label>
+                  <label><span>Director</span><input name="director" [(ngModel)]="draft.director" />@if (fieldErrors['director']) { <small class="field-error">{{ fieldErrors['director'] }}</small> }</label>
+                  <label><span>Runtime</span><input type="number" name="runtime" [(ngModel)]="draft.runtime" />@if (fieldErrors['runtime']) { <small class="field-error">{{ fieldErrors['runtime'] }}</small> }</label>
+                  <label><span>Studio</span><input name="studio" [(ngModel)]="draft.studio" />@if (fieldErrors['studio']) { <small class="field-error">{{ fieldErrors['studio'] }}</small> }</label>
+                  <label><span>Language</span><input name="dvdLanguage" [(ngModel)]="draft.dvdLanguage" />@if (fieldErrors['dvdLanguage']) { <small class="field-error">{{ fieldErrors['dvdLanguage'] }}</small> }</label>
+                  <label><span>Subtitles</span><input name="subtitlesText" [(ngModel)]="draft.subtitlesText" />@if (fieldErrors['subtitlesText']) { <small class="field-error">{{ fieldErrors['subtitlesText'] }}</small> }</label>
+                  <label><span>Release date</span><input type="date" name="dvdReleaseDate" [(ngModel)]="draft.dvdReleaseDate" /></label>
+                  <label><span>Genre</span><input name="dvdGenre" [(ngModel)]="draft.dvdGenre" /></label>
+                </div>
+              }
+
+              @if (draft.productType === 'NEWSPAPER') {
+                <div class="form-grid">
+                  <label><span>Editor-in-chief</span><input name="editorInChief" [(ngModel)]="draft.editorInChief" />@if (fieldErrors['editorInChief']) { <small class="field-error">{{ fieldErrors['editorInChief'] }}</small> }</label>
+                  <label><span>Publisher</span><input name="newspaperPublisher" [(ngModel)]="draft.newspaperPublisher" />@if (fieldErrors['newspaperPublisher']) { <small class="field-error">{{ fieldErrors['newspaperPublisher'] }}</small> }</label>
+                  <label><span>Publication date</span><input type="date" name="newspaperPublicationDate" [(ngModel)]="draft.newspaperPublicationDate" />@if (fieldErrors['newspaperPublicationDate']) { <small class="field-error">{{ fieldErrors['newspaperPublicationDate'] }}</small> }</label>
+                  <label><span>Issue</span><input name="issueNumber" [(ngModel)]="draft.issueNumber" /></label>
+                  <label><span>Frequency</span><input name="publicationFrequency" [(ngModel)]="draft.publicationFrequency" /></label>
+                  <label><span>ISSN</span><input name="issn" [(ngModel)]="draft.issn" /></label>
+                  <label><span>Language</span><input name="newspaperLanguage" [(ngModel)]="draft.newspaperLanguage" /></label>
+                  <label><span>Sections</span><input name="sectionsText" [(ngModel)]="draft.sectionsText" /></label>
+                </div>
+              }
+            </section>
+          </form>
+        }
+
+        @if (activeDrawerTab === 'stock' && selectedProduct) {
+          <form class="stock-form" (ngSubmit)="submitProduct()">
+            <p>Current stock: <strong>{{ originalStockQuantity }}</strong></p>
+            <label>
+              <span>New stock quantity</span>
+              <input type="number" name="stockQuantityStockTab" [(ngModel)]="draft.stockQuantity" min="0" />
+            </label>
+            @if (hasStockChanged) {
+              <label>
+                <span>Reason</span>
+                <textarea name="stockAdjustmentReasonStockTab" [(ngModel)]="draft.stockAdjustmentReason"></textarea>
+                @if (fieldErrors['stockAdjustmentReason']) {
+                  <small class="field-error">{{ fieldErrors['stockAdjustmentReason'] }}</small>
+                }
+              </label>
+            }
+            <button type="submit" [disabled]="isSaving">Save stock</button>
+          </form>
+        }
+
+        @if (activeDrawerTab === 'history' && selectedProduct) {
+          <section class="history-panel">
+            <div class="history-toolbar">
+              <label>
+                <span>Action</span>
+                <select name="historyAction" [(ngModel)]="historyAction">
+                  @for (action of historyActions; track action) {
+                    <option [value]="action">{{ action || 'ALL' }}</option>
+                  }
+                </select>
+              </label>
+              <label><span>From</span><input type="date" name="historyFrom" [(ngModel)]="historyFrom" /></label>
+              <label><span>To</span><input type="date" name="historyTo" [(ngModel)]="historyTo" /></label>
+              <button type="button" class="secondary" (click)="loadHistories()">Query</button>
+            </div>
+            @if (histories.length === 0) {
+              <p class="empty-state">No history for this product and filter.</p>
+            } @else {
+              <div class="history-list">
+                @for (history of histories; track history.historyId) {
+                  <article>
+                    <strong>{{ history.actionType }}</strong>
+                    <span>{{ history.actionTime | date:'medium' }}</span>
+                    <span>{{ history.reason || 'No reason' }}</span>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+        }
+      </div>
+
+      @if (activeDrawerTab === 'edit') {
+        <footer class="drawer-actions">
+          <button type="button" class="secondary" (click)="closeDrawer()">Cancel</button>
+          <button type="submit" form="product-editor-form" [disabled]="!canSubmitProduct">
+            {{ formMode === 'create' ? 'Create' : 'Save' }}
+          </button>
+        </footer>
+      }
+    </aside>
+  }
+
+  @if (isDeleteDialogOpen) {
+    <div class="dialog-backdrop" (click)="closeDeleteDialog()">
+      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-dialog-title" (click)="$event.stopPropagation()">
+        <h2 id="delete-dialog-title">Delete/deactivate products</h2>
+        <p>
+          {{ selectedProductIds.size }} products selected. Products with stock will be deactivated;
+          zero-stock products will be marked deleted.
+        </p>
+        <div class="consequence-grid">
+          <span>{{ selectedProductsWithStock }} with stock</span>
+          <span>{{ selectedProductsWithoutStock }} zero stock</span>
+        </div>
+        <label>
+          <span>Reason</span>
+          <textarea name="deleteReason" [(ngModel)]="deleteReason"></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" class="secondary" (click)="closeDeleteDialog()">Cancel</button>
+          <button type="button" class="danger" (click)="submitBulkDelete()" [disabled]="isSaving">
+            Confirm delete/deactivate
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>

@@ -5,28 +5,45 @@ import { AppModule } from './app.module.js';
 import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  readStaffSeedConfig,
+  seedStaffAccounts,
+} from './auth/seed/staff-seed.js';
 
 async function bootstrap() {
   console.log('🔄 Đang khởi tạo ứng dụng NestJS...');
-  // Tạo NestJS context nhưng không mở port web (chỉ chạy script)
   const app = await NestFactory.createApplicationContext(AppModule);
 
   console.log('📦 Đang lấy kết nối Database...');
-  const dataSource = app.get(DataSource); // DataSource chứa config database
+  const dataSource = app.get(DataSource);
 
-  // Đường dẫn trỏ tới file SQL
-  const sqlPath = path.join(process.cwd(), 'seed_50_products.sql'); // đường dẫn tới file seed_50_products.sql
-  // process.cwd() Trả về thư mục nơi bạn mở terminal và gõ lệnh chạy chương trình. Nó sẽ thay đổi nếu bạn thay đổi vị trí chạy lệnh.
+  const sqlPath = path.join(process.cwd(), 'seed_50_products.sql');
   const sql = fs.readFileSync(sqlPath, 'utf8');
 
-  console.log('🚀 Đang chạy script Seeding dữ liệu...');
+  console.log('🚀 Đang chạy script Seeding dữ liệu sản phẩm...');
   try {
     await dataSource.query(sql);
-    console.log('✅ Đã đổ dữ liệu rác thành công vào Database!');
+    console.log('✅ Đã đổ dữ liệu sản phẩm thành công vào Database!');
   } catch (error) {
-    console.error('❌ Lỗi khi đổ dữ liệu:', error.message);
+    console.error('❌ Lỗi khi đổ dữ liệu sản phẩm:', error.message);
+  }
+
+  console.log('🚀 Đang kiểm tra cấu hình seed nhân viên...');
+  try {
+    const config = readStaffSeedConfig(process.env);
+    if (config) {
+      console.log('🔄 Đang chạy script Seeding dữ liệu nhân viên...');
+      await seedStaffAccounts(dataSource, config);
+      console.log('✅ Đã đổ dữ liệu nhân viên thành công vào Database!');
+    } else {
+      console.log(
+        'ℹ️ Bỏ qua seeding dữ liệu nhân viên (thiếu cấu hình môi trường/credentials).',
+      );
+    }
+  } catch (error: any) {
+    console.error('❌ Lỗi khi seeding nhân viên:', error.message);
+    process.exitCode = 1;
   } finally {
-    // Đóng ứng dụng lại sau khi xong
     await app.close();
   }
 }

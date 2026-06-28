@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  AdminOrderDetail,
   CartItemPayload,
   ShippingFeeResult,
   InvoiceData,
   DeliveryInfo,
+  PendingOrdersResponse,
   PaymentConfirmationResponse,
   VietQrPaymentRequest,
 } from '../models/order.model';
@@ -21,11 +23,12 @@ import { VietQrPaymentBoundary } from '../pay-order/pay-by-vietqr/boundary/api/v
 export class OrderService {
   private readonly apiUrl = 'http://localhost:8080/api/orders';
   private readonly paymentApiUrl = 'http://localhost:8080/api/payment/pay-order';
+  private readonly adminOrdersApiUrl = 'http://localhost:8080/api/admin/orders';
 
   constructor(
     private readonly http: HttpClient,
     private readonly vietQrPaymentBoundary: VietQrPaymentBoundary,
-  ) { }
+  ) {}
 
   /**
    * AC-2: Calculate shipping fee dynamically.
@@ -36,20 +39,18 @@ export class OrderService {
     address: string,
     cartItems: CartItemPayload[],
   ): Observable<ShippingFeeResult> {
-    return this.http.post<ShippingFeeResult>(
-      `${this.apiUrl}/calculate-shipping`,
-      { province, address, cartItems },
-    );
+    return this.http.post<ShippingFeeResult>(`${this.apiUrl}/calculate-shipping`, {
+      province,
+      address,
+      cartItems,
+    });
   }
 
   /**
    * AC-1 & AC-3: Place an order with delivery info and cart items.
    * Calls POST /api/orders/place
    */
-  placeOrder(
-    deliveryInfo: DeliveryInfo,
-    cartItems: CartItemPayload[],
-  ): Observable<InvoiceData> {
+  placeOrder(deliveryInfo: DeliveryInfo, cartItems: CartItemPayload[]): Observable<InvoiceData> {
     return this.http.post<InvoiceData>(`${this.apiUrl}/place`, {
       ...deliveryInfo,
       cartItems,
@@ -103,10 +104,13 @@ export class OrderService {
    * 1. Customer bấm nút “Confirm cancellation”.
    * 2. Component gọi cancelCustomerOrder(cancelToken).
    * 3. Backend kiểm tra token và trạng thái đơn hàng.
-   * 4. Nếu hợp lệ, backend đổi trạng thái đơn sang CANCELLED, 
+   * 4. Nếu hợp lệ, backend đổi trạng thái đơn sang CANCELLED,
    */
   cancelCustomerOrder(cancelToken: string): Observable<any> {
-    return this.http.post<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`, {});
+    return this.http.post<any>(
+      `http://localhost:8080/api/customer/orders/cancel/${cancelToken}`,
+      {},
+    );
   }
 
   /**
@@ -120,5 +124,24 @@ export class OrderService {
    */
   getCustomerOrderByCancelToken(cancelToken: string): Observable<any> {
     return this.http.get<any>(`http://localhost:8080/api/customer/orders/cancel/${cancelToken}`);
+  }
+
+  getPendingOrders(page = 1, limit = 30): Observable<PendingOrdersResponse> {
+    const params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+    return this.http.get<PendingOrdersResponse>(`${this.adminOrdersApiUrl}/pending`, { params });
+  }
+
+  getAdminOrderDetail(orderId: string): Observable<AdminOrderDetail> {
+    return this.http.get<AdminOrderDetail>(`${this.adminOrdersApiUrl}/${orderId}`);
+  }
+
+  approveAdminOrder(orderId: string): Observable<AdminOrderDetail> {
+    return this.http.post<AdminOrderDetail>(`${this.adminOrdersApiUrl}/${orderId}/approve`, {});
+  }
+
+  rejectAdminOrder(orderId: string, reason: string): Observable<AdminOrderDetail> {
+    return this.http.post<AdminOrderDetail>(`${this.adminOrdersApiUrl}/${orderId}/reject`, {
+      reason,
+    });
   }
 }

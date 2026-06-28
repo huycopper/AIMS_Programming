@@ -25,7 +25,7 @@ export class CustomerOrderService {
     private readonly refundService: RefundService,
     private readonly orderCancelledNotificationControl: OrderCancelledNotificationControl,
     private readonly orderService: OrderService,
-  ) { }
+  ) {}
 
   async getOrderByViewToken(viewToken: string) {
     const order = await this.orderRepo.findOne({
@@ -81,14 +81,14 @@ export class CustomerOrderService {
       },
       paymentTransaction: transaction
         ? {
-          transactionId: transaction.paymentDetails.transactionid,
-          paymentTransactionId: transaction.paymentTransactionId,
-          transactionReference: transaction.transactionRef,
-          transactionDatetime: transaction.createdAt.toISOString(),
-          amount: Number(transaction.amount),
-          paymentMethod: transaction.paymentMethod,
-          status: transaction.status,
-        }
+            transactionId: transaction.paymentDetails.transactionid,
+            paymentTransactionId: transaction.paymentTransactionId,
+            transactionReference: transaction.transactionRef,
+            transactionDatetime: transaction.createdAt.toISOString(),
+            amount: Number(transaction.amount),
+            paymentMethod: transaction.paymentMethod,
+            status: transaction.status,
+          }
         : null,
     };
   }
@@ -107,7 +107,9 @@ export class CustomerOrderService {
     }
 
     if (order.status !== 'PENDING' && order.status !== 'PENDING_PROCESSING') {
-      throw new ConflictException(`Order cannot be cancelled in status ${order.status}`);
+      throw new ConflictException(
+        `Order cannot be cancelled in status ${order.status}`,
+      );
     }
 
     // Process cancellation
@@ -127,7 +129,10 @@ export class CustomerOrderService {
 
     if (transaction) {
       if (transaction.paymentMethod === 'VIETQR') {
-        const refund = await this.refundService.createManualRefundForVietQR(transaction, 'Customer requested cancellation');
+        const refund = await this.refundService.createManualRefundForVietQR(
+          transaction,
+          'Customer requested cancellation',
+        );
         refundSummary = {
           refundStatus: refund.refundStatus,
           refundMethod: refund.refundMethod,
@@ -135,12 +140,19 @@ export class CustomerOrderService {
         };
 
         // Fire and forget notification
-        this.orderCancelledNotificationControl.sendOrderCancelledNotification(order, refund).catch((err) => {
-          this.logger.error(`Failed to send cancellation notification for order ${order.orderId}`, err.stack);
-        });
+        this.orderCancelledNotificationControl
+          .sendOrderCancelledNotification(order, refund)
+          .catch((err) => {
+            this.logger.error(
+              `Failed to send cancellation notification for order ${order.orderId}`,
+              err.stack,
+            );
+          });
       } else {
         // PayPal or other methods would go here in the future
-        this.logger.warn(`Refund for payment method ${transaction.paymentMethod} is not yet implemented.`);
+        this.logger.warn(
+          `Refund for payment method ${transaction.paymentMethod} is not yet implemented.`,
+        );
       }
     }
 
@@ -172,7 +184,9 @@ export class CustomerOrderService {
     });
 
     if (transaction) {
-      const refund = await this.refundService.getRefundByPaymentTransaction(transaction.paymentTransactionId);
+      const refund = await this.refundService.getRefundByPaymentTransaction(
+        transaction.paymentTransactionId,
+      );
       if (refund) {
         refundSummary = {
           refundStatus: refund.refundStatus,
