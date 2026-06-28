@@ -345,12 +345,32 @@
 /* ===== Pagination ===== */
 .pagination {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
+}
+
+.pagination-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pagination-summary strong {
+  color: var(--text-primary);
+}
+
+.pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .page-btn {
@@ -395,11 +415,21 @@
   border-color: var(--border-color);
 }
 
+.page-ellipsis {
+  min-width: 32px;
+  height: 40px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  user-select: none;
+}
+
 .page-info {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-  margin-left: 12px;
   padding: 6px 14px;
   background: #f8fafc;
   border-radius: 9999px;
@@ -469,6 +499,15 @@
     flex-wrap: wrap;
   }
 
+  .pagination-summary,
+  .page-info {
+    font-size: 12px;
+  }
+
+  .pagination-controls {
+    gap: 6px;
+  }
+
   .page-btn {
     min-width: 36px;
     height: 36px;
@@ -476,9 +515,13 @@
     padding: 0 10px;
   }
 
+  .page-ellipsis {
+    min-width: 28px;
+    height: 36px;
+  }
+
   .page-info {
     font-size: 12px;
-    margin-left: 8px;
     padding: 5px 10px;
   }
 }
@@ -583,6 +626,17 @@
     gap: 4px;
   }
 
+  .pagination-summary {
+    width: 100%;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  .pagination-controls {
+    width: 100%;
+    gap: 4px;
+  }
+
   .page-btn {
     min-width: 32px;
     height: 32px;
@@ -591,10 +645,15 @@
     border-radius: 6px;
   }
 
+  .page-ellipsis {
+    min-width: 22px;
+    height: 32px;
+    font-size: 12px;
+  }
+
   .page-info {
     width: 100%;
     text-align: center;
-    margin-left: 0;
     margin-top: 4px;
     font-size: 11px;
     padding: 4px 8px;

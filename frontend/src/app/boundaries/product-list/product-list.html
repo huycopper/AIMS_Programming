@@ -125,50 +125,64 @@
         <!-- Pagination -->
         @if (totalPages > 1) {
           <nav class="pagination" id="pagination" aria-label="Product pages">
-            <button
-              class="page-btn"
-              [disabled]="currentPage <= 1"
-              (click)="goToPage(1)"
-              aria-label="First page"
-            >
-              «
-            </button>
-            <button
-              class="page-btn"
-              [disabled]="currentPage <= 1"
-              (click)="goToPage(currentPage - 1)"
-              aria-label="Previous page"
-            >
-              ‹
-            </button>
+            <div class="pagination-summary">
+              Showing
+              <strong>{{ firstVisibleProductIndex }}-{{ lastVisibleProductIndex }}</strong>
+              of <strong>{{ totalProducts }}</strong>
+            </div>
 
-            @for (page of getPageNumbers(); track page) {
+            <div class="pagination-controls">
               <button
                 class="page-btn"
-                [class.active]="page === currentPage"
-                (click)="goToPage(page)"
-                [attr.aria-current]="page === currentPage ? 'page' : null"
+                [disabled]="currentPage <= 1 || isLoading"
+                (click)="goToPage(1)"
+                aria-label="First page"
               >
-                {{ page }}
+                &laquo;
               </button>
-            }
+              <button
+                class="page-btn"
+                [disabled]="currentPage <= 1 || isLoading"
+                (click)="goToPage(currentPage - 1)"
+                aria-label="Previous page"
+              >
+                &lsaquo;
+              </button>
 
-            <button
-              class="page-btn"
-              [disabled]="currentPage >= totalPages"
-              (click)="goToPage(currentPage + 1)"
-              aria-label="Next page"
-            >
-              ›
-            </button>
-            <button
-              class="page-btn"
-              [disabled]="currentPage >= totalPages"
-              (click)="goToPage(totalPages)"
-              aria-label="Last page"
-            >
-              »
-            </button>
+              @for (item of getPaginationItems(); track item) {
+                @if (isPageNumber(item)) {
+                  <button
+                    class="page-btn"
+                    [class.active]="item === currentPage"
+                    [disabled]="isLoading"
+                    (click)="goToPage(item)"
+                    [attr.aria-current]="item === currentPage ? 'page' : null"
+                    [attr.aria-label]="'Page ' + item"
+                  >
+                    {{ item }}
+                  </button>
+                } @else {
+                  <span class="page-ellipsis" aria-hidden="true">...</span>
+                }
+              }
+
+              <button
+                class="page-btn"
+                [disabled]="currentPage >= totalPages || isLoading"
+                (click)="goToPage(currentPage + 1)"
+                aria-label="Next page"
+              >
+                &rsaquo;
+              </button>
+              <button
+                class="page-btn"
+                [disabled]="currentPage >= totalPages || isLoading"
+                (click)="goToPage(totalPages)"
+                aria-label="Last page"
+              >
+                &raquo;
+              </button>
+            </div>
 
             <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
           </nav>

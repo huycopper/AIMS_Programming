@@ -64,10 +64,13 @@ describe('ProductListComponent', () => {
     component.ngOnInit();
 
     expect(productService.getRandomProducts).toHaveBeenCalledWith();
-    expect(productService.searchProducts).not.toHaveBeenCalled();
+    expect(productService.searchProducts).toHaveBeenCalledWith({
+      page: 1,
+      limit: 20,
+    });
     expect(component.products).toEqual(randomProducts);
-    expect(component.totalProducts).toBe(20);
-    expect(component.totalPages).toBe(1);
+    expect(component.totalProducts).toBe(40);
+    expect(component.totalPages).toBe(2);
     expect(component.isSearchMode).toBe(false);
   });
 
@@ -90,7 +93,10 @@ describe('ProductListComponent', () => {
     component.onSearchChanged({ page: 1, limit: 20 });
 
     expect(productService.getRandomProducts).toHaveBeenCalledWith();
-    expect(productService.searchProducts).not.toHaveBeenCalled();
+    expect(productService.searchProducts).toHaveBeenCalledWith({
+      page: 1,
+      limit: 20,
+    });
   });
 
   it('preserves filters across pagination', () => {
@@ -115,6 +121,70 @@ describe('ProductListComponent', () => {
       maxPrice: 200000,
       page: 2,
       limit: 20,
+    });
+  });
+
+  it('builds a compact pagination bar with ellipses for long result sets', () => {
+    const { component } = createComponent();
+
+    component.totalPages = 10;
+    component.currentPage = 5;
+
+    expect(component.getPaginationItems()).toEqual([
+      1,
+      'ellipsis-left',
+      4,
+      5,
+      6,
+      'ellipsis-right',
+      10,
+    ]);
+  });
+
+  it('keeps the leading pages visible near the start of long result sets', () => {
+    const { component } = createComponent();
+
+    component.totalPages = 10;
+    component.currentPage = 2;
+
+    expect(component.getPaginationItems()).toEqual([
+      1,
+      2,
+      3,
+      4,
+      5,
+      'ellipsis-right',
+      10,
+    ]);
+  });
+
+  it('reports the visible product range for the current search page', () => {
+    const { component } = createComponent();
+
+    component.totalProducts = 45;
+    component.pageSize = 20;
+    component.currentPage = 3;
+
+    expect(component.firstVisibleProductIndex).toBe(41);
+    expect(component.lastVisibleProductIndex).toBe(45);
+  });
+
+  it('loads catalog pages from the homepage pagination bar', () => {
+    const { component, productService } = createComponent();
+
+    component.totalPages = 2;
+    component.currentPage = 1;
+    component.isSearchMode = false;
+    component.isLoading = false;
+    component.goToPage(2);
+
+    expect(productService.searchProducts).toHaveBeenCalledWith({
+      page: 2,
+      limit: 20,
+    });
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: 'smooth',
     });
   });
 });
