@@ -104,4 +104,49 @@ describe('PayThroughVietQRController', () => {
     expect(response.transaction?.transactionContent).toBe(returnedContent);
     expect(response.transaction?.transactionContent).not.toBe(callbackContent);
   });
+
+  it('does not move approved orders back to pending processing during payment confirmation', async () => {
+    const order = {
+      orderId: 'order-123',
+      status: 'APPROVED',
+      totalAmount: 132000,
+      deliveryInfo: {
+        name: 'Dong Dai Huy',
+        phone: '0333016514',
+        province: 'Ha Noi',
+        address: 'Ta Quang Buu',
+        email: 'huy@example.com',
+      },
+    } as unknown as Order;
+    const transaction = {
+      paymentTransactionId: 'payment-tx-1',
+      transactionRef: 'ref-1',
+      amount: 132000,
+      paymentMethod: 'VIETQR',
+      status: 'SUCCESS',
+      createdAt: new Date('2026-06-28T12:00:00Z'),
+      paymentDetails: {
+        transactionid: 'bank-tx-1',
+        transactiontime: Date.UTC(2026, 5, 28, 12, 0, 0),
+        content: 'AIMS order-123',
+      },
+    } as PaymentTransaction;
+    const queryBuilder = {
+      innerJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(transaction),
+    };
+    orderRepo.findOne.mockResolvedValue(order);
+    paymentTransactionRepo.createQueryBuilder.mockReturnValue(
+      queryBuilder as never,
+    );
+
+    const response = await controller.getPaymentConfirmation(order.orderId);
+
+    expect(order.status).toBe('APPROVED');
+    expect(orderRepo.save).not.toHaveBeenCalled();
+    expect(response.order.status).toBe('APPROVED');
+  });
 });

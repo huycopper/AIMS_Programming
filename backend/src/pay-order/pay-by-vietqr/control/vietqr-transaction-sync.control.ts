@@ -42,6 +42,12 @@ export class VietQrTransactionSyncControl {
     );
 
     // Bước 2: Sinh mã tham chiếu
+    if (Number(order.totalAmount) !== Number(transactionSyncBody.amount)) {
+      throw new Error(
+        `Amount mismatch for order ${order.orderId}: expected ${Number(order.totalAmount)}, received ${Number(transactionSyncBody.amount)}`,
+      );
+    }
+
     const refTransactionId = `AIMS_TXN_${Date.now()}_${randomUUID().substring(0, 8)}`;
     const transactionRefNum = transactionSyncBody.referencenumber;
 
@@ -57,12 +63,14 @@ export class VietQrTransactionSyncControl {
       `PaymentTransaction saved: ${paymentTransaction.paymentTransactionId}`,
     );
 
-    // Bước 4: Cập nhật trạng thái đơn hàng → PENDING_PROCESSING (chờ xử lý tiếp theo)
-    order.status = 'PENDING_PROCESSING';
-    await this.orderRepo.save(order);
-    this.logger.log(
-      `Order ${order.orderId} status updated to PENDING_PROCESSING`,
-    );
+    // Payment success only moves a freshly placed order into Product Manager review.
+    if (order.status === 'PENDING') {
+      order.status = 'PENDING_PROCESSING';
+      await this.orderRepo.save(order);
+      this.logger.log(
+        `Order ${order.orderId} status updated to PENDING_PROCESSING`,
+      );
+    }
 
     // Bước 5: Gửi email xác nhận kèm hóa đơn và đường link tra cứu cho khách hàng
     if (!paymentTransaction.receiptEmailSentAt) {

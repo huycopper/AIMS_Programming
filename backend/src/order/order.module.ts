@@ -7,11 +7,11 @@ import { OrderFulfillmentService } from './order-fulfillment.service.js';
 import { Order, OrderItem, DeliveryInfo } from './entities/order.entity.js';
 import { PaymentTransaction } from '../payment/entities/payment-transaction.entity.js';
 import { Product } from '../product/entities/product.entity.js';
-import { ProductHistory } from '../product/entities/product-history.entity.js';
 import { RefundModule } from '../refund/refund.module.js';
 import { PayOrderNotificationModule } from '../pay-order/notification/pay-order-notification.module.js';
 import { AuthModule } from '../auth/auth.module.js';
 import { OrderFulfillmentNotificationControl } from './notification/order-fulfillment-notification.control.js';
+import { ProductModule } from '../product/product.module.js';
 
 @Module({
   imports: [
@@ -21,11 +21,11 @@ import { OrderFulfillmentNotificationControl } from './notification/order-fulfil
       DeliveryInfo,
       PaymentTransaction,
       Product,
-      ProductHistory,
     ]),
     AuthModule,
     RefundModule,
     PayOrderNotificationModule,
+    ProductModule,
   ],
   controllers: [PlaceOrderController, OrderFulfillmentController],
   providers: [

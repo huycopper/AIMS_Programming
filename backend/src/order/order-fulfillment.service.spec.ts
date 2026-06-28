@@ -11,6 +11,8 @@ import {
 import { ProductHistory } from '../product/entities/product-history.entity.js';
 import { RefundService } from '../refund/refund.service.js';
 import { OrderFulfillmentNotificationControl } from './notification/order-fulfillment-notification.control.js';
+import { ProductStockMovementControl } from '../product/control/product-stock-movement.control.js';
+import { ProductHistoryActionType } from '../product/entities/product-history.entity.js';
 
 describe('OrderFulfillmentService', () => {
   const manager = {
@@ -65,6 +67,7 @@ describe('OrderFulfillmentService', () => {
     sendApproved: jest.fn(),
     sendRejected: jest.fn(),
   } as unknown as jest.Mocked<OrderFulfillmentNotificationControl>;
+  const stockMovementControl = new ProductStockMovementControl();
 
   let service: OrderFulfillmentService;
 
@@ -105,6 +108,7 @@ describe('OrderFulfillmentService', () => {
       dataSource,
       refundService,
       notificationControl,
+      stockMovementControl,
     );
   });
 
@@ -150,7 +154,10 @@ describe('OrderFulfillmentService', () => {
       expect.objectContaining({
         productId: product.productId,
         performedBy: 'manager-1',
+        actionType: ProductHistoryActionType.STOCK_ADJUST,
         reason: `Order approved: ${order.orderId}`,
+        oldValueSnapshot: expect.objectContaining({ stockQuantity: 5 }),
+        newValueSnapshot: expect.objectContaining({ stockQuantity: 3 }),
       }),
     );
     expect(result.stockResults).toEqual([
@@ -173,6 +180,32 @@ describe('OrderFulfillmentService', () => {
     expect(productManagerRepo.save).not.toHaveBeenCalled();
     expect(historyManagerRepo.save).not.toHaveBeenCalled();
     expect(order.status).toBe('PENDING_PROCESSING');
+  });
+
+  it('does not deduct stock twice when an already approved order is approved again', async () => {
+    const order = makeOrder();
+    const payment = makePayment();
+    const product = makeProduct({ stockQuantity: 5 });
+    const approvedOrder = makeOrder();
+    approvedOrder.status = 'APPROVED';
+
+    orderManagerRepo.findOne
+      .mockResolvedValueOnce(order)
+      .mockResolvedValueOnce(order)
+      .mockResolvedValueOnce(approvedOrder)
+      .mockResolvedValueOnce(approvedOrder);
+    paymentManagerRepo.findOne.mockResolvedValue(payment);
+    productManagerRepo.findOne.mockResolvedValue(product);
+    productRepo.findBy.mockResolvedValue([product]);
+
+    await service.approveOrder(order.orderId, 'manager-1');
+    await expect(
+      service.approveOrder(order.orderId, 'manager-2'),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    expect(product.stockQuantity).toBe(3);
+    expect(productManagerRepo.save).toHaveBeenCalledTimes(1);
+    expect(historyManagerRepo.save).toHaveBeenCalledTimes(1);
   });
 
   it('rejects a pending VietQR order with idempotent manual refund and no stock change', async () => {

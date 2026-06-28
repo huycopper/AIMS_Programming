@@ -10,9 +10,9 @@ import { QueryPendingOrdersDto } from './dto/query-pending-orders.dto.js';
 import { PaymentTransaction } from '../payment/entities/payment-transaction.entity.js';
 import { Product, ProductStatus } from '../product/entities/product.entity.js';
 import {
-  ProductHistory,
-  ProductHistoryActionType,
-} from '../product/entities/product-history.entity.js';
+  ProductStockMovementControl,
+  StockConflict,
+} from '../product/control/product-stock-movement.control.js';
 import { RefundService } from '../refund/refund.service.js';
 import { RefundTransaction } from '../refund/entities/refund-transaction.entity.js';
 import {
@@ -23,13 +23,6 @@ import {
 const PENDING_PROCESSING = 'PENDING_PROCESSING';
 const APPROVED = 'APPROVED';
 const REJECTED = 'REJECTED';
-
-export interface StockConflict {
-  productId: string;
-  title: string;
-  requested: number;
-  available: number;
-}
 
 @Injectable()
 export class OrderFulfillmentService {
@@ -43,6 +36,7 @@ export class OrderFulfillmentService {
     private readonly dataSource: DataSource,
     private readonly refundService: RefundService,
     private readonly notificationControl: OrderFulfillmentNotificationControl,
+    private readonly stockMovementControl: ProductStockMovementControl,
   ) {}
 
   async listPendingOrders(dto: QueryPendingOrdersDto) {
@@ -81,7 +75,11 @@ export class OrderFulfillmentService {
         });
       }
 
-      const deductions = await this.deductStock(manager, order, processedBy);
+      const deductions = await this.stockMovementControl.deductForApprovedOrder(
+        manager,
+        order,
+        processedBy,
+      );
       order.status = APPROVED;
       order.processedBy = processedBy;
       order.processedAt = new Date();
@@ -133,90 +131,6 @@ export class OrderFulfillmentService {
       refund: this.toRefundSummary(result.refund),
       notification: email,
     };
-  }
-
-  private async deductStock(
-    manager: EntityManager,
-    order: Order,
-    processedBy: string,
-  ) {
-    const quantities = this.aggregateOrderQuantities(order.items || []);
-    const productRepo = manager.getRepository(Product);
-    const historyRepo = manager.getRepository(ProductHistory);
-    const products = new Map<string, Product>();
-    const conflicts: StockConflict[] = [];
-
-    for (const [productId, requested] of quantities) {
-      const product = await this.findProductForStockUpdate(
-        productRepo,
-        productId,
-      );
-      products.set(productId, product as Product);
-      if (!product) {
-        conflicts.push({
-          productId,
-          title: this.orderItemTitle(order, productId),
-          requested,
-          available: 0,
-        });
-        continue;
-      }
-      const available = Number(product.stockQuantity);
-      if (product.status !== ProductStatus.ACTIVE || available < requested) {
-        conflicts.push({
-          productId,
-          title: product.title,
-          requested,
-          available,
-        });
-      }
-    }
-
-    if (conflicts.length > 0) {
-      throw new ConflictException({
-        message: 'Insufficient or unavailable stock for order approval.',
-        code: 'STOCK_CONFLICT',
-        conflicts,
-      });
-    }
-
-    const results: Array<{
-      productId: string;
-      title: string;
-      requested: number;
-      previousStock: number;
-      newStock: number;
-    }> = [];
-
-    for (const [productId, requested] of quantities) {
-      const product = products.get(productId)!;
-      const oldSnapshot = this.productSnapshot(product);
-      const previousStock = Number(product.stockQuantity);
-      product.stockQuantity = previousStock - requested;
-      await productRepo.save(product);
-
-      const newSnapshot = this.productSnapshot(product);
-      await historyRepo.save(
-        historyRepo.create({
-          productId,
-          performedBy: processedBy,
-          actionType: ProductHistoryActionType.STOCK_ADJUST,
-          oldValueSnapshot: oldSnapshot,
-          newValueSnapshot: newSnapshot,
-          reason: `Order approved: ${order.orderId}`,
-        }),
-      );
-
-      results.push({
-        productId,
-        title: product.title,
-        requested,
-        previousStock,
-        newStock: product.stockQuantity,
-      });
-    }
-
-    return results;
   }
 
   private async createRefund(
@@ -377,17 +291,6 @@ export class OrderFulfillmentService {
     return this.findOrderOrFail(manager, orderId);
   }
 
-  private async findProductForStockUpdate(
-    productRepo: Repository<Product>,
-    productId: string,
-  ): Promise<Product | null> {
-    return productRepo
-      .createQueryBuilder('lockedProduct')
-      .setLock('pessimistic_write')
-      .where('lockedProduct.productId = :productId', { productId })
-      .getOne();
-  }
-
   private async findLatestSuccessfulPayment(
     manager: EntityManager,
     orderId: string,
@@ -406,34 +309,6 @@ export class OrderFulfillmentService {
         status: order.status,
       });
     }
-  }
-
-  private aggregateOrderQuantities(items: OrderItem[]): Map<string, number> {
-    return items.reduce((map, item) => {
-      map.set(
-        item.productId,
-        (map.get(item.productId) || 0) + Number(item.quantity),
-      );
-      return map;
-    }, new Map<string, number>());
-  }
-
-  private orderItemTitle(order: Order, productId: string): string {
-    return (
-      (order.items || []).find((item) => item.productId === productId)
-        ?.productTitle || productId
-    );
-  }
-
-  private productSnapshot(product: Product): Record<string, unknown> {
-    return {
-      productId: product.productId,
-      title: product.title,
-      currentPrice: Number(product.currentPrice),
-      stockQuantity: Number(product.stockQuantity),
-      status: product.status,
-      updatedAt: product.updatedAt,
-    };
   }
 
   private toPaymentSummary(payment: PaymentTransaction | null) {

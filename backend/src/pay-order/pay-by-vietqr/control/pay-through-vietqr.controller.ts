@@ -102,7 +102,7 @@ export class PayThroughVietQRController {
       );
     }
 
-    if (order.status !== 'PENDING_PROCESSING') {
+    if (order.status === 'PENDING') {
       order.status = 'PENDING_PROCESSING';
       await this.orderRepo.save(order);
     }
